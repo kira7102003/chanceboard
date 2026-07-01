@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import Lobby from './components/Lobby'
 import CharSelect from './components/CharSelect'
-import PieceSelect from './components/PieceSelect'
+import DeckBuild from './components/DeckBuild'
 import BattleView from './components/BattleView'
 import { useGameStore } from './store/gameStore'
 import { useRoom, loadSession, clearSession } from './hooks/useRoom'
-import type { PieceType } from './types/piece'
 
 function WaitingRoom({ roomId, mySide }: { roomId: string; mySide: 'A' | 'B' | null }) {
   const copy = () => navigator.clipboard.writeText(roomId)
@@ -37,7 +36,7 @@ export default function App() {
   const { appPhase, mySide } = useGameStore()
 
   const { localPlayCard, localMoveUnit, localExecuteMove, localPass, localToggleAuto,
-          sendCharSelect, sendPieceSelect, sendReady } = useRoom(roomId)
+          sendCharSelect, sendDeckSelect } = useRoom(roomId)
 
   const handleJoin = (id: string) => setRoomId(id)
 
@@ -47,12 +46,12 @@ export default function App() {
 
   const handleCharConfirm = (ids: string[]) => {
     sendCharSelect(ids)
-    useGameStore.getState().setAppPhase('pieceSelect')
+    useGameStore.getState().setAppPhase('deckBuild')
   }
 
-  const handlePieceConfirm = (p: PieceType) => {
-    sendPieceSelect(p)
-    sendReady()
+  const handleDeckConfirm = (deckIds: string[]) => {
+    useGameStore.getState().setMyDeck(deckIds)
+    sendDeckSelect(deckIds)
   }
 
   const handleEnd = () => {
@@ -80,8 +79,8 @@ export default function App() {
         <CharSelect onConfirm={handleCharConfirm} />
       )}
 
-      {roomId && appPhase === 'pieceSelect' && (
-        <PieceSelect onConfirm={handlePieceConfirm} />
+      {roomId && appPhase === 'deckBuild' && (
+        <DeckBuild onConfirm={handleDeckConfirm} />
       )}
 
       {roomId && (appPhase === 'battle' || appPhase === 'end') && (

@@ -95,20 +95,13 @@ export function useRoom(roomId: string) {
           break
         }
 
-        case 'pieceSelect': {
-          store.setOpponentPiece(msg.piece as PieceType)
-          break
-        }
-
         case 'startBattle': {
-          const preState = gs()
-          console.log('[startBattle] isHost:', preState.isHost, 'selectedChars:', preState.selectedCharIds, 'opponentChars:', preState.opponentCharIds, 'selectedPiece:', preState.selectedPiece, 'opponentPiece:', preState.opponentPiece)
-          if (msg.hostPiece) {
-            // Fresh read to get correct isHost
-            const fresh = gs()
-            if (fresh.isHost) fresh.selectPiece(msg.hostPiece)
-            else              fresh.setOpponentPiece(msg.hostPiece)
-          }
+          // Server sends random piece + both decks
+          const fresh = gs()
+          fresh.selectPiece((msg.piece ?? 'pawn') as PieceType)
+          fresh.setMyDeck(fresh.mySide === 'A' ? (msg.deckA ?? []) : (msg.deckB ?? []))
+          fresh.setOpponentDeck(fresh.mySide === 'A' ? (msg.deckB ?? []) : (msg.deckA ?? []))
+          console.log('[startBattle] isHost:', fresh.isHost, 'piece:', msg.piece, 'mySide:', fresh.mySide)
           gs().startBattle()
 
           // Fresh read again after startBattle mutated state
@@ -180,16 +173,15 @@ export function useRoom(roomId: string) {
   }
 
   const sendCharSelect  = (charIds: string[])  => send({ type: 'charSelect', charIds })
-  const sendPieceSelect = (piece: PieceType)    => send({ type: 'pieceSelect', piece })
-  const sendReady       = ()                    => send({ type: 'ready' })
+  const sendDeckSelect  = (deckIds: string[])  => send({ type: 'deckSelect', deckIds })
 
-  return { localPlayCard, localMoveUnit, localExecuteMove, localPass, localToggleAuto, sendCharSelect, sendPieceSelect, sendReady }
+  return { localPlayCard, localMoveUnit, localExecuteMove, localPass, localToggleAuto, sendCharSelect, sendDeckSelect }
 }
 
 function applyRemoteAction(action: any) {
   const store = useGameStore.getState()
   switch (action.type) {
-    case 'playCard':    store.playCard(action.cardId); break
+    case 'playCard':    store.playCard(action.cardId, action.side); break
     case 'moveUnit':    store.moveUnit(action.unitId, action.toSlot); break
     case 'executeMove': store.executeMove(action.unitId, action.moveSlot, action.targetId); break
     case 'pass':        store.pass(action.unitId); break

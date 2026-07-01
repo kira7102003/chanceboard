@@ -7,7 +7,7 @@ import {
   doExecuteMove, doPass, doToggleAuto, autoPlayUnit, getReadyUnits,
 } from '../engine/atb'
 
-export type AppPhase = 'lobby' | 'charSelect' | 'pieceSelect' | 'battle' | 'end'
+export type AppPhase = 'lobby' | 'charSelect' | 'deckBuild' | 'battle' | 'end'
 
 interface Store {
   appPhase: AppPhase
@@ -20,6 +20,8 @@ interface Store {
   opponentCharIds: string[]
   selectedPiece: PieceType | null
   opponentPiece: PieceType | null
+  myDeckIds: string[]
+  opponentDeckIds: string[]
 
   game: GameState | null
   pendingUnitId: string | null    // unit the local player is currently deciding for
@@ -36,6 +38,8 @@ interface Store {
 
   selectPiece: (p: PieceType) => void
   setOpponentPiece: (p: PieceType) => void
+  setMyDeck: (ids: string[]) => void
+  setOpponentDeck: (ids: string[]) => void
 
   startBattle: () => void
   applyRemoteState: (json: string) => void
@@ -44,7 +48,7 @@ interface Store {
   startATBLoop: (onSync: (json: string, phase: AppPhase) => void) => void
   stopATBLoop: () => void
 
-  playCard: (cardId: string) => void
+  playCard: (cardId: string, side?: 'A' | 'B') => void
   moveUnit: (unitId: string, toSlot: 1 | 2 | 3) => void
   executeMove: (unitId: string, moveSlot: MoveSlot, targetId: string | null) => void
   pass: (unitId: string) => void
@@ -65,6 +69,8 @@ export const useGameStore = create<Store>((set, get) => ({
   opponentCharIds: [],
   selectedPiece: null,
   opponentPiece: null,
+  myDeckIds: [],
+  opponentDeckIds: [],
 
   game: null,
   pendingUnitId: null,
@@ -81,24 +87,26 @@ export const useGameStore = create<Store>((set, get) => ({
     else if (cur.length < 3) set({ selectedCharIds: [...cur, id] })
   },
   confirmCharSelect: () => {
-    set({ appPhase: 'pieceSelect' })
+    set({ appPhase: 'deckBuild' })
   },
   setOpponentChars: (ids) => set({ opponentCharIds: ids }),
 
-  selectPiece: (p) => {
-    set({ selectedPiece: p })
-  },
+  selectPiece: (p) => { set({ selectedPiece: p }) },
   setOpponentPiece: (p) => set({ opponentPiece: p }),
+  setMyDeck: (ids) => set({ myDeckIds: ids }),
+  setOpponentDeck: (ids) => set({ opponentDeckIds: ids }),
 
   startBattle: () => {
-    const { selectedCharIds, opponentCharIds, selectedPiece, opponentPiece, mySide } = get()
+    const { selectedCharIds, opponentCharIds, selectedPiece, opponentPiece, mySide, myDeckIds, opponentDeckIds } = get()
     const piece = selectedPiece ?? opponentPiece ?? 'pawn'
     const charA = mySide === 'A' ? selectedCharIds : opponentCharIds
     const charB = mySide === 'A' ? opponentCharIds : selectedCharIds
+    const deckAIds = mySide === 'A' ? myDeckIds : opponentDeckIds
+    const deckBIds = mySide === 'A' ? opponentDeckIds : myDeckIds
     console.log('[startBattle] charA:', charA, 'charB:', charB, 'piece:', piece, 'mySide:', mySide)
     let init: ReturnType<typeof initBattleState>
     try {
-      init = initBattleState(charA, charB, piece)
+      init = initBattleState(charA, charB, piece, deckAIds, deckBIds)
     } catch (err) {
       console.error('[startBattle] initBattleState THREW:', err)
       return
@@ -181,10 +189,12 @@ export const useGameStore = create<Store>((set, get) => ({
     set({ intervalId: null })
   },
 
-  playCard: (cardId) => {
+  playCard: (cardId, side?) => {
     const { game, mySide } = get()
-    if (!game || !mySide) return
-    const next = doPlayCard(game, mySide, cardId)
+    if (!game) return
+    const effectiveSide = side ?? mySide
+    if (!effectiveSide) return
+    const next = doPlayCard(game, effectiveSide, cardId)
     get()._applyGame(next)
   },
 

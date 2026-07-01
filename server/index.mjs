@@ -3,12 +3,14 @@ import { WebSocketServer } from 'ws'
 const PORT = process.env.PORT ?? 3001
 const wss  = new WebSocketServer({ port: Number(PORT) })
 
-// rooms: Map<roomId, { players: Map<connId, player>, lastState, hostPiece }>
+const PIECES = ['pawn', 'knight', 'castle', 'bishop', 'queen', 'king']
+
+// rooms: Map<roomId, { players: Map<connId, player>, lastState, piece, deckA, deckB }>
 const rooms = new Map()
 let _id = 0
 
 function getRoom(roomId) {
-  if (!rooms.has(roomId)) rooms.set(roomId, { players: new Map(), lastState: null, hostPiece: null })
+  if (!rooms.has(roomId)) rooms.set(roomId, { players: new Map(), lastState: null, piece: null, deckA: null, deckB: null })
   return rooms.get(roomId)
 }
 
@@ -39,7 +41,7 @@ wss.on('connection', ws => {
       }
 
       const isHost = side === 'A'
-      room.players.set(connId, { ws, side, ready: false, piece: null, charIds: null })
+      room.players.set(connId, { ws, side, charIds: null, deckIds: null })
 
       ws.send(JSON.stringify({
         type: 'welcome',
@@ -60,14 +62,13 @@ wss.on('connection', ws => {
       for (const [, p] of room.players) {
         if (p.side !== side) {
           if (p.charIds) ws.send(JSON.stringify({ type: 'charSelect', charIds: p.charIds }))
-          if (p.piece)   ws.send(JSON.stringify({ type: 'pieceSelect', piece: p.piece }))
           break
         }
       }
 
       // If 2 players and game already in progress, tell both to resume
       if (room.lastState && room.players.size === 2) {
-        broadcastAll(room, { type: 'resumeGame', hostPiece: room.hostPiece })
+        broadcastAll(room, { type: 'resumeGame' })
       }
       return
     }
@@ -76,19 +77,25 @@ wss.on('connection', ws => {
     const room = rooms.get(roomId)
     const self = room.players.get(connId)
 
-    if (msg.type === 'charSelect' && self)  { self.charIds = msg.charIds }
-    if (msg.type === 'pieceSelect' && self) { self.piece   = msg.piece   }
+    if (msg.type === 'charSelect' && self) {
+      self.charIds = msg.charIds
+      broadcast(room, connId, msg)  // relay to opponent
+      return
+    }
 
-    if (msg.type === 'ready') {
-      if (self) self.ready = true
+    if (msg.type === 'deckSelect' && self) {
+      self.deckIds = msg.deckIds
       const all = [...room.players.values()]
-      console.log(`[ready] room=${roomId} side=${self?.side} readyCount=${all.filter(p=>p.ready).length}/${all.length}`)
-      broadcastAll(room, msg)
-      if (all.length === 2 && all.every(p => p.ready)) {
-        const hostPiece = all.find(p => p.side === 'A')?.piece ?? 'pawn'
-        room.hostPiece = hostPiece
-        console.log(`[startBattle] room=${roomId} hostPiece=${hostPiece} charA=${JSON.stringify(all.find(p=>p.side==='A')?.charIds)} charB=${JSON.stringify(all.find(p=>p.side==='B')?.charIds)}`)
-        broadcastAll(room, { type: 'startBattle', hostPiece })
+      console.log(`[deckSelect] room=${roomId} side=${self.side} decks ready: ${all.filter(p=>p.deckIds).length}/${all.length}`)
+      if (all.length === 2 && all.every(p => p.deckIds)) {
+        const piece = PIECES[Math.floor(Math.random() * PIECES.length)]
+        const deckA = all.find(p => p.side === 'A')?.deckIds ?? []
+        const deckB = all.find(p => p.side === 'B')?.deckIds ?? []
+        room.piece = piece
+        room.deckA = deckA
+        room.deckB = deckB
+        console.log(`[startBattle] room=${roomId} piece=${piece}`)
+        broadcastAll(room, { type: 'startBattle', piece, deckA, deckB })
       }
       return
     }

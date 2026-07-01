@@ -59,6 +59,17 @@ export function makeUnit(charId: string, side: 'A' | 'B', slot: 1 | 2 | 3, start
   return unit
 }
 
+// ─── Helpers ────────────────────────────────────────────────────────────────────
+
+function shuffleArr<T>(arr: T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 // ─── Public deck builder ────────────────────────────────────────────────────────
 
 export function buildPublicDeck(piece: PieceType): Card[] {
@@ -70,13 +81,10 @@ export function buildPublicDeck(piece: PieceType): Card[] {
     if (!card) continue
     for (let i = 0; i < w; i++) pool.push(card)
   }
-  // shuffle
-  for (let i = pool.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [pool[i], pool[j]] = [pool[j], pool[i]]
-  }
-  return pool
+  return shuffleArr(pool)
 }
+
+const HAND_LIMIT = 4
 
 // ─── Initial deal ────────────────────────────────────────────────────────────────
 
@@ -85,18 +93,28 @@ function drawN(deck: Card[], n: number): [Card[], Card[]] {
   return [hand, deck]
 }
 
+function buildCustomDeckOrder(deckIds: string[]): Card[] {
+  const resolved = deckIds.flatMap(id => {
+    const card = allCards.find(c => c.id === id)
+    return card ? [card] : []
+  })
+  return shuffleArr(resolved)
+}
+
 export function initBattleState(
   charIdsA: string[],
   charIdsB: string[],
   piece: PieceType,
+  deckAIds: string[] = [],
+  deckBIds: string[] = [],
 ): Partial<GameState> {
   const startClock = 0
   const teamA = charIdsA.map((id, i) => makeUnit(id, 'A', (i + 1) as 1 | 2 | 3, startClock))
   const teamB = charIdsB.map((id, i) => makeUnit(id, 'B', (i + 1) as 1 | 2 | 3, startClock))
 
   const pubDeck = buildPublicDeck(piece)
-  const [handA, deckAfterA] = drawN(pubDeck, 5)
-  const [handB, finalDeck]  = drawN(deckAfterA, 5)
+  const [handA, deckAfterA] = drawN(pubDeck, HAND_LIMIT)
+  const [handB, finalDeck]  = drawN(deckAfterA, HAND_LIMIT)
 
   return {
     phase: 'act',
@@ -118,7 +136,35 @@ export function initBattleState(
     log: [],
     winner: null,
     winnerReason: null,
+    customDeckOrder:  buildCustomDeckOrder(deckAIds),
+    customDeckOrderB: buildCustomDeckOrder(deckBIds),
   }
+}
+
+// ─── Round card deal ─────────────────────────────────────────────────────────────
+
+function drawPublicCard(s: GameState): Card | null {
+  if (s.drawPublic.length === 0) {
+    if (s.discardPublic.length === 0) return null
+    s.drawPublic = shuffleArr(s.discardPublic)
+    s.discardPublic = []
+  }
+  return s.drawPublic.shift() ?? null
+}
+
+function dealRoundCards(s: GameState) {
+  while (s.handA.length < HAND_LIMIT) {
+    const c = drawPublicCard(s)
+    if (!c) break
+    s.handA.push(c)
+  }
+  while (s.handB.length < HAND_LIMIT) {
+    const c = drawPublicCard(s)
+    if (!c) break
+    s.handB.push(c)
+  }
+  if (s.customDeckOrder.length > 0)  s.handA.push(s.customDeckOrder.shift()!)
+  if (s.customDeckOrderB.length > 0) s.handB.push(s.customDeckOrderB.shift()!)
 }
 
 // ─── ATB tick ────────────────────────────────────────────────────────────────────
@@ -137,6 +183,7 @@ export function tickATB(gs: GameState): GameState {
   if (s.clock % 100 === 0) {
     s.round++
     runRoundEndPassives(s)
+    dealRoundCards(s)
   }
 
   // check winner
@@ -173,6 +220,14 @@ function checkWinner(s: GameState): { winner: 'A' | 'B' | 'draw'; reason: string
   if (!aAlive && !bAlive) return { winner: 'draw', reason: '雙方同時倒下' }
   if (!aAlive) return { winner: 'B', reason: 'A 方全滅' }
   if (!bAlive) return { winner: 'A', reason: 'B 方全滅' }
+  // Time limit: after round 10, compare remaining HP
+  if (s.round > 10) {
+    const hpA = s.teamA.reduce((sum, u) => sum + (u.alive ? u.hp : 0), 0)
+    const hpB = s.teamB.reduce((sum, u) => sum + (u.alive ? u.hp : 0), 0)
+    if (hpA > hpB) return { winner: 'A', reason: `時間到！A ${hpA} HP > B ${hpB} HP` }
+    if (hpB > hpA) return { winner: 'B', reason: `時間到！B ${hpB} HP > A ${hpA} HP` }
+    return { winner: 'draw', reason: '時間到！HP 相同，平局' }
+  }
   return null
 }
 

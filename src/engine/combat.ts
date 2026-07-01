@@ -74,7 +74,7 @@ export function resolveHit(attacker: Unit, target: Unit, move: Move): HitResult 
   const ratio = move.powerRatio ?? 1
   const el = elementMult(move.rangeType as Element | null, target.element)
 
-  let dmg = Math.max(1, Math.floor(atk * ratio * el / def * 10))
+  let dmg = Math.max(1, Math.round(atk * ratio * el / def))
   if (crit) dmg = Math.floor(dmg * 1.5)
 
   // sameMove reduction (法蘭克 passive)
