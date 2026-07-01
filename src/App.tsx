@@ -36,7 +36,7 @@ export default function App() {
   const [roomId, setRoomId] = useState('')
   const { appPhase, mySide } = useGameStore()
 
-  const { localPlayCard, localMoveUnit, localExecuteMove, localPass,
+  const { localPlayCard, localMoveUnit, localExecuteMove, localPass, localToggleAuto,
           sendCharSelect, sendPieceSelect, sendReady } = useRoom(roomId)
 
   const handleJoin = (id: string) => setRoomId(id)
@@ -90,6 +90,7 @@ export default function App() {
           onMoveUnit={localMoveUnit}
           onExecuteMove={(u, s, t) => localExecuteMove(u, s, t)}
           onPass={localPass}
+          onToggleAuto={localToggleAuto}
           onEnd={handleEnd}
         />
       )}

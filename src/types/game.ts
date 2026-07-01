@@ -37,6 +37,6 @@ export interface GameState {
   log: BattleLogEntry[]
   winner: 'A' | 'B' | 'draw' | null
   winnerReason: string | null
-  autoBattle: boolean
-  autoBattleDelay: number
+  autoBattleA: boolean
+  autoBattleB: boolean
 }

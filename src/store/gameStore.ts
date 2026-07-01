@@ -4,7 +4,7 @@ import type { MoveSlot } from '../types/move'
 import type { PieceType } from '../types/piece'
 import {
   initBattleState, tickATB, doPlayCard, doMoveUnit,
-  doExecuteMove, doPass,
+  doExecuteMove, doPass, doToggleAuto, autoPlayUnit, getReadyUnits,
 } from '../engine/atb'
 
 export type AppPhase = 'lobby' | 'charSelect' | 'pieceSelect' | 'battle' | 'end'
@@ -48,6 +48,7 @@ interface Store {
   moveUnit: (unitId: string, toSlot: 1 | 2 | 3) => void
   executeMove: (unitId: string, moveSlot: MoveSlot, targetId: string | null) => void
   pass: (unitId: string) => void
+  toggleAuto: (side: 'A' | 'B') => void
 
   _syncCb: ((json: string, phase: AppPhase) => void) | null
   _applyGame: (g: GameState) => void
@@ -129,8 +130,8 @@ export const useGameStore = create<Store>((set, get) => ({
       log: [],
       winner: null,
       winnerReason: null,
-      autoBattle: false,
-      autoBattleDelay: 500,
+      autoBattleA: false,
+      autoBattleB: false,
       ...init,
     }
     set({ game: gs, appPhase: 'battle' })
@@ -153,7 +154,15 @@ export const useGameStore = create<Store>((set, get) => ({
   tick: () => {
     const { game, isHost } = get()
     if (!game || !isHost || game.phase === 'end') return
-    const next = tickATB(game)
+    let next = tickATB(game)
+    // Auto-play ready units for sides that have auto enabled
+    const ready = getReadyUnits(next)
+    for (const unit of ready) {
+      if ((unit.side === 'A' && next.autoBattleA) || (unit.side === 'B' && next.autoBattleB)) {
+        next = autoPlayUnit(next, unit)
+        if (next.phase === 'end') break
+      }
+    }
     get()._applyGame(next)
   },
 
@@ -197,6 +206,13 @@ export const useGameStore = create<Store>((set, get) => ({
     const { game } = get()
     if (!game) return
     const next = doPass(game, unitId)
+    get()._applyGame(next)
+  },
+
+  toggleAuto: (side) => {
+    const { game } = get()
+    if (!game) return
+    const next = doToggleAuto(game, side)
     get()._applyGame(next)
   },
 }))

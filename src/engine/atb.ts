@@ -406,6 +406,38 @@ function resolveTargetUnits(move: Move, actor: Unit, targetId: string | null, s:
   return (actor.side === 'A' ? s.teamB : s.teamA).filter(u => u.alive).slice(0, 1)
 }
 
+export function doToggleAuto(gs: GameState, side: 'A' | 'B'): GameState {
+  const s = deepClone(gs)
+  if (side === 'A') s.autoBattleA = !s.autoBattleA
+  else              s.autoBattleB = !s.autoBattleB
+  return s
+}
+
+// Picks the best available move for a unit and executes it.
+export function autoPlayUnit(gs: GameState, unit: Unit): GameState {
+  const hand = unit.side === 'A' ? gs.handA : gs.handB
+  const suitOf: Record<string, string> = { sword: 'red', gun: 'green', magic: 'blue', wish: 'yellow' }
+  const slots: MoveSlot[] = ['sword', 'gun', 'magic', 'wish']
+
+  for (const slot of slots) {
+    const move = unit.moves[slot]
+    if (!move) continue
+    if ((unit.moveCooldownUntil[move.id] ?? 0) > gs.clock) continue
+
+    const color = suitOf[slot]
+    if (color) {
+      const liberated = unit.statuses.some(st => st.key === 'liberated')
+      const needed = liberated ? 1 : (move.condition ?? 1)
+      if (hand.filter(c => c.color === color).length < needed) continue
+    }
+
+    // resolveTargetUnits handles null targetId → first alive enemy
+    return doExecuteMove(gs, { unitId: unit.id, moveSlot: slot, targetId: null, cardId: null })
+  }
+
+  return doPass(gs, unit.id)
+}
+
 export function getReadyUnits(gs: GameState): Unit[] {
   return [...gs.teamA, ...gs.teamB].filter(
     u => u.alive && !u.statuses.some(s => s.key === 'frozen') && u.nextActionAt <= gs.clock

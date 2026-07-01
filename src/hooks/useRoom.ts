@@ -172,11 +172,18 @@ export function useRoom(roomId: string) {
     else send({ type: 'action', action: { type: 'pass', unitId } })
   }
 
+  const localToggleAuto = () => {
+    const s = gs()
+    if (!s.mySide) return
+    if (s.isHost) s.toggleAuto(s.mySide)
+    else send({ type: 'action', action: { type: 'toggleAuto', side: s.mySide } })
+  }
+
   const sendCharSelect  = (charIds: string[])  => send({ type: 'charSelect', charIds })
   const sendPieceSelect = (piece: PieceType)    => send({ type: 'pieceSelect', piece })
   const sendReady       = ()                    => send({ type: 'ready' })
 
-  return { localPlayCard, localMoveUnit, localExecuteMove, localPass, sendCharSelect, sendPieceSelect, sendReady }
+  return { localPlayCard, localMoveUnit, localExecuteMove, localPass, localToggleAuto, sendCharSelect, sendPieceSelect, sendReady }
 }
 
 function applyRemoteAction(action: any) {
@@ -186,5 +193,6 @@ function applyRemoteAction(action: any) {
     case 'moveUnit':    store.moveUnit(action.unitId, action.toSlot); break
     case 'executeMove': store.executeMove(action.unitId, action.moveSlot, action.targetId); break
     case 'pass':        store.pass(action.unitId); break
+    case 'toggleAuto':  store.toggleAuto(action.side); break
   }
 }

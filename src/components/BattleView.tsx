@@ -14,10 +14,11 @@ interface Props {
   onMoveUnit: (unitId: string, toSlot: 1 | 2 | 3) => void
   onExecuteMove: (unitId: string, moveSlot: MoveSlot, targetId: string | null) => void
   onPass: (unitId: string) => void
+  onToggleAuto: () => void
   onEnd: () => void
 }
 
-export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPass, onEnd }: Props) {
+export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPass, onToggleAuto, onEnd }: Props) {
   const { game, mySide } = useGameStore()
   const logRef = useRef<HTMLDivElement>(null)
   const [activeUnit, setActiveUnit] = useState<Unit | null>(null)
@@ -101,6 +102,20 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
 
       {/* Action panel */}
       <div className="action-panel">
+        {/* Auto battle toggle */}
+        {(() => {
+          const isAuto = mySide === 'A' ? game.autoBattleA : game.autoBattleB
+          return (
+            <button
+              className={`btn auto-btn ${isAuto ? 'active' : ''}`}
+              onClick={onToggleAuto}
+              title="自動選招"
+            >
+              {isAuto ? '⚡ 自動中' : '⚡ 自動'}
+            </button>
+          )
+        })()}
+
         {/* Hand */}
         <div className="hand-section">
           <div className="section-label">手牌</div>

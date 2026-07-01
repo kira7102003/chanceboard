@@ -49,6 +49,8 @@ body { margin: 0; }
 .btn.primary:hover { background: #7755ee; }
 .btn.danger { background: #440; border-color: var(--red); color: var(--red); }
 .btn.sm { padding: 4px 10px; font-size: 12px; }
+.btn.auto-btn { border-color: #555; color: #888; }
+.btn.auto-btn.active { border-color: #f90; color: #f90; background: #221800; }
 
 .input {
   flex: 1; background: var(--bg); border: 1px solid var(--border);
