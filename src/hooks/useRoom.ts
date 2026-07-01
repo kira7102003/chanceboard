@@ -45,6 +45,8 @@ export function useRoom(roomId: string) {
       let msg: any
       try { msg = JSON.parse(e.data) } catch { return }
 
+      console.log('[WS ←]', msg.type, msg)
+
       // Get fresh store state on every message
       const store = gs()
 
@@ -99,6 +101,8 @@ export function useRoom(roomId: string) {
         }
 
         case 'startBattle': {
+          const preState = gs()
+          console.log('[startBattle] isHost:', preState.isHost, 'selectedChars:', preState.selectedCharIds, 'opponentChars:', preState.opponentCharIds, 'selectedPiece:', preState.selectedPiece, 'opponentPiece:', preState.opponentPiece)
           if (msg.hostPiece) {
             // Fresh read to get correct isHost
             const fresh = gs()
@@ -108,6 +112,7 @@ export function useRoom(roomId: string) {
           gs().startBattle()
 
           // Fresh read again after startBattle mutated state
+          console.log('[startBattle] after: appPhase=', gs().appPhase, 'game=', !!gs().game)
           if (gs().isHost) {
             gs().startATBLoop((json, phase) => {
               send({ type: 'stateSync', stateJson: json, phase })

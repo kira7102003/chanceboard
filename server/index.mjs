@@ -81,11 +81,13 @@ wss.on('connection', ws => {
 
     if (msg.type === 'ready') {
       if (self) self.ready = true
-      broadcastAll(room, msg)
       const all = [...room.players.values()]
+      console.log(`[ready] room=${roomId} side=${self?.side} readyCount=${all.filter(p=>p.ready).length}/${all.length}`)
+      broadcastAll(room, msg)
       if (all.length === 2 && all.every(p => p.ready)) {
         const hostPiece = all.find(p => p.side === 'A')?.piece ?? 'pawn'
         room.hostPiece = hostPiece
+        console.log(`[startBattle] room=${roomId} hostPiece=${hostPiece} charA=${JSON.stringify(all.find(p=>p.side==='A')?.charIds)} charB=${JSON.stringify(all.find(p=>p.side==='B')?.charIds)}`)
         broadcastAll(room, { type: 'startBattle', hostPiece })
       }
       return

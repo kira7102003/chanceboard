@@ -94,7 +94,14 @@ export const useGameStore = create<Store>((set, get) => ({
     const piece = selectedPiece ?? opponentPiece ?? 'pawn'
     const charA = mySide === 'A' ? selectedCharIds : opponentCharIds
     const charB = mySide === 'A' ? opponentCharIds : selectedCharIds
-    const init  = initBattleState(charA, charB, piece)
+    console.log('[startBattle] charA:', charA, 'charB:', charB, 'piece:', piece, 'mySide:', mySide)
+    let init: ReturnType<typeof initBattleState>
+    try {
+      init = initBattleState(charA, charB, piece)
+    } catch (err) {
+      console.error('[startBattle] initBattleState THREW:', err)
+      return
+    }
     const gs: GameState = {
       phase: 'act',
       selectedIds: [],
