@@ -6,7 +6,9 @@ const WS_HOST = import.meta.env.VITE_WS_URL ?? 'ws://localhost:3001'
 
 export function useRoom(roomId: string) {
   const wsRef = useRef<WebSocket | null>(null)
-  const store  = useGameStore()
+
+  // Always read fresh state — never capture store in closure
+  const gs = () => useGameStore.getState()
 
   const send = (msg: object) => {
     const ws = wsRef.current
@@ -27,11 +29,13 @@ export function useRoom(roomId: string) {
       let msg: any
       try { msg = JSON.parse(e.data) } catch { return }
 
+      // Get fresh store state on every message
+      const store = gs()
+
       switch (msg.type) {
         case 'welcome': {
           store.setRoom(roomId, msg.side, msg.isHost)
           store.setPlayerCount(msg.playerCount)
-          // B 方加入時房間已有 A，直接進 charSelect
           if (msg.playerCount >= 2) {
             store.setAppPhase('charSelect')
           }
@@ -40,14 +44,14 @@ export function useRoom(roomId: string) {
 
         case 'playerJoined': {
           store.setPlayerCount(msg.playerCount)
-          if (msg.playerCount === 2) {
+          if (msg.playerCount >= 2) {
             store.setAppPhase('charSelect')
           }
           break
         }
 
         case 'playerLeft': {
-          store.setPlayerCount(Math.max(0, store.playerCount - 1))
+          store.setPlayerCount(Math.max(0, gs().playerCount - 1))
           break
         }
 
@@ -67,14 +71,17 @@ export function useRoom(roomId: string) {
         }
 
         case 'startBattle': {
-          // Use host's piece if provided (avoid deync)
           if (msg.hostPiece) {
-            if (store.isHost) store.selectPiece(msg.hostPiece)
-            else store.setOpponentPiece(msg.hostPiece)
+            // Fresh read to get correct isHost
+            const fresh = gs()
+            if (fresh.isHost) fresh.selectPiece(msg.hostPiece)
+            else              fresh.setOpponentPiece(msg.hostPiece)
           }
-          store.startBattle()
-          if (store.isHost) {
-            store.startATBLoop((json, phase) => {
+          gs().startBattle()
+
+          // Fresh read again after startBattle mutated state
+          if (gs().isHost) {
+            gs().startATBLoop((json, phase) => {
               send({ type: 'stateSync', stateJson: json, phase })
             })
           }
@@ -82,15 +89,15 @@ export function useRoom(roomId: string) {
         }
 
         case 'stateSync': {
-          if (!store.isHost) {
-            store.applyRemoteState(msg.stateJson)
+          if (!gs().isHost) {
+            gs().applyRemoteState(msg.stateJson)
           }
           break
         }
 
         case 'action': {
-          if (store.isHost) {
-            applyRemoteAction(msg.action, store)
+          if (gs().isHost) {
+            applyRemoteAction(msg.action)
           }
           break
         }
@@ -107,39 +114,40 @@ export function useRoom(roomId: string) {
     return () => {
       ws.close()
       wsRef.current = null
-      store.stopATBLoop()
+      gs().stopATBLoop()
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId])
 
   const localPlayCard = (cardId: string) => {
-    if (store.isHost) store.playCard(cardId)
-    else send({ type: 'action', action: { type: 'playCard', side: store.mySide, cardId } })
+    if (gs().isHost) gs().playCard(cardId)
+    else send({ type: 'action', action: { type: 'playCard', side: gs().mySide, cardId } })
   }
 
   const localMoveUnit = (unitId: string, toSlot: 1 | 2 | 3) => {
-    if (store.isHost) store.moveUnit(unitId, toSlot)
+    if (gs().isHost) gs().moveUnit(unitId, toSlot)
     else send({ type: 'action', action: { type: 'moveUnit', unitId, toSlot } })
   }
 
   const localExecuteMove = (unitId: string, moveSlot: string, targetId: string | null) => {
-    if (store.isHost) store.executeMove(unitId, moveSlot as any, targetId)
+    if (gs().isHost) gs().executeMove(unitId, moveSlot as any, targetId)
     else send({ type: 'action', action: { type: 'executeMove', unitId, moveSlot, targetId } })
   }
 
   const localPass = (unitId: string) => {
-    if (store.isHost) store.pass(unitId)
+    if (gs().isHost) gs().pass(unitId)
     else send({ type: 'action', action: { type: 'pass', unitId } })
   }
 
-  const sendCharSelect = (charIds: string[]) => send({ type: 'charSelect', charIds })
-  const sendPieceSelect = (piece: PieceType) => send({ type: 'pieceSelect', piece })
-  const sendReady = () => send({ type: 'ready' })
+  const sendCharSelect  = (charIds: string[])  => send({ type: 'charSelect', charIds })
+  const sendPieceSelect = (piece: PieceType)    => send({ type: 'pieceSelect', piece })
+  const sendReady       = ()                    => send({ type: 'ready' })
 
   return { localPlayCard, localMoveUnit, localExecuteMove, localPass, sendCharSelect, sendPieceSelect, sendReady }
 }
 
-function applyRemoteAction(action: any, store: ReturnType<typeof useGameStore.getState>) {
+function applyRemoteAction(action: any) {
+  const store = useGameStore.getState()
   switch (action.type) {
     case 'playCard':    store.playCard(action.cardId); break
     case 'moveUnit':    store.moveUnit(action.unitId, action.toSlot); break
