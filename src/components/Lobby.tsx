@@ -1,10 +1,13 @@
 import { useState } from 'react'
+import type { SavedSession } from '../hooks/useRoom'
 
 interface Props {
   onJoin: (roomId: string) => void
+  savedSession: SavedSession | null
+  onRejoin: () => void
 }
 
-export default function Lobby({ onJoin }: Props) {
+export default function Lobby({ onJoin, savedSession, onRejoin }: Props) {
   const [input, setInput] = useState('')
 
   const create = () => {
@@ -20,8 +23,24 @@ export default function Lobby({ onJoin }: Props) {
   return (
     <div className="lobby">
       <h1 className="title">奇蹟之盤 <span>Chanceboard</span></h1>
+
+      {/* 繼續上局 */}
+      {savedSession && (
+        <div className="lobby-card" style={{ borderColor: '#8866ff' }}>
+          <p style={{ textAlign: 'center', color: '#aaa', fontSize: '13px' }}>上次的房間</p>
+          <div style={{ textAlign: 'center', fontSize: '1.8rem', fontWeight: 700,
+                        letterSpacing: '4px', color: '#fff', margin: '8px 0' }}>
+            {savedSession.roomId}
+          </div>
+          <p style={{ textAlign: 'center', fontSize: '12px', color: '#666', marginBottom: '8px' }}>
+            你是 {savedSession.side} 方
+          </p>
+          <button className="btn primary" onClick={onRejoin}>繼續上局</button>
+        </div>
+      )}
+
       <div className="lobby-card">
-        <button className="btn primary" onClick={create}>建立房間</button>
+        <button className="btn primary" onClick={create}>建立新房間</button>
         <div className="divider">— 或 —</div>
         <div className="join-row">
           <input

@@ -4,7 +4,7 @@ import CharSelect from './components/CharSelect'
 import PieceSelect from './components/PieceSelect'
 import BattleView from './components/BattleView'
 import { useGameStore } from './store/gameStore'
-import { useRoom } from './hooks/useRoom'
+import { useRoom, loadSession, clearSession } from './hooks/useRoom'
 import type { PieceType } from './types/piece'
 
 function WaitingRoom({ roomId, mySide }: { roomId: string; mySide: 'A' | 'B' | null }) {
@@ -32,6 +32,7 @@ function WaitingRoom({ roomId, mySide }: { roomId: string; mySide: 'A' | 'B' | n
 }
 
 export default function App() {
+  const saved = loadSession()
   const [roomId, setRoomId] = useState('')
   const { appPhase, mySide } = useGameStore()
 
@@ -39,6 +40,10 @@ export default function App() {
           sendCharSelect, sendPieceSelect, sendReady } = useRoom(roomId)
 
   const handleJoin = (id: string) => setRoomId(id)
+
+  const handleRejoin = () => {
+    if (saved) setRoomId(saved.roomId)
+  }
 
   const handleCharConfirm = (ids: string[]) => {
     sendCharSelect(ids)
@@ -48,13 +53,23 @@ export default function App() {
   const handlePieceConfirm = (p: PieceType) => {
     sendPieceSelect(p)
     sendReady()
-    // Server triggers startBattle when both ready
+  }
+
+  const handleEnd = () => {
+    clearSession()
+    window.location.reload()
   }
 
   return (
     <div className="app">
       {/* 未進房間 */}
-      {!roomId && <Lobby onJoin={handleJoin} />}
+      {!roomId && (
+        <Lobby
+          onJoin={handleJoin}
+          savedSession={saved}
+          onRejoin={handleRejoin}
+        />
+      )}
 
       {/* 進了房間但還在等對手 */}
       {roomId && appPhase === 'lobby' && (
@@ -75,6 +90,7 @@ export default function App() {
           onMoveUnit={localMoveUnit}
           onExecuteMove={(u, s, t) => localExecuteMove(u, s, t)}
           onPass={localPass}
+          onEnd={handleEnd}
         />
       )}
 

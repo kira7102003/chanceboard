@@ -3,6 +3,19 @@ import { useGameStore } from '../store/gameStore'
 import type { PieceType } from '../types/piece'
 
 const WS_HOST = import.meta.env.VITE_WS_URL ?? 'ws://localhost:3001'
+const LS_KEY  = 'chanceboard_session'
+
+export interface SavedSession { roomId: string; side: 'A' | 'B' }
+
+export function loadSession(): SavedSession | null {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) ?? 'null') } catch { return null }
+}
+function saveSession(s: SavedSession) {
+  localStorage.setItem(LS_KEY, JSON.stringify(s))
+}
+export function clearSession() {
+  localStorage.removeItem(LS_KEY)
+}
 
 export function useRoom(roomId: string) {
   const wsRef = useRef<WebSocket | null>(null)
@@ -22,7 +35,10 @@ export function useRoom(roomId: string) {
     wsRef.current = ws
 
     ws.onopen = () => {
-      ws.send(JSON.stringify({ type: 'join', roomId }))
+      // If we have a saved session for this room, send rejoinSide
+      const saved = loadSession()
+      const rejoinSide = saved?.roomId === roomId ? saved.side : undefined
+      ws.send(JSON.stringify({ type: 'join', roomId, rejoinSide }))
     }
 
     ws.onmessage = (e: MessageEvent) => {
@@ -36,6 +52,8 @@ export function useRoom(roomId: string) {
         case 'welcome': {
           store.setRoom(roomId, msg.side, msg.isHost)
           store.setPlayerCount(msg.playerCount)
+          // Save session so user can rejoin after refresh
+          saveSession({ roomId, side: msg.side })
           if (msg.playerCount >= 2) {
             store.setAppPhase('charSelect')
           }
@@ -46,6 +64,16 @@ export function useRoom(roomId: string) {
           store.setPlayerCount(msg.playerCount)
           if (msg.playerCount >= 2) {
             store.setAppPhase('charSelect')
+          }
+          break
+        }
+
+        case 'resumeGame': {
+          // Both reconnected during active game — host restarts ATB
+          if (gs().isHost) {
+            gs().startATBLoop((json, phase) => {
+              send({ type: 'stateSync', stateJson: json, phase })
+            })
           }
           break
         }

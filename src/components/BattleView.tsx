@@ -14,9 +14,10 @@ interface Props {
   onMoveUnit: (unitId: string, toSlot: 1 | 2 | 3) => void
   onExecuteMove: (unitId: string, moveSlot: MoveSlot, targetId: string | null) => void
   onPass: (unitId: string) => void
+  onEnd: () => void
 }
 
-export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPass }: Props) {
+export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPass, onEnd }: Props) {
   const { game, mySide } = useGameStore()
   const logRef = useRef<HTMLDivElement>(null)
   const [activeUnit, setActiveUnit] = useState<Unit | null>(null)
@@ -38,7 +39,7 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
       <div className="battle-end">
         <h2>{game.winner === mySide ? '🏆 勝利！' : game.winner === 'draw' ? '平局' : '💀 落敗'}</h2>
         <p>{game.winnerReason}</p>
-        <button className="btn" onClick={() => window.location.reload()}>再玩一局</button>
+        <button className="btn" onClick={onEnd}>再玩一局</button>
       </div>
     )
   }
