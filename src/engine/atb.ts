@@ -50,7 +50,7 @@ export function makeUnit(charId: string, side: 'A' | 'B', slot: 1 | 2 | 3, start
     baseSpd: char.spd,
     moves: moveMap,
     alive: true,
-    nextActionAt: startAt + calcBAT({ baseSpd: char.spd, statuses: [], flags: {} } as Unit),
+    nextActionAt: startAt + Math.max(1, Math.floor(10 * (10 / char.spd))),
     statuses: [],
     moveCooldownUntil: {},
     flags,
