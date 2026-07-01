@@ -22,18 +22,23 @@ export default function Lobby({ onJoin, savedSession, onRejoin }: Props) {
 
   return (
     <div className="lobby">
-      <h1 className="title">奇蹟之盤 <span>Chanceboard</span></h1>
+      <div style={{ textAlign: 'center' }}>
+        <h1 className="title">奇蹟之盤 <span>Chanceboard</span></h1>
+        <p style={{ color: '#444466', fontSize: 12, marginTop: 6, letterSpacing: 1 }}>
+          TWO-PLAYER TACTICAL CARD BATTLE
+        </p>
+      </div>
 
-      {/* 繼續上局 */}
       {savedSession && (
-        <div className="lobby-card" style={{ borderColor: '#8866ff' }}>
-          <p style={{ textAlign: 'center', color: '#aaa', fontSize: '13px' }}>上次的房間</p>
-          <div style={{ textAlign: 'center', fontSize: '1.8rem', fontWeight: 700,
-                        letterSpacing: '4px', color: '#fff', margin: '8px 0' }}>
+        <div className="lobby-card" style={{ borderColor: '#443388', minWidth: 280 }}>
+          <p style={{ textAlign: 'center', color: '#666688', fontSize: 11,
+                      letterSpacing: 1, textTransform: 'uppercase' }}>上次的對局</p>
+          <div style={{ textAlign: 'center', fontSize: '2rem', fontWeight: 800,
+                        letterSpacing: '6px', color: '#d8d8f4', margin: '4px 0' }}>
             {savedSession.roomId}
           </div>
-          <p style={{ textAlign: 'center', fontSize: '12px', color: '#666', marginBottom: '8px' }}>
-            你是 {savedSession.side} 方
+          <p style={{ textAlign: 'center', fontSize: 11, color: '#444466' }}>
+            <span className={`side side-${savedSession.side}`}>{savedSession.side} 方</span>
           </p>
           <button className="btn primary" onClick={onRejoin}>繼續上局</button>
         </div>
@@ -45,7 +50,7 @@ export default function Lobby({ onJoin, savedSession, onRejoin }: Props) {
         <div className="join-row">
           <input
             className="input"
-            placeholder="房間代碼"
+            placeholder="輸入代碼"
             value={input}
             onChange={e => setInput(e.target.value.toUpperCase())}
             onKeyDown={e => e.key === 'Enter' && join()}
@@ -53,6 +58,9 @@ export default function Lobby({ onJoin, savedSession, onRejoin }: Props) {
           />
           <button className="btn" onClick={join}>加入</button>
         </div>
+        <p style={{ fontSize: 11, color: '#333350', textAlign: 'center' }}>
+          建立房間後把代碼傳給對手，雙方加入即可開始
+        </p>
       </div>
     </div>
   )

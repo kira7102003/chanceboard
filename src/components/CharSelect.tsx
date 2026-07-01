@@ -1,7 +1,7 @@
 import { useGameStore } from '../store/gameStore'
 import { characters } from '../data/db'
 
-const EL_ICON: Record<string, string> = { sword: '⚔️', gun: '🔫', magic: '✨' }
+const EL_LABEL: Record<string, string> = { sword: '⚔ 劍', gun: '🔫 槍', magic: '✦ 魔' }
 
 interface Props {
   onConfirm: (ids: string[]) => void
@@ -9,17 +9,15 @@ interface Props {
 
 export default function CharSelect({ onConfirm }: Props) {
   const { selectedCharIds, toggleCharSelect, mySide, playerCount } = useGameStore()
-
   const ready = selectedCharIds.length === 3
-
-  const confirm = () => {
-    if (ready) onConfirm(selectedCharIds)
-  }
 
   return (
     <div className="char-select">
-      <h2>選擇角色 — 你是 <span className={`side side-${mySide}`}>{mySide} 方</span></h2>
-      <p className="hint">選 3 位角色（已選 {selectedCharIds.length}/3）</p>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
+        <h2>選擇角色 — <span className={`side side-${mySide}`}>{mySide} 方</span></h2>
+        <span className="hint">選 3 位（{selectedCharIds.length}/3）</span>
+        {playerCount < 2 && <span className="waiting">等待對手…</span>}
+      </div>
 
       <div className="char-grid">
         {characters.map(c => {
@@ -27,27 +25,29 @@ export default function CharSelect({ onConfirm }: Props) {
           return (
             <div
               key={c.id}
-              className={`char-card ${sel ? 'selected' : ''}`}
+              className={`char-card el-${c.element} ${sel ? 'selected' : ''}`}
               onClick={() => toggleCharSelect(c.id)}
             >
               <div className="char-name">{c.name}</div>
               <div className="char-title">{c.title}</div>
-              <div className="char-el">{EL_ICON[c.element]} {c.element}</div>
+              <div className={`char-el el-${c.element}-color`}>{EL_LABEL[c.element]}</div>
               <div className="char-stats">
-                HP {c.hp} | ATK {c.atk} | DEF {c.def} | SPD {c.spd}
+                <div className="char-stat"><span>HP</span><b>{c.hp}</b></div>
+                <div className="char-stat"><span>ATK</span><b>{c.atk}</b></div>
+                <div className="char-stat"><span>DEF</span><b>{c.def}</b></div>
+                <div className="char-stat"><span>SPD</span><b>{c.spd}</b></div>
               </div>
             </div>
           )
         })}
       </div>
 
-      <button className="btn primary" disabled={!ready} onClick={confirm}>
-        確認選擇 →
-      </button>
-
-      {playerCount < 2 && (
-        <p className="waiting">等待對手加入…</p>
-      )}
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        <button className="btn primary" disabled={!ready} onClick={() => onConfirm(selectedCharIds)}>
+          確認選角 →
+        </button>
+        {!ready && <span className="hint">還需 {3 - selectedCharIds.length} 位</span>}
+      </div>
     </div>
   )
 }

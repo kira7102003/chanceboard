@@ -6,8 +6,8 @@ import type { MoveSlot } from '../types/move'
 import { getReadyUnits } from '../engine/atb'
 
 const SLOT_NAME = ['近', '中', '遠']
-const EL_COLOR: Record<string, string> = { sword: '#e55', gun: '#5a5', magic: '#66e' }
-const SUIT_COLOR: Record<string, string> = { red: '#e44', green: '#4a4', blue: '#44e', yellow: '#ca0', flower: '#c8c' }
+const EL_COLOR: Record<string, string> = { sword: '#e87733', gun: '#22cc77', magic: '#9955ee' }
+const SUIT_CLS: Record<string, string>  = { red: 'suit-red', green: 'suit-green', blue: 'suit-blue', yellow: 'suit-yellow', flower: 'suit-flower' }
 
 interface Props {
   onPlayCard: (cardId: string) => void
@@ -34,13 +34,15 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
   const enemyTeam = mySide === 'A' ? game.teamB : game.teamA
   const myHand    = mySide === 'A' ? game.handA : game.handB
   const readyUnits = getReadyUnits(game).filter(u => u.side === mySide)
+  const isAuto = mySide === 'A' ? game.autoBattleA : game.autoBattleB
 
   if (game.phase === 'end') {
+    const result = game.winner === mySide ? '🏆 勝利！' : game.winner === 'draw' ? '⚖ 平局' : '💀 落敗'
     return (
       <div className="battle-end">
-        <h2>{game.winner === mySide ? '🏆 勝利！' : game.winner === 'draw' ? '平局' : '💀 落敗'}</h2>
+        <h2>{result}</h2>
         <p>{game.winnerReason}</p>
-        <button className="btn" onClick={onEnd}>再玩一局</button>
+        <button className="btn primary" onClick={onEnd}>再玩一局</button>
       </div>
     )
   }
@@ -49,10 +51,8 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
     const move = unit.moves[slot]
     if (!move) return
     if (move.scope === 'group' || !move.rangeType) {
-      // no target selection needed
       onExecuteMove(unit.id, slot, null)
-      setActiveUnit(null)
-      setSelectingTarget(null)
+      setActiveUnit(null); setSelectingTarget(null)
     } else {
       setSelectingTarget(slot)
     }
@@ -61,22 +61,28 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
   const handleTargetClick = (target: Unit) => {
     if (!activeUnit || !selectingTarget) return
     onExecuteMove(activeUnit.id, selectingTarget, target.id)
-    setActiveUnit(null)
-    setSelectingTarget(null)
+    setActiveUnit(null); setSelectingTarget(null)
   }
 
   return (
     <div className="battle">
       {/* Header */}
       <div className="battle-header">
-        <span>回合 {game.round}</span>
-        <span>時鐘 {game.clock}</span>
-        <span>剩餘牌 {game.drawPublic.length}</span>
+        <div className="battle-header-item">回合 <b>{game.round}</b></div>
+        <div className="battle-header-item">時鐘 <b>{game.clock}</b></div>
+        <div className="battle-header-item">牌堆 <b>{game.drawPublic.length}</b></div>
+        <div className="battle-header-item" style={{ marginLeft: 'auto', borderRight: 'none' }}>
+          <button
+            className={`btn auto-btn ${isAuto ? 'active' : ''}`}
+            onClick={onToggleAuto}
+          >
+            ⚡ {isAuto ? '自動中' : '自動'}
+          </button>
+        </div>
       </div>
 
       {/* Teams */}
       <div className="teams">
-        {/* Enemy team */}
         <TeamPanel
           team={enemyTeam}
           label={mySide === 'A' ? 'B' : 'A'}
@@ -84,14 +90,12 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
           onTargetClick={selectingTarget ? handleTargetClick : undefined}
         />
 
-        {/* Battle log */}
         <div className="log-panel" ref={logRef}>
-          {game.log.slice(-60).map((l, i) => (
+          {game.log.slice(-80).map((l, i) => (
             <div key={i} className="log-line" dangerouslySetInnerHTML={{ __html: l.html }} />
           ))}
         </div>
 
-        {/* My team */}
         <TeamPanel
           team={myTeam}
           label={mySide!}
@@ -102,34 +106,23 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
 
       {/* Action panel */}
       <div className="action-panel">
-        {/* Auto battle toggle */}
-        {(() => {
-          const isAuto = mySide === 'A' ? game.autoBattleA : game.autoBattleB
-          return (
-            <button
-              className={`btn auto-btn ${isAuto ? 'active' : ''}`}
-              onClick={onToggleAuto}
-              title="自動選招"
-            >
-              {isAuto ? '⚡ 自動中' : '⚡ 自動'}
-            </button>
-          )
-        })()}
-
         {/* Hand */}
         <div className="hand-section">
-          <div className="section-label">手牌</div>
-          <div className="hand">
-            {myHand.map(c => (
-              <CardChip key={c.id} card={c} onClick={() => onPlayCard(c.id)} />
+          <div className="action-row">
+            <div className="section-label" style={{ margin: 0 }}>手牌 ({myHand.length})</div>
+          </div>
+          <div className="hand" style={{ marginTop: 6 }}>
+            {myHand.map((c, i) => (
+              <CardChip key={`${c.id}-${i}`} card={c} onClick={() => onPlayCard(c.id)} />
             ))}
+            {myHand.length === 0 && <span style={{ color: '#333355', fontSize: 12 }}>無手牌</span>}
           </div>
         </div>
 
         {/* Ready units */}
         {readyUnits.length > 0 && (
           <div className="ready-section">
-            <div className="section-label">待行動</div>
+            <div className="section-label">待行動 ({readyUnits.length})</div>
             {readyUnits.map(u => (
               <UnitActions
                 key={u.id}
@@ -149,14 +142,10 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
   )
 }
 
-// ─── Sub-components ─────────────────────────────────────────────────────────
+// ─── Sub-components ──────────────────────────────────────────────────────────
 
-function TeamPanel({
-  team, label, isEnemy, onTargetClick,
-}: {
-  team: Unit[]
-  label: string
-  isEnemy: boolean
+function TeamPanel({ team, label, isEnemy, onTargetClick }: {
+  team: Unit[]; label: string; isEnemy: boolean
   onTargetClick?: (u: Unit) => void
 }) {
   return (
@@ -183,20 +172,24 @@ function TeamPanel({
 
 function UnitBar({ unit, onClick }: { unit: Unit; onClick?: () => void }) {
   const pct = unit.alive ? (unit.hp / unit.maxHp) * 100 : 0
-  const color = pct > 50 ? '#4c8' : pct > 25 ? '#ca4' : '#e44'
+  // HP bar color shift: green(0%) → yellow(50%) → red(100% of background)
+  const hpColor = pct > 60 ? '#22cc66' : pct > 30 ? '#ccaa22' : '#cc3333'
 
   return (
-    <div className={`unit-bar ${!unit.alive ? 'dead' : ''} ${onClick ? 'targetable' : ''}`} onClick={onClick}>
-      <div className="unit-name" style={{ color: EL_COLOR[unit.element] }}>{unit.name}</div>
-      <div className="hp-bar-wrap">
-        <div className="hp-bar" style={{ width: `${pct}%`, background: color }} />
+    <div
+      className={`unit-bar ${!unit.alive ? 'dead' : ''} ${onClick ? 'targetable' : ''}`}
+      onClick={onClick}
+    >
+      <div className="unit-name" style={{ color: EL_COLOR[unit.element] }}>
+        {unit.name}
       </div>
-      <div className="unit-hp">{unit.alive ? `${unit.hp}/${unit.maxHp}` : '倒下'}</div>
+      <div className="hp-bar-wrap">
+        <div className="hp-bar" style={{ width: `${pct}%`, background: hpColor }} />
+      </div>
+      <div className="unit-hp">{unit.alive ? `${unit.hp} / ${unit.maxHp}` : '倒下'}</div>
       {unit.statuses.length > 0 && (
         <div className="status-chips">
-          {unit.statuses.map((s, i) => (
-            <span key={i} className="status-chip">{s.key}</span>
-          ))}
+          {unit.statuses.map((s, i) => <span key={i} className="status-chip">{s.key}</span>)}
         </div>
       )}
     </div>
@@ -206,45 +199,38 @@ function UnitBar({ unit, onClick }: { unit: Unit; onClick?: () => void }) {
 function CardChip({ card, onClick }: { card: Card; onClick: () => void }) {
   return (
     <div
-      className="card-chip"
-      style={{ borderColor: SUIT_COLOR[card.color] ?? '#888' }}
+      className={`card-chip ${SUIT_CLS[card.color] ?? ''}`}
       onClick={onClick}
       title={card.description ?? ''}
     >
       <span className="card-name">{card.name}</span>
-      {card.color === 'flower' && <span className="card-badge">花</span>}
+      {!card.isSuitCard && <span className="card-badge">花</span>}
     </div>
   )
 }
 
 const MOVE_SLOTS: MoveSlot[] = ['sword', 'gun', 'magic', 'wish']
 const SLOT_LABEL: Record<MoveSlot, string> = { sword: '劍', gun: '槍', magic: '法', wish: '願', passive: '被' }
-const SLOT_COLOR: Record<MoveSlot, string> = { sword: '#e55', gun: '#5a5', magic: '#66e', wish: '#ca0', passive: '#888' }
+const SLOT_COLOR: Record<MoveSlot, string> = { sword: '#e87733', gun: '#22cc77', magic: '#9955ee', wish: '#ddaa22', passive: '#666' }
 
-function UnitActions({
-  unit, active, selectingTarget,
-  onSelect, onMove, onSelfMove, onPass,
-}: {
-  unit: Unit
-  active: boolean
-  selectingTarget: MoveSlot | null
-  onSelect: () => void
-  onMove: (slot: MoveSlot) => void
-  onSelfMove: (slot: 1 | 2 | 3) => void
-  onPass: () => void
+function UnitActions({ unit, active, selectingTarget, onSelect, onMove, onSelfMove, onPass }: {
+  unit: Unit; active: boolean; selectingTarget: MoveSlot | null
+  onSelect: () => void; onMove: (slot: MoveSlot) => void
+  onSelfMove: (slot: 1|2|3) => void; onPass: () => void
 }) {
   return (
-    <div className={`unit-action ${active ? 'open' : ''}`}>
+    <div className="unit-action">
       <div className="unit-action-header" onClick={onSelect}>
         <b>{unit.name}</b>
-        <span style={{ color: EL_COLOR[unit.element] }}>{unit.element}</span>
-        <span>HP {unit.hp}/{unit.maxHp}</span>
+        <span style={{ color: EL_COLOR[unit.element], fontSize: 11 }}>{unit.element}</span>
+        <span style={{ color: '#555577' }}>HP {unit.hp}/{unit.maxHp}</span>
+        <span style={{ marginLeft: 'auto', color: active ? '#aaa' : '#444466' }}>{active ? '▲' : '▼'}</span>
       </div>
 
       {active && (
         <div className="unit-action-body">
           {selectingTarget && (
-            <div className="hint">↑ 點選上方敵方目標</div>
+            <div className="target-hint">↑ 點選上方敵方目標</div>
           )}
 
           <div className="move-buttons">
@@ -259,16 +245,16 @@ function UnitActions({
                   onClick={() => onMove(slot)}
                   title={move.description}
                 >
-                  <span style={{ color: SLOT_COLOR[slot] }}>{SLOT_LABEL[slot]}</span>
+                  <span style={{ color: SLOT_COLOR[slot], fontWeight: 700 }}>{SLOT_LABEL[slot]}</span>
                   {' '}{move.name}
-                  {move.condition ? ` (×${move.condition})` : ''}
+                  {move.condition ? <span style={{ color: '#555577' }}> ×{move.condition}</span> : ''}
                 </button>
               )
             })}
           </div>
 
           <div className="move-section">
-            <div className="section-label">移動</div>
+            <div className="section-label" style={{ margin: 0 }}>移動</div>
             {[1, 2, 3].map(s => (
               <button key={s} className="btn sm" onClick={() => onSelfMove(s as 1|2|3)}>
                 {SLOT_NAME[s - 1]}
