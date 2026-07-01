@@ -63,10 +63,17 @@ export function useRoom(roomId: string) {
         }
 
         case 'startBattle': {
+          // Use host's piece if provided (avoid deync)
+          if (msg.hostPiece) {
+            if (store.isHost) store.selectPiece(msg.hostPiece)
+            else store.setOpponentPiece(msg.hostPiece)
+          }
           store.startBattle()
-          store.startATBLoop((json, phase) => {
-            send({ type: 'stateSync', stateJson: json, phase })
-          })
+          if (store.isHost) {
+            store.startATBLoop((json, phase) => {
+              send({ type: 'stateSync', stateJson: json, phase })
+            })
+          }
           break
         }
 
