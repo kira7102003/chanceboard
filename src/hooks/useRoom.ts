@@ -31,6 +31,10 @@ export function useRoom(roomId: string) {
         case 'welcome': {
           store.setRoom(roomId, msg.side, msg.isHost)
           store.setPlayerCount(msg.playerCount)
+          // B 方加入時房間已有 A，直接進 charSelect
+          if (msg.playerCount >= 2) {
+            store.setAppPhase('charSelect')
+          }
           break
         }
 
