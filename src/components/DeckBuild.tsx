@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { cards as allCards } from '../data/db'
-
+import { randomDeck } from '../engine/randomDeck'
 
 const DECK_SIZE = 10
 
@@ -26,16 +26,7 @@ export default function DeckBuild({ onConfirm }: Props) {
     const idx = selected.lastIndexOf(id)
     if (idx !== -1) setSelected(s => { const a = [...s]; a.splice(idx, 1); return a })
   }
-  const randomize = () => {
-    const pool = [...allCards, ...allCards]  // allow up to 2 copies each
-    const shuffled = pool.sort(() => Math.random() - 0.5)
-    const deck: string[] = []
-    for (const c of shuffled) {
-      if (deck.length >= DECK_SIZE) break
-      if (deck.filter(x => x === c.id).length < 2) deck.push(c.id)
-    }
-    setSelected(deck)
-  }
+  const randomize = () => setSelected(randomDeck())
 
   const CardRow = ({ card }: { card: typeof allCards[number] }) => {
     const cnt = countOf(card.id)
