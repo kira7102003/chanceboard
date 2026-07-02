@@ -476,34 +476,54 @@ export function doToggleAuto(gs: GameState, side: 'A' | 'B'): GameState {
   return s
 }
 
-// Analyse unit's full move kit to determine its ideal fighting slot.
-// sword-heavy → front (1), magic-heavy → mirror enemy cluster, gun/mixed → front.
-function kitPreferredSlot(unit: Unit, enemies: Unit[]): 1 | 2 | 3 {
+// Determine ideal slot based on what moves the unit can ACTUALLY USE right now
+// (has the cards in hand + not on cooldown). Falls back to full kit if nothing affordable.
+function kitPreferredSlot(unit: Unit, enemies: Unit[], hand: Card[], clock: number): 1 | 2 | 3 {
+  const suitOf: Record<string, string> = { sword: 'red', gun: 'green', magic: 'blue', wish: 'yellow' }
   const attackSlots: MoveSlot[] = ['sword', 'gun', 'magic', 'wish']
-  let swordPwr = 0, gunPwr = 0, magicPwr = 0
+  const liberated = unit.statuses.some(st => st.key === 'liberated')
 
-  for (const s of attackSlots) {
-    const m = unit.moves[s]
-    if (!m || !m.powerRatio) continue
-    if (m.rangeType === 'sword')  swordPwr  += m.powerRatio
-    else if (m.rangeType === 'gun')   gunPwr    += m.powerRatio
-    else if (m.rangeType === 'magic') magicPwr  += m.powerRatio
+  function sumPwr(affordableOnly: boolean) {
+    let swordPwr = 0, gunPwr = 0, magicPwr = 0
+    for (const s of attackSlots) {
+      const m = unit.moves[s]
+      if (!m || !m.powerRatio) continue
+      if (affordableOnly) {
+        if ((unit.moveCooldownUntil[m.id] ?? 0) > clock) continue
+        const color = suitOf[s]
+        if (color) {
+          const needed = liberated ? 1 : (m.condition ?? 1)
+          if (hand.filter(c => c.color === color).length < needed) continue
+        }
+      }
+      if (m.rangeType === 'sword')       swordPwr += m.powerRatio
+      else if (m.rangeType === 'gun')    gunPwr   += m.powerRatio
+      else if (m.rangeType === 'magic')  magicPwr += m.powerRatio
+    }
+    return { swordPwr, gunPwr, magicPwr }
+  }
+
+  // First try: only count moves affordable with current hand
+  let { swordPwr, gunPwr, magicPwr } = sumPwr(true)
+  // Fallback: use full kit if no affordable attack moves exist
+  if (swordPwr + gunPwr + magicPwr === 0) {
+    ;({ swordPwr, gunPwr, magicPwr } = sumPwr(false))
   }
 
   const total = swordPwr + gunPwr + magicPwr
   if (total === 0) return 3  // pure support — retreat to back row
 
-  // Magic-dominant: mirror the slot where the most enemies cluster
+  // Magic-dominant: mirror the slot where most enemies cluster
   if (magicPwr >= swordPwr && magicPwr >= gunPwr) {
     const count: Record<number, number> = { 1: 0, 2: 0, 3: 0 }
     for (const e of enemies) count[e.slot] = (count[e.slot] ?? 0) + 1
     return ([1, 2, 3] as const).reduce((a, b) => (count[b] ?? 0) > (count[a] ?? 0) ? b : a)
   }
 
-  // Sword dominant: advance to slot 1 (needs front to melee)
+  // Sword dominant → front row
   if (swordPwr >= gunPwr) return 1
 
-  // Gun dominant: mid-range slot 2 (can reach anyone from there, safer than front)
+  // Gun dominant → mid row (can hit anyone from slot 2, safer than front)
   return 2
 }
 
@@ -514,8 +534,9 @@ export function autoPlayUnit(gs: GameState, unit: Unit): GameState {
   const enemies = (side === 'A' ? gs.teamB : gs.teamA).filter(u => u.alive)
   if (enemies.length === 0) return doPass(gs, unit.id)
 
-  const isRooted     = unit.statuses.some(s => s.key === 'rooted') && !unit.flags.immuneToRooted
-  const preferredSlot = kitPreferredSlot(unit, enemies)
+  const isRooted = unit.statuses.some(s => s.key === 'rooted') && !unit.flags.immuneToRooted
+  const hand     = side === 'A' ? gs.handA : gs.handB
+  const preferredSlot = kitPreferredSlot(unit, enemies, hand, gs.clock)
 
   // Reposition first based on kit analysis, then pick a move
   let workGS = gs
@@ -525,8 +546,8 @@ export function autoPlayUnit(gs: GameState, unit: Unit): GameState {
     movedSlot = preferredSlot
   }
 
-  // Score all available moves from the new position
-  const hand    = side === 'A' ? workGS.handA : workGS.handB
+  // Score all available moves from the new position (hand unchanged by move)
+  const handAfter = side === 'A' ? workGS.handA : workGS.handB
   const suitOf: Record<string, string> = { sword: 'red', gun: 'green', magic: 'blue', wish: 'yellow' }
   const slots: MoveSlot[] = ['sword', 'gun', 'magic', 'wish']
 
@@ -542,7 +563,7 @@ export function autoPlayUnit(gs: GameState, unit: Unit): GameState {
     if (color) {
       const liberated = unit.statuses.some(st => st.key === 'liberated')
       const needed = liberated ? 1 : (move.condition ?? 1)
-      if (hand.filter(c => c.color === color).length < needed) continue
+      if (handAfter.filter(c => c.color === color).length < needed) continue
     }
 
     let reachable = enemies.filter(e => !e.statuses.some(s => s.key === 'hidden'))
