@@ -10,7 +10,7 @@ import type { Move, MoveSlot } from '../types/move'
 import type { Card } from '../types/card'
 import { characters, moves as allMoves, cards as allCards, deckWeights } from '../data/db'
 import type { PieceType } from '../types/piece'
-import { calcBAT, resolveHit, applyDamage } from './combat'
+import { calcBAT, resolveHit, applyDamage, elementMult } from './combat'
 import { runEffectOps, runCardEffects, tickStatuses } from './effects'
 import type { LogLine } from './effects'
 
@@ -476,17 +476,25 @@ export function doToggleAuto(gs: GameState, side: 'A' | 'B'): GameState {
   return s
 }
 
-// Picks the best available move for a unit and executes it.
+// Smart AI: considers positioning, target priority, and move scoring.
 export function autoPlayUnit(gs: GameState, unit: Unit): GameState {
-  const hand = unit.side === 'A' ? gs.handA : gs.handB
+  const side    = unit.side
+  const hand    = side === 'A' ? gs.handA : gs.handB
+  const enemies = (side === 'A' ? gs.teamB : gs.teamA).filter(u => u.alive)
+  if (enemies.length === 0) return doPass(gs, unit.id)
+
   const suitOf: Record<string, string> = { sword: 'red', gun: 'green', magic: 'blue', wish: 'yellow' }
   const slots: MoveSlot[] = ['sword', 'gun', 'magic', 'wish']
+
+  type Candidate = { slot: MoveSlot; score: number; targetId: string | null; needFront: boolean }
+  const candidates: Candidate[] = []
 
   for (const slot of slots) {
     const move = unit.moves[slot]
     if (!move) continue
     if ((unit.moveCooldownUntil[move.id] ?? 0) > gs.clock) continue
 
+    // Check hand resources
     const color = suitOf[slot]
     if (color) {
       const liberated = unit.statuses.some(st => st.key === 'liberated')
@@ -494,11 +502,57 @@ export function autoPlayUnit(gs: GameState, unit: Unit): GameState {
       if (hand.filter(c => c.color === color).length < needed) continue
     }
 
-    // resolveTargetUnits handles null targetId → first alive enemy
-    return doExecuteMove(gs, { unitId: unit.id, moveSlot: slot, targetId: null, cardId: null })
+    // Determine reachable targets based on rangeType
+    let reachable = enemies.filter(e => !e.statuses.some(s => s.key === 'hidden'))
+    const needFront = move.rangeType === 'sword'
+
+    if (move.rangeType === 'sword') {
+      // Sword: can only hit slot-1 enemies, and only when attacker is also slot 1
+      reachable = reachable.filter(e => e.slot === 1)
+      if (reachable.length === 0) continue  // no front-row enemy — skip
+    }
+
+    if (move.scope === 'group') {
+      // Group attack: score = powerRatio × enemy count × avg element mult
+      const avgEl = reachable.reduce((s, e) =>
+        s + elementMult(move.rangeType as any, e.element), 0) / (reachable.length || 1)
+      const score = (move.powerRatio ?? 0) * reachable.length * avgEl
+      candidates.push({ slot, score, targetId: null, needFront })
+    } else if (move.powerRatio) {
+      // Single target: pick lowest HP% enemy (finish kills first)
+      const best = reachable.reduce((a, b) =>
+        (a.hp / a.maxHp) <= (b.hp / b.maxHp) ? a : b)
+      const elBonus = elementMult(move.rangeType as any, best.element)
+      const score   = (move.powerRatio ?? 0) * elBonus *
+        (best.hp / best.maxHp < 0.3 ? 1.4 : 1)   // bonus priority if near-dead
+      candidates.push({ slot, score, targetId: best.id, needFront })
+    } else {
+      // Support / wish move (no powerRatio): flat score
+      candidates.push({ slot, score: 0.3, targetId: null, needFront })
+    }
   }
 
-  return doPass(gs, unit.id)
+  if (candidates.length === 0) return doPass(gs, unit.id)
+
+  // Pick highest scoring move
+  candidates.sort((a, b) => b.score - a.score)
+  const pick = candidates[0]
+
+  // Positioning: sword move needs attacker in slot 1
+  if (pick.needFront && unit.slot !== 1 &&
+      !unit.statuses.some(s => s.key === 'rooted')) {
+    const moved = doMoveUnit(gs, unit.id, 1)
+    return doExecuteMove(moved, { unitId: unit.id, moveSlot: pick.slot, targetId: pick.targetId, cardId: null })
+  }
+
+  // Gun move: move to slot 1 to minimize distance to any enemy (optional heuristic)
+  if (unit.moves[pick.slot]?.rangeType === 'gun' && unit.slot !== 1 &&
+      !unit.statuses.some(s => s.key === 'rooted') && Math.random() < 0.5) {
+    const moved = doMoveUnit(gs, unit.id, 1)
+    return doExecuteMove(moved, { unitId: unit.id, moveSlot: pick.slot, targetId: pick.targetId, cardId: null })
+  }
+
+  return doExecuteMove(gs, { unitId: unit.id, moveSlot: pick.slot, targetId: pick.targetId, cardId: null })
 }
 
 export function getReadyUnits(gs: GameState): Unit[] {
