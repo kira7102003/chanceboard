@@ -4,7 +4,6 @@
  */
 import { characters } from '../data/db'
 import { useGameStore } from '../store/gameStore'
-import { randomDeck } from '../engine/randomDeck'
 
 function pickRandom<T>(arr: T[], n: number): T[] {
   return [...arr].sort(() => Math.random() - 0.5).slice(0, n)
@@ -26,7 +25,7 @@ export function useSolo() {
 
     store.setOpponentChars(opponentIds)
     store.setMyDeck(myDeckIds)
-    store.setOpponentDeck(randomDeck())
+    store.setOpponentDeck([])
     store.selectPiece('pawn')
     store.startBattle()
     store.toggleAuto('B')       // AI always controls B
