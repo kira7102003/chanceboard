@@ -188,6 +188,12 @@ function BasicTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<C
   )
 }
 
+// suit dot + colour per slot
+const SUIT_DOT:  Record<string, string> = { red: '🔴', green: '🟢', blue: '🔵', yellow: '🟡' }
+const SUIT_OF:   Record<string, string> = { sword: 'red', gun: 'green', magic: 'blue', wish: 'yellow' }
+const SUIT_NAME: Record<string, string> = { red: '紅牌', green: '綠牌', blue: '藍牌', yellow: '黃牌' }
+const RANGE_LBL: Record<string, string> = { sword: '近戰', gun: '遠程', magic: '魔法' }
+
 // ─── MovesTab ─────────────────────────────────────────────────────────────────
 
 function MovesTab({ moves }: { moves: Move[] }) {
@@ -198,60 +204,90 @@ function MovesTab({ moves }: { moves: Move[] }) {
   if (!moves.length) return <div className="adm-empty">此角色沒有招式資料</div>
   return (
     <div className="adm-moves">
-      {moves.map(m => (
-        <div key={m.id} className="adm-move" style={{ borderLeftColor: SLOT_COLOR[m.slot] }}>
+      {moves.map(m => {
+        const suitColor = SUIT_OF[m.slot]
+        const dot       = suitColor ? SUIT_DOT[suitColor] : null
+        const cost      = m.condition ?? 1
+        const isOpen    = openId === m.id
 
-          {/* header row */}
-          <div className="adm-move-hdr">
-            <span style={{ color: SLOT_COLOR[m.slot], fontWeight: 800 }}>{SLOT_LABEL[m.slot]}</span>
-            <b style={{ color: '#d8dcf4' }}>{m.name}</b>
-            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <MiniImg storageKey={`cb_move_img_${m.id}`} size={38} rev={rev[m.id] ?? 0} />
-              <button className="btn sm" onClick={() => setOpenId(openId === m.id ? null : m.id)}>
-                {openId === m.id ? '收起' : '設定圖片'}
-              </button>
+        return (
+          <div key={m.id} className="adm-move" style={{ borderLeftColor: SLOT_COLOR[m.slot] }}>
+
+            <div className="adm-move-body">
+              {/* ── Left: image ── */}
+              <div className="adm-move-img-col">
+                <MoveImg storageKey={`cb_move_img_${m.id}`} rev={rev[m.id] ?? 0} />
+                <button className="btn sm" style={{ marginTop: 6, width: '100%', fontSize: 10 }}
+                  onClick={() => setOpenId(isOpen ? null : m.id)}>
+                  {isOpen ? '收起' : '設定圖片'}
+                </button>
+              </div>
+
+              {/* ── Right: info ── */}
+              <div className="adm-move-info">
+                <div className="adm-move-hdr">
+                  <span style={{ color: SLOT_COLOR[m.slot], fontWeight: 900, fontSize: 11 }}>{SLOT_LABEL[m.slot]}</span>
+                  <b style={{ color: '#d8dcf4', fontSize: 15 }}>{m.name}</b>
+                </div>
+
+                {/* Activation cost */}
+                <div className="adm-move-cost">
+                  {dot
+                    ? <>
+                        <span className="adm-cost-badge" style={{ color: SLOT_COLOR[m.slot] }}>
+                          啟動條件：{dot} {SUIT_NAME[suitColor]} × {cost}
+                        </span>
+                      </>
+                    : <span className="adm-cost-badge" style={{ color: '#888' }}>被動 — 不消耗手牌</span>
+                  }
+                </div>
+
+                <div className="adm-move-stats">
+                  {m.rangeType  != null && <Pill label="範圍" val={RANGE_LBL[m.rangeType] ?? m.rangeType} />}
+                  {m.scope      != null && <Pill label="目標" val={m.scope === 'group' ? '群體' : '單體'} />}
+                  {m.powerRatio != null && <Pill label="威力" val={`×${m.powerRatio}`} />}
+                  {m.hitRate    != null && <Pill label="命中" val={`${Math.round(m.hitRate * 100)}%`} />}
+                  {m.critRate   != null && <Pill label="爆擊" val={`${Math.round(m.critRate * 100)}%`} />}
+                  {m.cooldown   != null && <Pill label="CD"   val={`${m.cooldown}回合`} />}
+                </div>
+
+                <div className="adm-move-desc">{m.description || '—'}</div>
+              </div>
             </div>
+
+            {isOpen && (
+              <div className="adm-move-crop">
+                <ImageCrop
+                  storageKey={`cb_move_img_${m.id}`}
+                  previewSize={200}
+                  outSize={640}
+                  onSave={() => markSaved(m.id)}
+                />
+              </div>
+            )}
           </div>
-
-          <div className="adm-move-desc">{m.description || '—'}</div>
-
-          <div className="adm-move-stats">
-            {m.powerRatio != null && <Pill label="威力" val={`×${m.powerRatio}`} />}
-            {m.hitRate    != null && <Pill label="命中" val={`${Math.round(m.hitRate * 100)}%`} />}
-            {m.critRate   != null && <Pill label="爆擊" val={`${Math.round(m.critRate * 100)}%`} />}
-            {m.condition  != null && <Pill label="條件" val={`${m.condition}`} />}
-            {m.cooldown   != null && <Pill label="CD"   val={`${m.cooldown}回`} />}
-            {m.scope      != null && <Pill label="範圍" val={m.scope === 'group' ? '群體' : '單體'} />}
-          </div>
-
-          {openId === m.id && (
-            <div className="adm-move-crop">
-              <ImageCrop
-                storageKey={`cb_move_img_${m.id}`}
-                previewSize={200}
-                outSize={640}
-                onSave={() => markSaved(m.id)}
-              />
-            </div>
-          )}
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
 
-function MiniImg({ storageKey, size, rev }: { storageKey: string; size: number; rev: number }) {
-  // rev is only used to re-trigger render after save
+function MoveImg({ storageKey, rev }: { storageKey: string; rev: number }) {
   void rev
   const src = localStorage.getItem(storageKey)
   return src
-    ? <img src={src} width={size} height={size}
-        style={{ borderRadius: 5, objectFit: 'cover', border: '1px solid #333355', flexShrink: 0 }} alt="" />
+    ? <img src={src} alt=""
+        style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover',
+                 border: '1px solid #333355', display: 'block' }} />
     : <div style={{
-        width: size, height: size, borderRadius: 5, background: 'var(--bg3)',
-        border: '1px dashed #252538', display: 'flex', alignItems: 'center',
-        justifyContent: 'center', fontSize: 9, color: '#252540', flexShrink: 0
-      }}>無圖</div>
+        width: 80, height: 80, borderRadius: 8, background: 'var(--bg3)',
+        border: '2px dashed #252545', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', gap: 3,
+        color: '#353560', fontSize: 10,
+      }}>
+        <span style={{ fontSize: 22 }}>🖼</span>
+        <span>尚無圖片</span>
+      </div>
 }
 
 // ─── StoryTab ─────────────────────────────────────────────────────────────────

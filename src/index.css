@@ -265,9 +265,9 @@ h2 {
 /* Info below portrait */
 .char-card-info { padding: 10px 12px 13px; }
 .char-name  { font-weight: 700; color: var(--text-h); font-size: 13px; margin-bottom: 1px; letter-spacing: .3px; }
-.char-title { color: #32325a; font-size: 10px; margin-bottom: 8px; }
+.char-title { color: #8899bb; font-size: 10px; margin-bottom: 8px; }
 .char-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 6px; font-size: 10px; }
-.char-stat  { display: flex; justify-content: space-between; color: #303050; }
+.char-stat  { display: flex; justify-content: space-between; color: var(--text); }
 .char-stat b { color: var(--text2); font-weight: 600; }
 
 /* ── Char info button + popover ────────────────────────────── */
@@ -967,26 +967,31 @@ h2 {
 .crop-h-br { bottom: -6px; right: -6px; cursor: se-resize; }
 
 /* Moves tab */
-.adm-moves { display: flex; flex-direction: column; gap: 10px; }
-.adm-empty { color: #282840; font-size: 12px; padding: 24px; text-align: center; }
+.adm-moves { display: flex; flex-direction: column; gap: 12px; }
+.adm-empty { color: var(--text); font-size: 12px; padding: 24px; text-align: center; }
 .adm-move {
   background: linear-gradient(155deg, var(--bg3), var(--bg2));
   border: 1px solid var(--border);
-  border-left: 3px solid; border-radius: 9px; padding: 11px 14px;
-  display: flex; flex-direction: column; gap: 6px;
+  border-left: 3px solid; border-radius: 9px; padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 8px;
   transition: box-shadow .15s;
 }
 .adm-move:hover { box-shadow: 0 4px 20px rgba(0,0,0,.4); }
-.adm-move-hdr { display: flex; align-items: center; gap: 10px; font-size: 12px; }
-.adm-move-hdr b { color: var(--text-h); }
-.adm-move-desc { font-size: 11px; color: #4a4a7a; line-height: 1.5; }
-.adm-move-stats { display: flex; flex-wrap: wrap; gap: 5px; }
+.adm-move-body { display: flex; gap: 14px; align-items: flex-start; }
+.adm-move-img-col { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+.adm-move-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.adm-move-hdr { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.adm-move-hdr b { color: var(--text-h); font-size: 15px; }
+.adm-move-cost { font-size: 12px; }
+.adm-cost-badge { font-weight: 700; letter-spacing: .3px; }
+.adm-move-desc { font-size: 11px; color: var(--text2); line-height: 1.6; }
+.adm-move-stats { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 2px; }
 .adm-pill {
   display: flex; align-items: center; gap: 4px;
   background: rgba(0,0,0,.3); border: 1px solid var(--border);
   border-radius: 5px; padding: 2px 8px; font-size: 10px;
 }
-.adm-pill-label { color: #36364e; }
+.adm-pill-label { color: var(--text); }
 .adm-pill b { color: var(--text-h); }
 
 /* Move crop expand */
@@ -1003,4 +1008,46 @@ h2 {
 .adm-story-textarea:focus {
   outline: none; border-color: rgba(200,161,90,.4);
   box-shadow: 0 0 0 3px rgba(200,161,90,.07);
+}
+
+/* ── Mobile responsive ──────────────────────────────────────── */
+@media (max-width: 640px) {
+  /* global padding reduction */
+  .char-select,
+  .deck-page    { padding: 16px 12px; }
+
+  /* char grid: 2 columns on phone */
+  .char-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .char-portrait-box { height: 120px; }
+  .char-card-info { padding: 7px 8px 10px; }
+  .char-name  { font-size: 11px; }
+  .char-title { font-size: 9px; }
+
+  /* char info popover full-width on mobile */
+  .char-info-panel { min-width: min(90vw, 340px); max-width: 94vw; padding: 14px 14px; }
+
+  /* battle: stack sides vertically */
+  .battle-main { grid-template-columns: 1fr; }
+  .battle-side { padding: 8px 10px; }
+  .slots-row   { gap: 4px; }
+  .uc-portrait { height: 64px; }
+  .unit-card   { padding: 5px 6px; }
+  .unit-card-name { font-size: 11px; }
+  .battle-header { padding: 6px 10px; gap: 6px; flex-wrap: wrap; }
+
+  /* log panel smaller */
+  .log-panel  { font-size: 10px; }
+  .log-line   { padding: 2px 6px; }
+
+  /* admin editor: stack sidebar + editor */
+  .adm-body   { flex-direction: column; }
+  .adm-list   { flex-direction: row; flex-wrap: wrap; max-height: 110px; overflow-y: auto;
+                width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+  .adm-list-item { flex-direction: column; align-items: center; gap: 3px; padding: 6px 4px;
+                    min-width: 60px; text-align: center; }
+  .adm-move-body { flex-direction: column; }
+  .adm-move-img-col { flex-direction: row; align-items: center; gap: 10px; width: 100%; }
+
+  /* lobby / char select on phone */
+  .lobby-actions { flex-direction: column; }
 }
