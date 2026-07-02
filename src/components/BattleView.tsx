@@ -7,7 +7,8 @@ import { getReadyUnits } from '../engine/atb'
 import ScorePanel from './ScorePanel'
 import { getCharImg } from '../utils/charStore'
 
-const SLOT_NAME = ['近', '中', '遠']
+const SLOT_NAME  = ['近', '中', '遠']
+const SLOT_COLOR_POS = ['#e85533', '#ddaa22', '#33aacc']  // 近=red, 中=yellow, 遠=blue
 const EL_COLOR: Record<string, string> = { sword: '#e87733', gun: '#22cc77', magic: '#9955ee' }
 const SUIT_CLS: Record<string, string>  = { red: 'suit-red', green: 'suit-green', blue: 'suit-blue', yellow: 'suit-yellow', flower: 'suit-flower' }
 const MOVE_SLOTS: MoveSlot[] = ['sword', 'gun', 'magic', 'wish']
@@ -207,10 +208,11 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
             <span className={`side-badge side-${mySide}`}>{mySide} 方</span>
             <span className="side-meta">手牌 {myHand.length} · 自訂剩 {myCustomLeft}</span>
           </div>
+          {/* my-side: show slots 3→2→1 so slot-1 (近) faces the center */}
           <div className="slots-row">
-            {[1,2,3].map(slot => (
+            {[3,2,1].map(slot => (
               <div key={slot} className="slot-col">
-                <div className="slot-name">{SLOT_NAME[slot-1]}</div>
+                <div className="slot-name" style={{ color: SLOT_COLOR_POS[slot-1] }}>{SLOT_NAME[slot-1]}</div>
                 {myTeam.filter(u => u.slot === slot).map(u => (
                   <UnitCard key={u.id} unit={u} clock={game.clock} />
                 ))}
@@ -225,10 +227,11 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
             <span className={`side-badge side-${oppSide}`}>{oppSide} 方</span>
             {selectingTarget && <span className="pick-target-hint">← 點選目標</span>}
           </div>
+          {/* enemy-side: show slots 1→2→3 so slot-1 (近) faces the center */}
           <div className="slots-row">
             {[1,2,3].map(slot => (
               <div key={slot} className="slot-col">
-                <div className="slot-name">{SLOT_NAME[slot-1]}</div>
+                <div className="slot-name" style={{ color: SLOT_COLOR_POS[slot-1] }}>{SLOT_NAME[slot-1]}</div>
                 {enemyTeam.filter(u => u.slot === slot).map(u => (
                   <UnitCard
                     key={u.id} unit={u} clock={game.clock}

@@ -500,8 +500,11 @@ function kitPreferredSlot(unit: Unit, enemies: Unit[]): 1 | 2 | 3 {
     return ([1, 2, 3] as const).reduce((a, b) => (count[b] ?? 0) > (count[a] ?? 0) ? b : a)
   }
 
-  // Sword or gun dominant: advance to slot 1
-  return 1
+  // Sword dominant: advance to slot 1 (needs front to melee)
+  if (swordPwr >= gunPwr) return 1
+
+  // Gun dominant: mid-range slot 2 (can reach anyone from there, safer than front)
+  return 2
 }
 
 // Smart AI: first determines ideal position from the character's move kit,
