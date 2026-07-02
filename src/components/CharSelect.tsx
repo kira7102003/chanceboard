@@ -1,5 +1,8 @@
 import { useGameStore } from '../store/gameStore'
-import { characters } from '../data/db'
+import { getChars } from '../utils/charStore'
+import { CharPortrait } from './Admin'
+
+const characters = getChars()
 
 const EL_LABEL: Record<string, string> = { sword: '⚔ 劍', gun: '🔫 槍', magic: '✦ 魔' }
 
@@ -28,9 +31,14 @@ export default function CharSelect({ onConfirm }: Props) {
               className={`char-card el-${c.element} ${sel ? 'selected' : ''}`}
               onClick={() => toggleCharSelect(c.id)}
             >
-              <div className="char-name">{c.name}</div>
-              <div className="char-title">{c.title}</div>
-              <div className={`char-el el-${c.element}-color`}>{EL_LABEL[c.element]}</div>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 7 }}>
+                <CharPortrait id={c.id} size={44} />
+                <div>
+                  <div className="char-name">{c.name}</div>
+                  <div className="char-title">{c.title}</div>
+                  <div className={`char-el el-${c.element}-color`}>{EL_LABEL[c.element]}</div>
+                </div>
+              </div>
               <div className="char-stats">
                 <div className="char-stat"><span>HP</span><b>{c.hp}</b></div>
                 <div className="char-stat"><span>ATK</span><b>{c.atk}</b></div>

@@ -16,4 +16,5 @@ export interface Character {
   moveNameMagic: string
   moveNameWish: string
   passiveName: string
+  story?: string
 }

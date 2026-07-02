@@ -3,6 +3,7 @@ import Lobby from './components/Lobby'
 import CharSelect from './components/CharSelect'
 import DeckBuild from './components/DeckBuild'
 import BattleView from './components/BattleView'
+import Admin from './components/Admin'
 import { useGameStore } from './store/gameStore'
 import { useRoom, loadSession, clearSession } from './hooks/useRoom'
 
@@ -32,7 +33,8 @@ function WaitingRoom({ roomId, mySide }: { roomId: string; mySide: 'A' | 'B' | n
 
 export default function App() {
   const saved = loadSession()
-  const [roomId, setRoomId] = useState('')
+  const [roomId,    setRoomId]    = useState('')
+  const [showAdmin, setShowAdmin] = useState(false)
   const { appPhase, mySide } = useGameStore()
 
   const { localPlayCard, localMoveUnit, localExecuteMove, localPass, localToggleAuto,
@@ -61,29 +63,33 @@ export default function App() {
 
   return (
     <div className="app">
+      {/* 資料編輯器 */}
+      {showAdmin && <Admin onBack={() => setShowAdmin(false)} />}
+
       {/* 未進房間 */}
-      {!roomId && (
+      {!showAdmin && !roomId && (
         <Lobby
           onJoin={handleJoin}
           savedSession={saved}
           onRejoin={handleRejoin}
+          onAdmin={() => setShowAdmin(true)}
         />
       )}
 
       {/* 進了房間但還在等對手 */}
-      {roomId && appPhase === 'lobby' && (
+      {!showAdmin && roomId && appPhase === 'lobby' && (
         <WaitingRoom roomId={roomId} mySide={mySide} />
       )}
 
-      {roomId && appPhase === 'charSelect' && (
+      {!showAdmin && roomId && appPhase === 'charSelect' && (
         <CharSelect onConfirm={handleCharConfirm} />
       )}
 
-      {roomId && appPhase === 'deckBuild' && (
+      {!showAdmin && roomId && appPhase === 'deckBuild' && (
         <DeckBuild onConfirm={handleDeckConfirm} />
       )}
 
-      {roomId && (appPhase === 'battle' || appPhase === 'end') && (
+      {!showAdmin && roomId && (appPhase === 'battle' || appPhase === 'end') && (
         <BattleView
           onPlayCard={localPlayCard}
           onMoveUnit={localMoveUnit}
@@ -94,7 +100,7 @@ export default function App() {
         />
       )}
 
-      {roomId && appPhase !== 'lobby' && (
+      {!showAdmin && roomId && appPhase !== 'lobby' && (
         <div className="room-badge">
           房間：<b>{roomId}</b>
           {mySide && <> &nbsp;|&nbsp; {mySide} 方</>}

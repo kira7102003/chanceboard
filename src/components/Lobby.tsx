@@ -5,9 +5,10 @@ interface Props {
   onJoin: (roomId: string) => void
   savedSession: SavedSession | null
   onRejoin: () => void
+  onAdmin: () => void
 }
 
-export default function Lobby({ onJoin, savedSession, onRejoin }: Props) {
+export default function Lobby({ onJoin, savedSession, onRejoin, onAdmin }: Props) {
   const [input, setInput] = useState('')
 
   const create = () => {
@@ -62,6 +63,14 @@ export default function Lobby({ onJoin, savedSession, onRejoin }: Props) {
           建立房間後把代碼傳給對手，雙方加入即可開始
         </p>
       </div>
+
+      <button
+        className="btn"
+        style={{ fontSize: 11, color: '#333355', border: '1px solid #222338', background: 'transparent' }}
+        onClick={onAdmin}
+      >
+        ⚙ 資料編輯器
+      </button>
     </div>
   )
 }
