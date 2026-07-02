@@ -491,7 +491,7 @@ function kitPreferredSlot(unit: Unit, enemies: Unit[]): 1 | 2 | 3 {
   }
 
   const total = swordPwr + gunPwr + magicPwr
-  if (total === 0) return unit.slot  // pure support — stay put
+  if (total === 0) return 3  // pure support — retreat to back row
 
   // Magic-dominant: mirror the slot where the most enemies cluster
   if (magicPwr >= swordPwr && magicPwr >= gunPwr) {
