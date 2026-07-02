@@ -270,6 +270,54 @@ h2 {
 .char-stat  { display: flex; justify-content: space-between; color: #303050; }
 .char-stat b { color: var(--text2); font-weight: 600; }
 
+/* ── Char info button + popover ────────────────────────────── */
+.char-info-btn {
+  position: absolute; top: 6px; right: 6px; z-index: 10;
+  background: rgba(0,0,0,.55); border: 1px solid rgba(200,161,90,.35);
+  color: rgba(200,161,90,.85); border-radius: 50%;
+  width: 22px; height: 22px; font-size: 13px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; padding: 0; transition: background .15s, color .15s;
+}
+.char-info-btn:hover { background: rgba(200,161,90,.25); color: #fff; }
+
+.char-info-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.55); backdrop-filter: blur(3px);
+}
+.char-info-panel {
+  background: #0d1128; border: 1px solid rgba(200,161,90,.3);
+  border-radius: 10px; padding: 18px 20px; min-width: 320px; max-width: 480px;
+  box-shadow: 0 8px 40px rgba(0,0,0,.7);
+}
+.char-info-hdr {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 14px;
+}
+.char-info-name { font-weight: 800; font-size: 16px; color: var(--gold); letter-spacing: .5px; }
+.char-info-close {
+  background: none; border: none; color: #aaa; font-size: 16px;
+  cursor: pointer; line-height: 1; padding: 2px 6px;
+}
+.char-info-close:hover { color: #fff; }
+
+.char-info-moves { display: flex; flex-direction: column; gap: 10px; }
+.char-info-move {
+  background: rgba(255,255,255,.04); border-radius: 6px;
+  padding: 8px 10px; border-left: 3px solid rgba(200,161,90,.2);
+}
+.cim-header {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.cim-slot  { font-weight: 900; font-size: 12px; min-width: 24px; }
+.cim-name  { font-weight: 700; font-size: 13px; color: var(--text-h); flex: 1; }
+.cim-cost  { font-size: 12px; }
+.cim-range { font-size: 10px; color: #aaa; background: rgba(255,255,255,.07); padding: 1px 5px; border-radius: 3px; }
+.cim-power { font-size: 10px; color: #c8a15a; background: rgba(200,161,90,.12); padding: 1px 5px; border-radius: 3px; }
+.cim-desc  { font-size: 11px; color: #aab; line-height: 1.5; }
+
 /* ── Deck page ─────────────────────────────────────────────── */
 .deck-page {
   flex: 1; padding: 28px 32px; display: flex; flex-direction: column;
