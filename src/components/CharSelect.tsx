@@ -31,19 +31,24 @@ export default function CharSelect({ onConfirm }: Props) {
               className={`char-card el-${c.element} ${sel ? 'selected' : ''}`}
               onClick={() => toggleCharSelect(c.id)}
             >
-              <div style={{ display: 'flex', gap: 8, marginBottom: 7 }}>
-                <CharPortrait id={c.id} size={44} />
-                <div>
-                  <div className="char-name">{c.name}</div>
-                  <div className="char-title">{c.title}</div>
-                  <div className={`char-el el-${c.element}-color`}>{EL_LABEL[c.element]}</div>
-                </div>
+              {/* ── Portrait ── */}
+              <div className="char-portrait-box">
+                <CharPortrait id={c.id} size={160}
+                  style={{ width: '100%', height: '100%', borderRadius: 0, flexShrink: 0 }} />
+                <div className={`char-portrait-el el-${c.element}-color`}>{EL_LABEL[c.element]}</div>
+                {sel && <div className="char-portrait-check">✓</div>}
               </div>
-              <div className="char-stats">
-                <div className="char-stat"><span>HP</span><b>{c.hp}</b></div>
-                <div className="char-stat"><span>ATK</span><b>{c.atk}</b></div>
-                <div className="char-stat"><span>DEF</span><b>{c.def}</b></div>
-                <div className="char-stat"><span>SPD</span><b>{c.spd}</b></div>
+
+              {/* ── Info ── */}
+              <div className="char-card-info">
+                <div className="char-name">{c.name}</div>
+                <div className="char-title">{c.title}</div>
+                <div className="char-stats">
+                  <div className="char-stat"><span>HP</span><b>{c.hp}</b></div>
+                  <div className="char-stat"><span>ATK</span><b>{c.atk}</b></div>
+                  <div className="char-stat"><span>DEF</span><b>{c.def}</b></div>
+                  <div className="char-stat"><span>SPD</span><b>{c.spd}</b></div>
+                </div>
               </div>
             </div>
           )

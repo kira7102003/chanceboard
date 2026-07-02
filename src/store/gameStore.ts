@@ -17,8 +17,9 @@ interface Store {
   isHost: boolean
   roomId: string
   playerCount: number
-  isSolo: boolean
-  soloScore: ScoreResult | null
+  isSolo:     boolean
+  isAIBattle: boolean
+  soloScore:  ScoreResult | null
 
   selectedCharIds: string[]
   opponentCharIds: string[]
@@ -35,8 +36,9 @@ interface Store {
   setRoom: (roomId: string, side: 'A' | 'B', isHost: boolean) => void
   setPlayerCount: (n: number) => void
   setAppPhase: (p: AppPhase) => void
-  setSolo: (v: boolean) => void
-  setScore: (r: ScoreResult | null) => void
+  setSolo:     (v: boolean) => void
+  setAIBattle: (v: boolean) => void
+  setScore:    (r: ScoreResult | null) => void
 
   toggleCharSelect: (id: string) => void
   confirmCharSelect: () => void
@@ -70,8 +72,9 @@ export const useGameStore = create<Store>((set, get) => ({
   isHost: false,
   roomId: '',
   playerCount: 0,
-  isSolo: false,
-  soloScore: null,
+  isSolo:     false,
+  isAIBattle: false,
+  soloScore:  null,
 
   selectedCharIds: [],
   opponentCharIds: [],
@@ -88,8 +91,9 @@ export const useGameStore = create<Store>((set, get) => ({
   setRoom: (roomId, side, isHost) => set({ roomId, mySide: side, isHost }),
   setPlayerCount: n => set({ playerCount: n }),
   setAppPhase: p => set({ appPhase: p }),
-  setSolo: v => set({ isSolo: v }),
-  setScore: r => set({ soloScore: r }),
+  setSolo:     v => set({ isSolo: v }),
+  setAIBattle: v => set({ isAIBattle: v }),
+  setScore:    r => set({ soloScore: r }),
 
   toggleCharSelect: (id) => {
     const cur = get().selectedCharIds
