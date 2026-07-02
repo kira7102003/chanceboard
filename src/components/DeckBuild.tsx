@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { cards as allCards } from '../data/db'
-import { randomDeck } from '../engine/randomDeck'
+import { fillDeck } from '../engine/randomDeck'
 
 const DECK_SIZE = 10
 
@@ -26,7 +26,7 @@ export default function DeckBuild({ onConfirm }: Props) {
     const idx = selected.lastIndexOf(id)
     if (idx !== -1) setSelected(s => { const a = [...s]; a.splice(idx, 1); return a })
   }
-  const randomize = () => setSelected(randomDeck())
+  const randomize = () => setSelected(s => fillDeck(s))
 
   const CardRow = ({ card }: { card: typeof allCards[number] }) => {
     const cnt = countOf(card.id)
@@ -104,7 +104,9 @@ export default function DeckBuild({ onConfirm }: Props) {
         <button className="btn primary" disabled={selected.length === 0} onClick={() => onConfirm(selected)}>
           {isSolo ? '確認牌組 — 開始挑戰' : '確認牌組 — 等待對手'}
         </button>
-        <button className="btn" onClick={randomize}>🎲 隨機</button>
+        <button className="btn" onClick={randomize}>
+          {selected.length === 0 ? '🎲 隨機配置' : `🎲 補齊（+${DECK_SIZE - selected.length}）`}
+        </button>
         {selected.length < DECK_SIZE && (
           <span className="hint">建議選滿 {DECK_SIZE} 張（目前 {selected.length}）</span>
         )}
