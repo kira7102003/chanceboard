@@ -32,7 +32,7 @@ interface MoveAnim {
 }
 
 export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPass, onToggleAuto, onEnd, onSoloReplay }: Props) {
-  const { game, mySide, isSolo, soloScore } = useGameStore()
+  const { game, mySide, isSolo, isAIBattle, soloScore } = useGameStore()
   const logRef      = useRef<HTMLDivElement>(null)
   const animTimer   = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [activeUnitId,    setActiveUnitId]    = useState<string|null>(null)
@@ -74,6 +74,21 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
     .sort((a, b) => a.nextActionAt - b.nextActionAt)
 
   if (game.phase === 'end') {
+    if (isAIBattle) {
+      const label =
+        game.winner === 'A' ? '🤖 A 方勝利！' :
+        game.winner === 'B' ? '🤖 B 方勝利！' : '⚖ 平局'
+      return (
+        <div className="battle-end">
+          <h2 style={{ fontSize: '2rem' }}>{label}</h2>
+          <p>{game.winnerReason}</p>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <button className="btn primary" onClick={onSoloReplay ?? onEnd}>再看一局</button>
+            <button className="btn"         onClick={onEnd}>返回大廳</button>
+          </div>
+        </div>
+      )
+    }
     if (isSolo) {
       if (!soloScore) return <div className="battle-end"><p style={{ color: '#c8a15a' }}>計算評分中…</p></div>
       return (
@@ -134,16 +149,21 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
         <div className="bh-item bh-sep">時鐘 <b>{game.clock}</b></div>
         <div className="bh-item bh-sep">牌庫 <b>{game.drawPublic.length}</b> · 棄牌 <b>{game.discardPublic.length}</b></div>
         <div style={{ flex: 1 }} />
-        <label className="auto-check">
-          <input type="checkbox" checked={isAutoMe} onChange={onToggleAuto} />
-          自動（{mySide}）
-        </label>
-        {!isSolo && (
-          <label className="auto-check" style={{ opacity: .45 }}>
-            <input type="checkbox" checked={isAutoOpp} readOnly />
-            自動（{oppSide}）
-          </label>
-        )}
+        {isAIBattle
+          ? <span style={{ fontSize: 12, color: '#9955ee', letterSpacing: 1 }}>🤖 AI 對戰觀戰中</span>
+          : <>
+              <label className="auto-check">
+                <input type="checkbox" checked={isAutoMe} onChange={onToggleAuto} />
+                自動（{mySide}）
+              </label>
+              {!isSolo && (
+                <label className="auto-check" style={{ opacity: .45 }}>
+                  <input type="checkbox" checked={isAutoOpp} readOnly />
+                  自動（{oppSide}）
+                </label>
+              )}
+            </>
+        }
       </div>
 
       {/* ── ATB Queue ── */}
@@ -206,7 +226,7 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
       </div>
 
       {/* ── Action panels ── */}
-      {readyUnits.length > 0 && (
+      {!isAIBattle && readyUnits.length > 0 && (
         <div className="action-area">
           {readyUnits.map((unit, idx) => {
             const isOpen = activeUnitId ? activeUnitId === unit.id : idx === 0

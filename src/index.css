@@ -632,6 +632,15 @@ h2 {
   background: linear-gradient(135deg, rgba(200,161,90,.28), rgba(200,161,90,.12));
   box-shadow: 0 0 16px rgba(200,161,90,.2);
 }
+.ai-btn {
+  background: linear-gradient(135deg, rgba(153,85,238,.18), rgba(153,85,238,.06));
+  border-color: rgba(153,85,238,.4); color: #cc88ff;
+  font-size: 1rem; font-weight: 600; letter-spacing: 1px;
+}
+.ai-btn:hover {
+  background: linear-gradient(135deg, rgba(153,85,238,.28), rgba(153,85,238,.12));
+  box-shadow: 0 0 16px rgba(153,85,238,.25);
+}
 
 /* ── Room badge ─────────────────────────────────────────────── */
 .room-badge {

@@ -7,6 +7,7 @@ import Admin       from './components/Admin'
 import { useGameStore }           from './store/gameStore'
 import { useRoom, loadSession, clearSession } from './hooks/useRoom'
 import { useSolo }                from './hooks/useSolo'
+import { useAIBattle }           from './hooks/useAIBattle'
 
 // ── Waiting room (online only) ────────────────────────────────────────────────
 
@@ -41,7 +42,7 @@ export default function App() {
   const [onlineRoomId, setOnlineRoomId] = useState('')
   const [showAdmin,    setShowAdmin]    = useState(false)
 
-  const { appPhase, mySide, isSolo } = useGameStore()
+  const { appPhase, mySide, isSolo, isAIBattle } = useGameStore()
 
   // ── Controllers ──────────────────────────────────────────────────────────────
 
@@ -52,16 +53,40 @@ export default function App() {
   // Solo: direct engine driver
   const { startSolo } = useSolo()
 
+  // AI battle: both sides auto-controlled
+  const { startAIBattle } = useAIBattle()
+
   // ── Routing helpers ───────────────────────────────────────────────────────────
 
-  // Gate: something is active (online room OR solo mode)
-  const isActive = isSolo || !!onlineRoomId
+  // Gate: something is active (online room, solo, or AI battle)
+  const isActive = isSolo || isAIBattle || !!onlineRoomId
 
   // ── Lobby handlers ────────────────────────────────────────────────────────────
 
   const handleJoin = (id: string) => setOnlineRoomId(id)
 
   const handleRejoin = () => { if (saved) setOnlineRoomId(saved.roomId) }
+
+  const handleAIBattleStart = () => startAIBattle()
+
+  const handleAIReplay = () => {
+    const store = useGameStore.getState()
+    store.stopATBLoop()
+    useGameStore.setState({
+      game:            null,
+      appPhase:        'lobby',
+      selectedCharIds: [],
+      opponentCharIds: [],
+      myDeckIds:       [],
+      opponentDeckIds: [],
+      soloScore:       null,
+      pendingUnitId:   null,
+      isAIBattle:      false,
+      isSolo:          false,
+    })
+    // kick off a fresh AI battle immediately
+    setTimeout(() => startAIBattle(), 0)
+  }
 
   const handleSoloStart = () => {
     const store = useGameStore.getState()
@@ -129,6 +154,7 @@ export default function App() {
         <Lobby
           onJoin={handleJoin}
           onSolo={handleSoloStart}
+          onAIBattle={handleAIBattleStart}
           savedSession={saved}
           onRejoin={handleRejoin}
           onAdmin={() => setShowAdmin(true)}
@@ -159,7 +185,7 @@ export default function App() {
           onPass={localPass}
           onToggleAuto={localToggleAuto}
           onEnd={handleEnd}
-          onSoloReplay={handleSoloReplay}
+          onSoloReplay={isAIBattle ? handleAIReplay : handleSoloReplay}
         />
       )}
 
@@ -174,6 +200,11 @@ export default function App() {
       {/* Solo 標籤 */}
       {!showAdmin && isSolo && appPhase !== 'charSelect' && appPhase !== 'deckBuild' && (
         <div className="room-badge">⚔ 單人模式</div>
+      )}
+
+      {/* AI 對戰標籤 */}
+      {!showAdmin && isAIBattle && (
+        <div className="room-badge" style={{ color: '#9955ee' }}>🤖 AI 對戰</div>
       )}
     </div>
   )
