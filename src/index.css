@@ -408,6 +408,67 @@ h2 { color: var(--text-h); font-weight: 700; font-size: 1.1rem; letter-spacing: 
 .el-gun-color   { color: #22cc77; }
 .el-magic-color { color: #9955ee; }
 
+/* ── Move animation overlay ─────────────────────────────── */
+@keyframes moveOverlayFade {
+  0%   { background: rgba(0,0,0,0); }
+  12%  { background: rgba(0,0,0,.78); }
+  78%  { background: rgba(0,0,0,.72); }
+  100% { background: rgba(0,0,0,0); }
+}
+@keyframes moveImgPop {
+  0%   { opacity: 0; transform: scale(.55) translateY(30px); filter: brightness(2); }
+  18%  { opacity: 1; transform: scale(1.06) translateY(-6px); filter: brightness(1.2); }
+  32%  { transform: scale(1) translateY(0);  filter: brightness(1); }
+  75%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.12) translateY(-12px); }
+}
+@keyframes moveNoImgPop {
+  0%   { opacity: 0; transform: scale(.4); }
+  25%  { opacity: 1; transform: scale(1.1); }
+  45%  { transform: scale(1); }
+  75%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes moveTextSlide {
+  0%   { opacity: 0; transform: translateY(14px); letter-spacing: 4px; }
+  22%  { opacity: 1; transform: translateY(0);   letter-spacing: 2px; }
+  75%  { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-6px); }
+}
+@keyframes moveCharSlide {
+  0%,10% { opacity: 0; transform: translateY(8px); }
+  28%    { opacity: 1; transform: translateY(0); }
+  75%    { opacity: 1; }
+  100%   { opacity: 0; }
+}
+
+.move-anim-overlay {
+  position: fixed; inset: 0; z-index: 9999; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+  animation: moveOverlayFade 1.9s ease-in-out forwards;
+}
+.move-anim-img {
+  max-width: min(500px, 68vw); max-height: 48vh; object-fit: contain;
+  border-radius: 16px;
+  box-shadow: 0 0 80px rgba(0,0,0,.9), 0 0 30px rgba(255,255,255,.06) inset;
+  animation: moveImgPop 1.9s ease-in-out forwards;
+}
+.move-anim-no-img {
+  font-size: 5rem; line-height: 1;
+  animation: moveNoImgPop 1.9s ease-in-out forwards;
+  filter: drop-shadow(0 0 30px currentColor);
+}
+.move-anim-name {
+  font-size: 2.2rem; font-weight: 900; letter-spacing: 2px;
+  text-shadow: 0 0 40px currentColor, 0 2px 8px rgba(0,0,0,.9);
+  animation: moveTextSlide 1.9s ease-in-out forwards;
+}
+.move-anim-char {
+  font-size: .95rem; color: rgba(200,200,230,.6); letter-spacing: 1px;
+  text-shadow: 0 1px 4px rgba(0,0,0,.8);
+  animation: moveCharSlide 1.9s ease-in-out forwards;
+}
+
 /* ── Admin editor ────────────────────────────────────────── */
 .adm {
   flex: 1; display: flex; flex-direction: column; height: 100dvh; overflow: hidden;
@@ -540,6 +601,11 @@ h2 { color: var(--text-h); font-weight: 700; font-size: 1.1rem; letter-spacing: 
 }
 .adm-pill-label { color: #44446a; }
 .adm-pill b { color: var(--text-h); }
+
+/* Move crop expand */
+.adm-move-crop {
+  margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);
+}
 
 /* Story tab */
 .adm-story { display: flex; flex-direction: column; gap: 8px; }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useGameStore } from '../store/gameStore'
 import type { Unit } from '../types/unit'
 import type { Card } from '../types/card'
@@ -22,11 +22,21 @@ interface Props {
   onEnd: () => void
 }
 
+interface MoveAnim {
+  img: string | null
+  name: string
+  charName: string
+  color: string
+}
+
 export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPass, onToggleAuto, onEnd }: Props) {
   const { game, mySide } = useGameStore()
-  const logRef = useRef<HTMLDivElement>(null)
-  const [activeUnitId, setActiveUnitId] = useState<string|null>(null)
+  const logRef      = useRef<HTMLDivElement>(null)
+  const animTimer   = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [activeUnitId,    setActiveUnitId]    = useState<string|null>(null)
   const [selectingTarget, setSelectingTarget] = useState<MoveSlot|null>(null)
+  const [moveAnim,  setMoveAnim]  = useState<MoveAnim | null>(null)
+  const [animKey,   setAnimKey]   = useState(0)
 
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight
@@ -43,6 +53,15 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
   const readyUnits = getReadyUnits(game).filter(u => u.side === mySide)
   const isAutoMe  = mySide === 'A' ? game.autoBattleA : game.autoBattleB
   const isAutoOpp = mySide === 'A' ? game.autoBattleB : game.autoBattleA
+
+  const triggerAnim = useCallback((unit: Unit, slot: MoveSlot) => {
+    const move = unit.moves[slot]; if (!move) return
+    const img  = localStorage.getItem(`cb_move_img_${move.id}`)
+    if (animTimer.current) clearTimeout(animTimer.current)
+    setMoveAnim({ img, name: move.name, charName: unit.name, color: SLOT_COLOR[slot] })
+    setAnimKey(k => k + 1)
+    animTimer.current = setTimeout(() => setMoveAnim(null), 1900)
+  }, [])
 
   const suitInHand: Record<string, number> = { red: 0, green: 0, blue: 0, yellow: 0 }
   for (const c of myHand) if (c.color in suitInHand) suitInHand[c.color]++
@@ -67,6 +86,7 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
     const move = unit.moves[slot]
     if (!move) return
     if (move.scope === 'group' || !move.rangeType) {
+      triggerAnim(unit, slot)
       onExecuteMove(unit.id, slot, null)
       setActiveUnitId(null); setSelectingTarget(null)
     } else {
@@ -77,12 +97,24 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
   const handleTargetClick = (target: Unit) => {
     const active = readyUnits.find(u => u.id === activeUnitId) ?? readyUnits[0]
     if (!active || !selectingTarget) return
+    triggerAnim(active, selectingTarget)
     onExecuteMove(active.id, selectingTarget, target.id)
     setActiveUnitId(null); setSelectingTarget(null)
   }
 
   return (
     <div className="battle">
+      {/* ── Move animation overlay ── */}
+      {moveAnim && (
+        <div className="move-anim-overlay" key={animKey}>
+          {moveAnim.img
+            ? <img src={moveAnim.img} className="move-anim-img" alt="" />
+            : <div className="move-anim-no-img" style={{ color: moveAnim.color }}>⚡</div>
+          }
+          <div className="move-anim-name" style={{ color: moveAnim.color }}>{moveAnim.name}</div>
+          <div className="move-anim-char">{moveAnim.charName}</div>
+        </div>
+      )}
 
       {/* ── Header ── */}
       <div className="battle-header">

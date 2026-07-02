@@ -36,3 +36,13 @@ export function saveCharImg(id: string, dataUrl: string): void {
 export function removeCharImg(id: string): void {
   localStorage.removeItem(LS_IMG(id))
 }
+
+// Move skill images
+export const getMoveImg    = (id: string)             => localStorage.getItem(`cb_move_img_${id}`)
+export const saveMoveImg   = (id: string, d: string)  => localStorage.setItem(`cb_move_img_${id}`, d)
+export const removeMoveImg = (id: string)             => localStorage.removeItem(`cb_move_img_${id}`)
+
+// Story illustration images
+export const getStoryImg    = (id: string)             => localStorage.getItem(`cb_story_img_${id}`)
+export const saveStoryImg   = (id: string, d: string)  => localStorage.setItem(`cb_story_img_${id}`, d)
+export const removeStoryImg = (id: string)             => localStorage.removeItem(`cb_story_img_${id}`)
