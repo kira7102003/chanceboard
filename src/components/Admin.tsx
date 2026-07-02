@@ -289,13 +289,16 @@ interface CropProps {
 
 type CropDragState =
   | { mode: 'move'; startMx: number; startMy: number; startBx: number; startBy: number }
-  | { mode: 'resize'; corner: 'tl'|'tr'|'bl'|'br'; ax: number; ay: number; dw: number; dh: number }
+  | { mode: 'resize'; corner: 'tl'|'tr'|'bl'|'br'
+      ax: number; ay: number; dw: number; dh: number; imgX: number; imgY: number }
   | null
 
+// disp: rendered image bounds within fixed-height stage (coords relative to stage origin)
+// box:  crop box position/size relative to rendered image (NOT stage)
 function ImageCrop({ storageKey, outSize = 256, onSave }: CropProps) {
   const [imgSrc, setImgSrc] = useState<string | null>(null)
   const [saved,  setSaved]  = useState<string | null>(() => localStorage.getItem(storageKey))
-  const [disp,   setDisp]   = useState({ w: 0, h: 0 })
+  const [disp,   setDisp]   = useState({ w: 0, h: 0, imgX: 0, imgY: 0 })
   const [box,    setBox]    = useState({ x: 0, y: 0, size: 100 })
 
   const imgRef   = useRef<HTMLImageElement>(null)
@@ -311,12 +314,22 @@ function ImageCrop({ storageKey, outSize = 256, onSave }: CropProps) {
     setImgSrc(null)
   }, [storageKey])
 
+  // compute object-fit:contain rendered size + letterbox offsets
   const initBox = useCallback(() => {
-    const img = imgRef.current; if (!img) return
-    const w = img.offsetWidth, h = img.offsetHeight
-    setDisp({ w, h }); dispRef.current = { w, h }
-    const sz = Math.round(Math.min(w, h) * 0.7)
-    const nb = { x: Math.round((w - sz) / 2), y: Math.round((h - sz) / 2), size: sz }
+    const img = imgRef.current; const stage = stageRef.current
+    if (!img || !stage || !img.naturalWidth) return
+    const sw = stage.offsetWidth, sh = stage.offsetHeight
+    const nw = img.naturalWidth,  nh = img.naturalHeight
+    let rw: number, rh: number, imgX: number, imgY: number
+    if (nw / nh >= sw / sh) {
+      rw = sw;           rh = sw / nw * nh; imgX = 0;              imgY = (sh - rh) / 2
+    } else {
+      rh = sh;           rw = sh / nh * nw; imgX = (sw - rw) / 2; imgY = 0
+    }
+    const d = { w: Math.round(rw), h: Math.round(rh), imgX: Math.round(imgX), imgY: Math.round(imgY) }
+    setDisp(d); dispRef.current = d
+    const sz = Math.round(Math.min(rw, rh) * 0.7)
+    const nb = { x: Math.round((rw - sz) / 2), y: Math.round((rh - sz) / 2), size: sz }
     setBox(nb); boxRef.current = nb
   }, [])
 
@@ -338,8 +351,9 @@ function ImageCrop({ storageKey, outSize = 256, onSave }: CropProps) {
         setBox(nb); boxRef.current = nb
       } else {
         const rect = stage.getBoundingClientRect()
-        const mx = e.clientX - rect.left
-        const my = e.clientY - rect.top
+        // convert mouse → rendered-image coordinates
+        const mx = e.clientX - rect.left - ds.imgX
+        const my = e.clientY - rect.top  - ds.imgY
         const { corner, ax, ay, dw, dh } = ds
         let nb: { x: number; y: number; size: number }
         if (corner === 'br') {
@@ -376,9 +390,9 @@ function ImageCrop({ storageKey, outSize = 256, onSave }: CropProps) {
   const startResize = (corner: 'tl'|'tr'|'bl'|'br') => (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation()
     const b = boxRef.current; const d = dispRef.current
-    const ax = corner === 'br' || corner === 'tr' ? b.x        : b.x + b.size
-    const ay = corner === 'br' || corner === 'bl' ? b.y        : b.y + b.size
-    dragRef.current = { mode: 'resize', corner, ax, ay, dw: d.w, dh: d.h }
+    const ax = corner === 'br' || corner === 'tr' ? b.x : b.x + b.size
+    const ay = corner === 'br' || corner === 'bl' ? b.y : b.y + b.size
+    dragRef.current = { mode: 'resize', corner, ax, ay, dw: d.w, dh: d.h, imgX: d.imgX, imgY: d.imgY }
   }
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -390,9 +404,9 @@ function ImageCrop({ storageKey, outSize = 256, onSave }: CropProps) {
 
   const handleSave = () => {
     const img = imgRef.current; if (!img || !img.naturalWidth) return
-    const { w, h } = dispRef.current; if (!w || !h) return
+    const d = dispRef.current; if (!d.w || !d.h) return
     const b = boxRef.current
-    const sx = img.naturalWidth / w, sy = img.naturalHeight / h
+    const sx = img.naturalWidth / d.w, sy = img.naturalHeight / d.h
     const cv = document.createElement('canvas'); cv.width = outSize; cv.height = outSize
     const ctx = cv.getContext('2d')!
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'
@@ -405,7 +419,9 @@ function ImageCrop({ storageKey, outSize = 256, onSave }: CropProps) {
   const handleRemove = () => { localStorage.removeItem(storageKey); setSaved(null) }
 
   const { x, y, size } = box
-  const { w } = disp
+  const { w, imgX, imgY } = disp
+  // crop box in stage coords
+  const absX = imgX + x, absY = imgY + y
 
   return (
     <div className="img-crop">
@@ -430,17 +446,19 @@ function ImageCrop({ storageKey, outSize = 256, onSave }: CropProps) {
       {imgSrc && (
         <div className="img-crop-tool">
           <div ref={stageRef} className="img-crop-stage">
+            {/* image fills stage via object-fit:contain (CSS) */}
             <img ref={imgRef} src={imgSrc} className="img-crop-src"
               alt="" onLoad={initBox} draggable={false} />
 
             {w > 0 && <>
-              <div className="crop-mask" style={{ top: 0, left: 0, right: 0, height: y }} />
-              <div className="crop-mask" style={{ top: y + size, left: 0, right: 0, bottom: 0 }} />
-              <div className="crop-mask" style={{ top: y, left: 0, width: x, height: size }} />
-              <div className="crop-mask" style={{ top: y, left: x + size, right: 0, height: size }} />
+              {/* 4 masks inside rendered image, outside crop box */}
+              <div className="crop-mask" style={{ top: imgY, left: imgX, width: disp.w, height: y }} />
+              <div className="crop-mask" style={{ top: absY + size, left: imgX, width: disp.w, height: disp.h - y - size }} />
+              <div className="crop-mask" style={{ top: absY, left: imgX, width: x, height: size }} />
+              <div className="crop-mask" style={{ top: absY, left: absX + size, width: disp.w - x - size, height: size }} />
 
               <div className="crop-box"
-                style={{ left: x, top: y, width: size, height: size }}
+                style={{ left: absX, top: absY, width: size, height: size }}
                 onMouseDown={startMove}
               >
                 <div className="crop-grid-h" style={{ top: '33.3%' }} />
