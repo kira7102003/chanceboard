@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { cards as allCards } from '../data/db'
 
+
 const DECK_SIZE = 10
 
 const SUIT_COLOR: Record<string, string> = {
@@ -16,7 +17,7 @@ interface Props {
 }
 
 export default function DeckBuild({ onConfirm }: Props) {
-  const { mySide } = useGameStore()
+  const { mySide, isSolo } = useGameStore()
   const [selected, setSelected] = useState<string[]>([])
 
   const countOf = (id: string) => selected.filter(x => x === id).length
@@ -104,7 +105,7 @@ export default function DeckBuild({ onConfirm }: Props) {
           disabled={selected.length === 0}
           onClick={() => onConfirm(selected)}
         >
-          確認牌組 — 等待對手
+          {isSolo ? '確認牌組 — 開始挑戰' : '確認牌組 — 等待對手'}
         </button>
         {selected.length < DECK_SIZE && (
           <span className="hint">建議選滿 {DECK_SIZE} 張（目前 {selected.length}）</span>

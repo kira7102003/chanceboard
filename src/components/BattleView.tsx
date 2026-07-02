@@ -4,6 +4,7 @@ import type { Unit } from '../types/unit'
 import type { Card } from '../types/card'
 import type { MoveSlot } from '../types/move'
 import { getReadyUnits } from '../engine/atb'
+import ScorePanel from './ScorePanel'
 
 const SLOT_NAME = ['近', '中', '遠']
 const EL_COLOR: Record<string, string> = { sword: '#e87733', gun: '#22cc77', magic: '#9955ee' }
@@ -14,12 +15,13 @@ const SLOT_COLOR: Record<MoveSlot, string> = { sword: '#e87733', gun: '#22cc77',
 const SUIT_FOR: Record<string, string> = { sword: 'red', gun: 'green', magic: 'blue', wish: 'yellow' }
 
 interface Props {
-  onPlayCard: (cardId: string) => void
-  onMoveUnit: (unitId: string, toSlot: 1|2|3) => void
+  onPlayCard:    (cardId: string) => void
+  onMoveUnit:    (unitId: string, toSlot: 1|2|3) => void
   onExecuteMove: (unitId: string, moveSlot: MoveSlot, targetId: string|null) => void
-  onPass: (unitId: string) => void
-  onToggleAuto: () => void
-  onEnd: () => void
+  onPass:        (unitId: string) => void
+  onToggleAuto:  () => void
+  onEnd:         () => void
+  onSoloReplay?: () => void
 }
 
 interface MoveAnim {
@@ -29,8 +31,8 @@ interface MoveAnim {
   color: string
 }
 
-export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPass, onToggleAuto, onEnd }: Props) {
-  const { game, mySide } = useGameStore()
+export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPass, onToggleAuto, onEnd, onSoloReplay }: Props) {
+  const { game, mySide, isSolo, soloScore } = useGameStore()
   const logRef      = useRef<HTMLDivElement>(null)
   const animTimer   = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [activeUnitId,    setActiveUnitId]    = useState<string|null>(null)
@@ -72,6 +74,16 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
     .sort((a, b) => a.nextActionAt - b.nextActionAt)
 
   if (game.phase === 'end') {
+    if (isSolo) {
+      if (!soloScore) return <div className="battle-end"><p style={{ color: '#c8a15a' }}>計算評分中…</p></div>
+      return (
+        <ScorePanel
+          result={soloScore}
+          onReplay={onSoloReplay ?? onEnd}
+          onBack={onEnd}
+        />
+      )
+    }
     const result = game.winner === mySide ? '🏆 勝利！' : game.winner === 'draw' ? '⚖ 平局' : '💀 落敗'
     return (
       <div className="battle-end">
@@ -126,10 +138,12 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
           <input type="checkbox" checked={isAutoMe} onChange={onToggleAuto} />
           自動（{mySide}）
         </label>
-        <label className="auto-check" style={{ opacity: .45 }}>
-          <input type="checkbox" checked={isAutoOpp} readOnly />
-          自動（{oppSide}）
-        </label>
+        {!isSolo && (
+          <label className="auto-check" style={{ opacity: .45 }}>
+            <input type="checkbox" checked={isAutoOpp} readOnly />
+            自動（{oppSide}）
+          </label>
+        )}
       </div>
 
       {/* ── ATB Queue ── */}

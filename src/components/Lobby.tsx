@@ -2,13 +2,14 @@ import { useState } from 'react'
 import type { SavedSession } from '../hooks/useRoom'
 
 interface Props {
-  onJoin: (roomId: string) => void
+  onJoin:  (roomId: string) => void
+  onSolo:  () => void
   savedSession: SavedSession | null
   onRejoin: () => void
-  onAdmin: () => void
+  onAdmin:  () => void
 }
 
-export default function Lobby({ onJoin, savedSession, onRejoin, onAdmin }: Props) {
+export default function Lobby({ onJoin, onSolo, savedSession, onRejoin, onAdmin }: Props) {
   const [input, setInput] = useState('')
 
   const create = () => {
@@ -46,8 +47,9 @@ export default function Lobby({ onJoin, savedSession, onRejoin, onAdmin }: Props
       )}
 
       <div className="lobby-card">
-        <button className="btn primary" onClick={create}>建立新房間</button>
+        <button className="btn solo-btn" onClick={onSolo}>⚔ 單人遊玩</button>
         <div className="divider">— 或 —</div>
+        <button className="btn primary" onClick={create}>建立多人房間</button>
         <div className="join-row">
           <input
             className="input"

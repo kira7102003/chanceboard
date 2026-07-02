@@ -1,11 +1,14 @@
 import { useState } from 'react'
-import Lobby from './components/Lobby'
-import CharSelect from './components/CharSelect'
-import DeckBuild from './components/DeckBuild'
-import BattleView from './components/BattleView'
-import Admin from './components/Admin'
-import { useGameStore } from './store/gameStore'
+import Lobby      from './components/Lobby'
+import CharSelect  from './components/CharSelect'
+import DeckBuild   from './components/DeckBuild'
+import BattleView  from './components/BattleView'
+import Admin       from './components/Admin'
+import { useGameStore }           from './store/gameStore'
 import { useRoom, loadSession, clearSession } from './hooks/useRoom'
+import { useSolo }                from './hooks/useSolo'
+
+// ── Waiting room (online only) ────────────────────────────────────────────────
 
 function WaitingRoom({ roomId, mySide }: { roomId: string; mySide: 'A' | 'B' | null }) {
   const copy = () => navigator.clipboard.writeText(roomId)
@@ -31,65 +34,124 @@ function WaitingRoom({ roomId, mySide }: { roomId: string; mySide: 'A' | 'B' | n
   )
 }
 
+// ── App ───────────────────────────────────────────────────────────────────────
+
 export default function App() {
   const saved = loadSession()
-  const [roomId,    setRoomId]    = useState('')
-  const [showAdmin, setShowAdmin] = useState(false)
-  const { appPhase, mySide } = useGameStore()
+  const [onlineRoomId, setOnlineRoomId] = useState('')
+  const [showAdmin,    setShowAdmin]    = useState(false)
 
+  const { appPhase, mySide, isSolo } = useGameStore()
+
+  // ── Controllers ──────────────────────────────────────────────────────────────
+
+  // Online: WebSocket room (no-op when isSolo)
   const { localPlayCard, localMoveUnit, localExecuteMove, localPass, localToggleAuto,
-          sendCharSelect, sendDeckSelect } = useRoom(roomId)
+          sendCharSelect, sendDeckSelect } = useRoom(isSolo ? '' : onlineRoomId)
 
-  const handleJoin = (id: string) => setRoomId(id)
+  // Solo: direct engine driver
+  const { startSolo } = useSolo()
 
-  const handleRejoin = () => {
-    if (saved) setRoomId(saved.roomId)
+  // ── Routing helpers ───────────────────────────────────────────────────────────
+
+  // Gate: something is active (online room OR solo mode)
+  const isActive = isSolo || !!onlineRoomId
+
+  // ── Lobby handlers ────────────────────────────────────────────────────────────
+
+  const handleJoin = (id: string) => setOnlineRoomId(id)
+
+  const handleRejoin = () => { if (saved) setOnlineRoomId(saved.roomId) }
+
+  const handleSoloStart = () => {
+    const store = useGameStore.getState()
+    store.setSolo(true)
+    store.setRoom('SOLO', 'A', true)
+    store.setPlayerCount(2)   // skip "等待對手" in CharSelect
+    store.setAppPhase('charSelect')
   }
+
+  // ── CharSelect handlers ───────────────────────────────────────────────────────
 
   const handleCharConfirm = (ids: string[]) => {
-    sendCharSelect(ids)
-    useGameStore.getState().setAppPhase('deckBuild')
+    if (isSolo) {
+      // No server — go straight to deckBuild; opponent picked later in startSolo
+      useGameStore.getState().setAppPhase('deckBuild')
+    } else {
+      sendCharSelect(ids)
+      useGameStore.getState().setAppPhase('deckBuild')
+    }
   }
 
+  // ── DeckBuild handlers ────────────────────────────────────────────────────────
+
   const handleDeckConfirm = (deckIds: string[]) => {
-    useGameStore.getState().setMyDeck(deckIds)
-    sendDeckSelect(deckIds)
+    const store = useGameStore.getState()
+    if (isSolo) {
+      startSolo(store.selectedCharIds, deckIds)
+    } else {
+      store.setMyDeck(deckIds)
+      sendDeckSelect(deckIds)
+    }
   }
+
+  // ── End handlers ──────────────────────────────────────────────────────────────
 
   const handleEnd = () => {
     clearSession()
     window.location.reload()
   }
 
+  const handleSoloReplay = () => {
+    const store = useGameStore.getState()
+    store.stopATBLoop()
+    useGameStore.setState({
+      game:            null,
+      appPhase:        'charSelect',
+      selectedCharIds: [],
+      opponentCharIds: [],
+      myDeckIds:       [],
+      opponentDeckIds: [],
+      soloScore:       null,
+      pendingUnitId:   null,
+    })
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────────
+
   return (
     <div className="app">
       {/* 資料編輯器 */}
       {showAdmin && <Admin onBack={() => setShowAdmin(false)} />}
 
-      {/* 未進房間 */}
-      {!showAdmin && !roomId && (
+      {/* 大廳 */}
+      {!showAdmin && !isActive && (
         <Lobby
           onJoin={handleJoin}
+          onSolo={handleSoloStart}
           savedSession={saved}
           onRejoin={handleRejoin}
           onAdmin={() => setShowAdmin(true)}
         />
       )}
 
-      {/* 進了房間但還在等對手 */}
-      {!showAdmin && roomId && appPhase === 'lobby' && (
-        <WaitingRoom roomId={roomId} mySide={mySide} />
+      {/* Online：等待對手 */}
+      {!showAdmin && !isSolo && onlineRoomId && appPhase === 'lobby' && (
+        <WaitingRoom roomId={onlineRoomId} mySide={mySide} />
       )}
 
-      {!showAdmin && roomId && appPhase === 'charSelect' && (
+      {/* 選角 */}
+      {!showAdmin && isActive && appPhase === 'charSelect' && (
         <CharSelect onConfirm={handleCharConfirm} />
       )}
 
-      {!showAdmin && roomId && appPhase === 'deckBuild' && (
+      {/* 組牌 */}
+      {!showAdmin && isActive && appPhase === 'deckBuild' && (
         <DeckBuild onConfirm={handleDeckConfirm} />
       )}
 
-      {!showAdmin && roomId && (appPhase === 'battle' || appPhase === 'end') && (
+      {/* 戰鬥 */}
+      {!showAdmin && isActive && (appPhase === 'battle' || appPhase === 'end') && (
         <BattleView
           onPlayCard={localPlayCard}
           onMoveUnit={localMoveUnit}
@@ -97,14 +159,21 @@ export default function App() {
           onPass={localPass}
           onToggleAuto={localToggleAuto}
           onEnd={handleEnd}
+          onSoloReplay={handleSoloReplay}
         />
       )}
 
-      {!showAdmin && roomId && appPhase !== 'lobby' && (
+      {/* 房間標籤 (online only) */}
+      {!showAdmin && !isSolo && onlineRoomId && appPhase !== 'lobby' && (
         <div className="room-badge">
-          房間：<b>{roomId}</b>
+          房間：<b>{onlineRoomId}</b>
           {mySide && <> &nbsp;|&nbsp; {mySide} 方</>}
         </div>
+      )}
+
+      {/* Solo 標籤 */}
+      {!showAdmin && isSolo && appPhase !== 'charSelect' && appPhase !== 'deckBuild' && (
+        <div className="room-badge">⚔ 單人模式</div>
       )}
     </div>
   )

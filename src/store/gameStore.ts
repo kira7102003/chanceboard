@@ -2,10 +2,12 @@ import { create } from 'zustand'
 import type { GameState } from '../types/game'
 import type { MoveSlot } from '../types/move'
 import type { PieceType } from '../types/piece'
+import type { ScoreResult } from '../types/score'
 import {
   initBattleState, tickATB, doPlayCard, doMoveUnit,
   doExecuteMove, doPass, doToggleAuto, autoPlayUnit, getReadyUnits,
 } from '../engine/atb'
+import { calcScore } from '../engine/score'
 
 export type AppPhase = 'lobby' | 'charSelect' | 'deckBuild' | 'battle' | 'end'
 
@@ -15,6 +17,8 @@ interface Store {
   isHost: boolean
   roomId: string
   playerCount: number
+  isSolo: boolean
+  soloScore: ScoreResult | null
 
   selectedCharIds: string[]
   opponentCharIds: string[]
@@ -31,6 +35,8 @@ interface Store {
   setRoom: (roomId: string, side: 'A' | 'B', isHost: boolean) => void
   setPlayerCount: (n: number) => void
   setAppPhase: (p: AppPhase) => void
+  setSolo: (v: boolean) => void
+  setScore: (r: ScoreResult | null) => void
 
   toggleCharSelect: (id: string) => void
   confirmCharSelect: () => void
@@ -64,6 +70,8 @@ export const useGameStore = create<Store>((set, get) => ({
   isHost: false,
   roomId: '',
   playerCount: 0,
+  isSolo: false,
+  soloScore: null,
 
   selectedCharIds: [],
   opponentCharIds: [],
@@ -80,6 +88,8 @@ export const useGameStore = create<Store>((set, get) => ({
   setRoom: (roomId, side, isHost) => set({ roomId, mySide: side, isHost }),
   setPlayerCount: n => set({ playerCount: n }),
   setAppPhase: p => set({ appPhase: p }),
+  setSolo: v => set({ isSolo: v }),
+  setScore: r => set({ soloScore: r }),
 
   toggleCharSelect: (id) => {
     const cur = get().selectedCharIds
@@ -153,9 +163,14 @@ export const useGameStore = create<Store>((set, get) => ({
   },
 
   _applyGame: (g) => {
-    const { _syncCb } = get()
+    const { _syncCb, isSolo, soloScore, mySide } = get()
     const appPhase = g.phase === 'end' ? 'end' : 'battle'
-    set({ game: g, appPhase })
+    const updates: Partial<Store> = { game: g, appPhase }
+    // Compute score once when solo battle ends
+    if (g.phase === 'end' && isSolo && !soloScore && mySide) {
+      updates.soloScore = calcScore(g, mySide)
+    }
+    set(updates)
     if (_syncCb) _syncCb(JSON.stringify(g), appPhase)
   },
 
