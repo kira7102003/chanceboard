@@ -26,6 +26,16 @@ export default function DeckBuild({ onConfirm }: Props) {
     const idx = selected.lastIndexOf(id)
     if (idx !== -1) setSelected(s => { const a = [...s]; a.splice(idx, 1); return a })
   }
+  const randomize = () => {
+    const pool = [...allCards, ...allCards]  // allow up to 2 copies each
+    const shuffled = pool.sort(() => Math.random() - 0.5)
+    const deck: string[] = []
+    for (const c of shuffled) {
+      if (deck.length >= DECK_SIZE) break
+      if (deck.filter(x => x === c.id).length < 2) deck.push(c.id)
+    }
+    setSelected(deck)
+  }
 
   const CardRow = ({ card }: { card: typeof allCards[number] }) => {
     const cnt = countOf(card.id)
@@ -100,13 +110,10 @@ export default function DeckBuild({ onConfirm }: Props) {
       </div>
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', paddingBottom: 8 }}>
-        <button
-          className="btn primary"
-          disabled={selected.length === 0}
-          onClick={() => onConfirm(selected)}
-        >
+        <button className="btn primary" disabled={selected.length === 0} onClick={() => onConfirm(selected)}>
           {isSolo ? '確認牌組 — 開始挑戰' : '確認牌組 — 等待對手'}
         </button>
+        <button className="btn" onClick={randomize}>🎲 隨機</button>
         {selected.length < DECK_SIZE && (
           <span className="hint">建議選滿 {DECK_SIZE} 張（目前 {selected.length}）</span>
         )}
