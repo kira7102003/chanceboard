@@ -126,7 +126,7 @@ function BasicTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<C
     <div className="adm-basic">
       <div className="adm-section">
         <div className="adm-section-label">角色圖片</div>
-        <ImageCrop storageKey={`cb_img_${char.id}`} previewSize={220} outSize={256} />
+        <ImageCrop storageKey={`cb_img_${char.id}`} previewSize={220} outSize={600} />
       </div>
 
       <div className="adm-section">
@@ -229,7 +229,7 @@ function MovesTab({ moves }: { moves: Move[] }) {
               <ImageCrop
                 storageKey={`cb_move_img_${m.id}`}
                 previewSize={200}
-                outSize={320}
+                outSize={640}
                 onSave={() => markSaved(m.id)}
               />
             </div>
@@ -261,7 +261,7 @@ function StoryTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<C
     <div className="adm-story">
       <div className="adm-section">
         <div className="adm-section-label">故事插圖</div>
-        <ImageCrop storageKey={`cb_story_img_${char.id}`} previewSize={240} outSize={400} />
+        <ImageCrop storageKey={`cb_story_img_${char.id}`} previewSize={240} outSize={800} />
       </div>
 
       <div className="adm-section">
@@ -278,36 +278,108 @@ function StoryTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<C
   )
 }
 
-// ─── ImageCrop (generic) ──────────────────────────────────────────────────────
+// ─── ImageCrop — visual crop-box UI ──────────────────────────────────────────
 
 interface CropProps {
-  storageKey: string   // localStorage key
-  previewSize?: number // canvas preview px (default 220)
-  outSize?: number     // saved image px (default 256)
+  storageKey: string
+  previewSize?: number   // unused (kept for API compat)
+  outSize?: number       // output image px
   onSave?: () => void
 }
 
-function ImageCrop({ storageKey, previewSize = 220, outSize = 256, onSave }: CropProps) {
-  const [imgSrc,  setImgSrc]  = useState<string | null>(null)
-  const [saved,   setSaved]   = useState<string | null>(() => localStorage.getItem(storageKey))
-  const [offsetX, setOffsetX] = useState(50)
-  const [offsetY, setOffsetY] = useState(50)
-  const [zoom,    setZoom]    = useState(100)
-  const hiddenImg     = useRef<HTMLImageElement>(null)
-  const previewCanvas = useRef<HTMLCanvasElement>(null)
+type CropDragState =
+  | { mode: 'move'; startMx: number; startMy: number; startBx: number; startBy: number }
+  | { mode: 'resize'; corner: 'tl'|'tr'|'bl'|'br'; ax: number; ay: number; dw: number; dh: number }
+  | null
+
+function ImageCrop({ storageKey, outSize = 256, onSave }: CropProps) {
+  const [imgSrc, setImgSrc] = useState<string | null>(null)
+  const [saved,  setSaved]  = useState<string | null>(() => localStorage.getItem(storageKey))
+  const [disp,   setDisp]   = useState({ w: 0, h: 0 })
+  const [box,    setBox]    = useState({ x: 0, y: 0, size: 100 })
+
+  const imgRef   = useRef<HTMLImageElement>(null)
+  const stageRef = useRef<HTMLDivElement>(null)
+  const dragRef  = useRef<CropDragState>(null)
+  const boxRef   = useRef(box)
+  const dispRef  = useRef(disp)
+  useEffect(() => { boxRef.current  = box  }, [box])
+  useEffect(() => { dispRef.current = disp }, [disp])
 
   useEffect(() => {
     setSaved(localStorage.getItem(storageKey))
-    setImgSrc(null); setOffsetX(50); setOffsetY(50); setZoom(100)
+    setImgSrc(null)
   }, [storageKey])
 
-  const redraw = useCallback(() => {
-    const img = hiddenImg.current; const cv = previewCanvas.current
-    if (!img || !cv || !img.naturalWidth) return
-    drawCrop(img, cv, previewSize, offsetX, offsetY, zoom / 100)
-  }, [previewSize, offsetX, offsetY, zoom])
+  const initBox = useCallback(() => {
+    const img = imgRef.current; if (!img) return
+    const w = img.offsetWidth, h = img.offsetHeight
+    setDisp({ w, h }); dispRef.current = { w, h }
+    const sz = Math.round(Math.min(w, h) * 0.7)
+    const nb = { x: Math.round((w - sz) / 2), y: Math.round((h - sz) / 2), size: sz }
+    setBox(nb); boxRef.current = nb
+  }, [])
 
-  useEffect(() => { redraw() }, [redraw])
+  useEffect(() => {
+    const MIN = 40
+    const onMove = (e: MouseEvent) => {
+      const ds = dragRef.current; if (!ds) return
+      const stage = stageRef.current; if (!stage) return
+
+      if (ds.mode === 'move') {
+        const dx = e.clientX - ds.startMx
+        const dy = e.clientY - ds.startMy
+        const { w, h } = dispRef.current
+        const b = boxRef.current
+        const nb = { ...b,
+          x: Math.max(0, Math.min(w - b.size, ds.startBx + dx)),
+          y: Math.max(0, Math.min(h - b.size, ds.startBy + dy)),
+        }
+        setBox(nb); boxRef.current = nb
+      } else {
+        const rect = stage.getBoundingClientRect()
+        const mx = e.clientX - rect.left
+        const my = e.clientY - rect.top
+        const { corner, ax, ay, dw, dh } = ds
+        let nb: { x: number; y: number; size: number }
+        if (corner === 'br') {
+          const sz = Math.max(MIN, Math.min(mx - ax, my - ay, dw - ax, dh - ay))
+          nb = { x: ax, y: ay, size: sz }
+        } else if (corner === 'tl') {
+          const sz = Math.max(MIN, Math.min(ax - mx, ay - my, ax, ay))
+          nb = { x: ax - sz, y: ay - sz, size: sz }
+        } else if (corner === 'tr') {
+          const sz = Math.max(MIN, Math.min(mx - ax, ay - my, dw - ax, ay))
+          nb = { x: ax, y: ay - sz, size: sz }
+        } else {
+          const sz = Math.max(MIN, Math.min(ax - mx, my - ay, ax, dh - ay))
+          nb = { x: ax - sz, y: ay, size: sz }
+        }
+        setBox(nb); boxRef.current = nb
+      }
+    }
+    const onUp = () => { dragRef.current = null }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup',   onUp)
+    return () => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup',   onUp)
+    }
+  }, [])
+
+  const startMove = (e: React.MouseEvent) => {
+    e.preventDefault(); e.stopPropagation()
+    const b = boxRef.current
+    dragRef.current = { mode: 'move', startMx: e.clientX, startMy: e.clientY, startBx: b.x, startBy: b.y }
+  }
+
+  const startResize = (corner: 'tl'|'tr'|'bl'|'br') => (e: React.MouseEvent) => {
+    e.preventDefault(); e.stopPropagation()
+    const b = boxRef.current; const d = dispRef.current
+    const ax = corner === 'br' || corner === 'tr' ? b.x        : b.x + b.size
+    const ay = corner === 'br' || corner === 'bl' ? b.y        : b.y + b.size
+    dragRef.current = { mode: 'resize', corner, ax, ay, dw: d.w, dh: d.h }
+  }
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return
@@ -317,27 +389,29 @@ function ImageCrop({ storageKey, previewSize = 220, outSize = 256, onSave }: Cro
   }
 
   const handleSave = () => {
-    const img = hiddenImg.current; if (!img || !img.naturalWidth) return
+    const img = imgRef.current; if (!img || !img.naturalWidth) return
+    const { w, h } = dispRef.current; if (!w || !h) return
+    const b = boxRef.current
+    const sx = img.naturalWidth / w, sy = img.naturalHeight / h
     const cv = document.createElement('canvas'); cv.width = outSize; cv.height = outSize
-    drawCrop(img, cv, outSize, offsetX, offsetY, zoom / 100)
-    const dataUrl = cv.toDataURL('image/webp', 0.88)
+    const ctx = cv.getContext('2d')!
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'
+    ctx.drawImage(img, b.x * sx, b.y * sy, b.size * sx, b.size * sy, 0, 0, outSize, outSize)
+    const dataUrl = cv.toDataURL('image/webp', 0.95)
     localStorage.setItem(storageKey, dataUrl)
     setSaved(dataUrl); setImgSrc(null); onSave?.()
   }
 
   const handleRemove = () => { localStorage.removeItem(storageKey); setSaved(null) }
 
+  const { x, y, size } = box
+  const { w } = disp
+
   return (
     <div className="img-crop">
-      {imgSrc && (
-        <img ref={hiddenImg} src={imgSrc} onLoad={redraw}
-          style={{ display: 'none' }} alt="" crossOrigin="anonymous" />
-      )}
-
-      {/* Saved state */}
       {!imgSrc && (
         <div className="img-crop-saved">
-          <div className="img-crop-preview-box" style={{ width: 100, height: 100 }}>
+          <div className="img-crop-preview-box">
             {saved
               ? <img src={saved} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
               : <div className="img-crop-empty">尚無圖片</div>
@@ -345,7 +419,7 @@ function ImageCrop({ storageKey, previewSize = 220, outSize = 256, onSave }: Cro
           </div>
           <div className="img-crop-actions">
             <label className="btn sm" style={{ cursor: 'pointer' }}>
-              {saved ? '更換' : '上傳圖片'}
+              {saved ? '更換圖片' : '上傳圖片'}
               <input type="file" accept="image/*" onChange={handleFile} hidden />
             </label>
             {saved && <button className="btn sm danger" onClick={handleRemove}>移除</button>}
@@ -353,52 +427,42 @@ function ImageCrop({ storageKey, previewSize = 220, outSize = 256, onSave }: Cro
         </div>
       )}
 
-      {/* Crop tool */}
       {imgSrc && (
         <div className="img-crop-tool">
-          <canvas ref={previewCanvas} width={previewSize} height={previewSize}
-            className="img-crop-canvas" />
-          <div className="img-crop-sliders">
-            <SliderRow label="水平" value={offsetX} min={0}   max={100} onChange={setOffsetX} />
-            <SliderRow label="垂直" value={offsetY} min={0}   max={100} onChange={setOffsetY} />
-            <SliderRow label="縮放" value={zoom}    min={100} max={300} onChange={setZoom} unit="%" />
+          <div ref={stageRef} className="img-crop-stage">
+            <img ref={imgRef} src={imgSrc} className="img-crop-src"
+              alt="" onLoad={initBox} draggable={false} />
+
+            {w > 0 && <>
+              <div className="crop-mask" style={{ top: 0, left: 0, right: 0, height: y }} />
+              <div className="crop-mask" style={{ top: y + size, left: 0, right: 0, bottom: 0 }} />
+              <div className="crop-mask" style={{ top: y, left: 0, width: x, height: size }} />
+              <div className="crop-mask" style={{ top: y, left: x + size, right: 0, height: size }} />
+
+              <div className="crop-box"
+                style={{ left: x, top: y, width: size, height: size }}
+                onMouseDown={startMove}
+              >
+                <div className="crop-grid-h" style={{ top: '33.3%' }} />
+                <div className="crop-grid-h" style={{ top: '66.6%' }} />
+                <div className="crop-grid-v" style={{ left: '33.3%' }} />
+                <div className="crop-grid-v" style={{ left: '66.6%' }} />
+                <div className="crop-handle crop-h-tl" onMouseDown={startResize('tl')} />
+                <div className="crop-handle crop-h-tr" onMouseDown={startResize('tr')} />
+                <div className="crop-handle crop-h-bl" onMouseDown={startResize('bl')} />
+                <div className="crop-handle crop-h-br" onMouseDown={startResize('br')} />
+              </div>
+            </>}
           </div>
-          <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+
+          <div className="img-crop-hint">拖曳框內移動位置 · 拖曳四角縮放大小</div>
+          <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
             <button className="btn primary sm" onClick={handleSave}>裁切並儲存</button>
             <button className="btn sm" onClick={() => setImgSrc(null)}>取消</button>
           </div>
         </div>
       )}
     </div>
-  )
-}
-
-function drawCrop(img: HTMLImageElement, cv: HTMLCanvasElement,
-                  size: number, ox: number, oy: number, zoom: number) {
-  const ctx = cv.getContext('2d')!
-  const nw = img.naturalWidth, nh = img.naturalHeight
-  if (!nw || !nh) return
-  const base  = Math.max(size / nw, size / nh)
-  const scale = base * zoom
-  const rw = nw * scale, rh = nh * scale
-  const ex = Math.max(0, rw - size), ey = Math.max(0, rh - size)
-  const sx = (ex * ox / 100) / scale, sy = (ey * oy / 100) / scale
-  const sw = size / scale,            sh = size / scale
-  ctx.clearRect(0, 0, size, size)
-  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, size, size)
-}
-
-function SliderRow({ label, value, min, max, onChange, unit = '' }: {
-  label: string; value: number; min: number; max: number
-  onChange: (v: number) => void; unit?: string
-}) {
-  return (
-    <label className="img-slider-row">
-      <span>{label}</span>
-      <input type="range" min={min} max={max} value={value}
-        onChange={e => onChange(+e.target.value)} />
-      <span className="img-slider-val">{value}{unit}</span>
-    </label>
   )
 }
 
