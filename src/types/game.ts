@@ -8,6 +8,7 @@ export type Phase = 'select' | 'deckbuild' | 'act' | 'end'
 export interface BattleLogEntry {
   type?: string
   html: string
+  moveAnim?: { moveId: string; moveName: string; moveSlot: string; charName: string }
 }
 
 export interface GameState {

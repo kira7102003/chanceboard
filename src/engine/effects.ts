@@ -84,7 +84,7 @@ export function runEffectOps(
           const basis = op.basis === 'current' ? t.hp : t.maxHp
           const amt   = Math.floor(basis * pct)
           healUnit(t, amt)
-          log.push({ html: `<b>${t.name}</b> 回復 ${amt} HP` })
+          log.push({ html: `<b>${t.name}</b> <span class="dmg-heal">+${amt} HP</span>` })
         }
         break
       }
@@ -93,7 +93,7 @@ export function runEffectOps(
         const amt = Math.floor((op.amount as number) * effectMult)
         for (const t of targets) {
           healUnit(t, amt)
-          log.push({ html: `<b>${t.name}</b> 回復 ${amt} HP` })
+          log.push({ html: `<b>${t.name}</b> <span class="dmg-heal">+${amt} HP</span>` })
         }
         break
       }

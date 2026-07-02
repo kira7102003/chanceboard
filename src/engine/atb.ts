@@ -313,7 +313,14 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
     }
   }
 
-  s.log.push({ html: `<b>${u.name}</b> 使用 <b>${move.name}</b>！` })
+  // Announce move with animation marker
+  const SLOT_COLOR: Record<string, string> = { sword:'#e87733', gun:'#22cc77', magic:'#9955ee', wish:'#ddaa22', passive:'#666' }
+  const moveColor = SLOT_COLOR[action.moveSlot] ?? '#aaa'
+  const moveAnim = { moveId: move.id, moveName: move.name, moveSlot: action.moveSlot, charName: u.name }
+  s.log.push({
+    html: `<span style="color:${moveColor}">【${move.name}】</span> <b>${u.name}</b> 準備出招`,
+    moveAnim,
+  })
 
   // Pre-hit effects
   const log: LogLine[] = []
@@ -331,12 +338,12 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
       const { hit, rawDamage } = resolveHit(u, u, move)
       if (hit) {
         const { hpLost } = applyDamage(u, rawDamage)
-        log.push({ html: `🔄 混亂！<b>${u.name}</b> 攻擊自己！傷害 ${hpLost}` })
+        log.push({ html: `🔄 混亂！<b>${u.name}</b> 攻擊自己 <span class="dmg-num">-${hpLost}</span>` })
       }
     } else {
       const { hit, crit, rawDamage } = resolveHit(u, t, move)
       if (!hit) {
-        log.push({ html: `<b>${u.name}</b> 攻擊 <b>${t.name}</b>…Miss！` })
+        log.push({ html: `<b>${u.name}</b> → <b>${t.name}</b> ✦ <span class="dmg-miss">Miss！</span>` })
         continue
       }
 
@@ -346,12 +353,13 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
 
       const { hpLost } = applyDamage(t, dmg)
       t._lastHitMoveId = move.id
-      log.push({ html: `<b>${u.name}</b> → <b>${t.name}</b> 造成 ${hpLost} 傷害${crit ? ' 💥爆擊' : ''}` })
+      const critTag = crit ? ' <span class="dmg-crit">💥爆擊</span>' : ''
+      log.push({ html: `<b>${u.name}</b> → <b>${t.name}</b> <span class="dmg-num">-${hpLost}</span>${critTag}` })
 
       if (hasReflect) {
         const healAmt = Math.floor(hpLost / 2)
         u.hp = Math.min(u.maxHp, u.hp + healAmt)
-        log.push({ html: `<b>${u.name}</b> 吸血回復 ${healAmt} HP` })
+        log.push({ html: `<b>${u.name}</b> 吸血 <span class="dmg-heal">+${healAmt} HP</span>` })
       }
 
       if (!t.alive) {

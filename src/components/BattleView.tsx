@@ -44,6 +44,20 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight
   }, [game?.log.length])
 
+  // Watch log for moveAnim entries (triggers for ALL moves incl. AI)
+  useEffect(() => {
+    if (!game) return
+    const last = game.log[game.log.length - 1]
+    if (!last?.moveAnim) return
+    const { moveId, moveName, moveSlot, charName } = last.moveAnim
+    const img = localStorage.getItem(`cb_move_img_${moveId}`)
+    if (!img) return   // only show overlay if image exists
+    if (animTimer.current) clearTimeout(animTimer.current)
+    setMoveAnim({ img, name: moveName, charName, color: SLOT_COLOR[moveSlot as MoveSlot] ?? '#aaa' })
+    setAnimKey(k => k + 1)
+    animTimer.current = setTimeout(() => setMoveAnim(null), 1900)
+  }, [game?.log.length])
+
   if (!game) return null
 
   const myTeam    = mySide === 'A' ? game.teamA : game.teamB
@@ -60,6 +74,7 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
     const move = unit.moves[slot]; if (!move) return
     const img  = localStorage.getItem(`cb_move_img_${move.id}`)
     if (animTimer.current) clearTimeout(animTimer.current)
+    // Always show overlay for player actions (img may be null → shows ⚡ fallback)
     setMoveAnim({ img, name: move.name, charName: unit.name, color: SLOT_COLOR[slot] })
     setAnimKey(k => k + 1)
     animTimer.current = setTimeout(() => setMoveAnim(null), 1900)
