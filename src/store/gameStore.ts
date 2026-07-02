@@ -2,6 +2,9 @@ import { create } from 'zustand'
 import type { GameState } from '../types/game'
 import type { MoveSlot } from '../types/move'
 import type { PieceType } from '../types/piece'
+
+const ALL_PIECES: PieceType[] = ['pawn', 'knight', 'castle', 'bishop', 'queen', 'king']
+function randomPiece(): PieceType { return ALL_PIECES[Math.floor(Math.random() * ALL_PIECES.length)] }
 import type { ScoreResult } from '../types/score'
 import {
   initBattleState, tickATB, doPlayCard, doMoveUnit,
@@ -111,8 +114,8 @@ export const useGameStore = create<Store>((set, get) => ({
   setOpponentDeck: (ids) => set({ opponentDeckIds: ids }),
 
   startBattle: () => {
-    const { selectedCharIds, opponentCharIds, selectedPiece, opponentPiece, mySide, myDeckIds, opponentDeckIds } = get()
-    const piece = selectedPiece ?? opponentPiece ?? 'pawn'
+    const { selectedCharIds, opponentCharIds, mySide, myDeckIds, opponentDeckIds } = get()
+    const piece = randomPiece()   // SA doc: random at battle start, not player-chosen
     const charA = mySide === 'A' ? selectedCharIds : opponentCharIds
     const charB = mySide === 'A' ? opponentCharIds : selectedCharIds
     const deckAIds = mySide === 'A' ? myDeckIds : opponentDeckIds

@@ -5,6 +5,7 @@ import type { Card } from '../types/card'
 import type { MoveSlot } from '../types/move'
 import { getReadyUnits } from '../engine/atb'
 import ScorePanel from './ScorePanel'
+import { getCharImg } from '../utils/charStore'
 
 const SLOT_NAME = ['近', '中', '遠']
 const EL_COLOR: Record<string, string> = { sword: '#e87733', gun: '#22cc77', magic: '#9955ee' }
@@ -278,17 +279,26 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
 // ─── UnitCard ────────────────────────────────────────────────────────────────
 
 function UnitCard({ unit, clock, onClick }: { unit: Unit; clock: number; onClick?: () => void }) {
-  const pct    = unit.alive ? (unit.hp / unit.maxHp) * 100 : 0
-  const ticks  = Math.max(0, unit.nextActionAt - clock)
-  const ready  = ticks === 0 && unit.alive
+  const pct     = unit.alive ? (unit.hp / unit.maxHp) * 100 : 0
+  const ticks   = Math.max(0, unit.nextActionAt - clock)
+  const ready   = ticks === 0 && unit.alive
   const hpColor = pct > 60 ? '#22cc66' : pct > 30 ? '#ccaa22' : '#cc3333'
+  const img     = getCharImg(unit.characterId)
 
   return (
     <div
       className={`unit-card ${!unit.alive ? 'dead' : ''} ${ready ? 'uc-ready' : ''} ${onClick ? 'targetable' : ''}`}
       onClick={onClick}
     >
-      <div className="unit-card-name" style={{ color: EL_COLOR[unit.element] }}>{unit.name}</div>
+      {img
+        ? (
+          <div className="uc-portrait" style={{ backgroundImage: `url(${img})` }}>
+            <span className="uc-portrait-name" style={{ color: EL_COLOR[unit.element] }}>{unit.name}</span>
+            {!unit.alive && <div className="uc-dead-overlay">✝</div>}
+          </div>
+        )
+        : <div className="unit-card-name" style={{ color: EL_COLOR[unit.element] }}>{unit.name}</div>
+      }
       <div className="hp-bar-wrap">
         <div className="hp-bar" style={{ width: `${pct}%`, background: hpColor }} />
       </div>
