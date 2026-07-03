@@ -44,7 +44,11 @@ function addStatus(unit: Unit, op: EffectOp, clock: number, durationMult = 1) {
   const key    = op.key as StatusEntry['key']
   const value  = (op.value as number) ?? 0
   const mode   = (op.mode as StatusEntry['mode']) ?? 'flat'
-  const baseDur = (op.duration as number) ?? 10
+  // SA E5: durationRng picks a random duration in [min, max]
+  const rng     = op.durationRng as [number, number] | undefined
+  const baseDur = rng
+    ? Math.floor(Math.random() * (rng[1] - rng[0] + 1)) + rng[0]
+    : ((op.duration as number) ?? 10)
   const dur     = Math.round(baseDur * durationMult * (unit.flags.statusDurationExtend
     ? (1 + unit.flags.statusDurationExtend / 10)
     : 1))
@@ -122,8 +126,9 @@ export function runEffectOps(
       case 'revive': {
         const pct = (op.pct as number) ?? 0.05
         for (const t of targets) {
-          t.alive = true
-          t.hp    = Math.max(1, Math.floor(t.maxHp * pct))
+          t.alive        = true
+          t.hp           = Math.max(1, Math.floor(t.maxHp * pct))
+          t.nextActionAt = clock  // SA A9: revived unit can act immediately
           log.push({ html: `<b>${t.name}</b> 復活，HP ${t.hp}` })
         }
         break

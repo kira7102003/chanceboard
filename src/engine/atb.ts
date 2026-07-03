@@ -8,6 +8,7 @@ import type { GameState } from '../types/game'
 import type { Unit } from '../types/unit'
 import type { Move, MoveSlot } from '../types/move'
 import type { Card } from '../types/card'
+import type { StatusEntry } from '../types/status'
 import { characters, moves as allMoves, cards as allCards, deckWeights } from '../data/db'
 import type { PieceType } from '../types/piece'
 import { calcBAT, resolveHit, applyDamage, elementMult } from './combat'
@@ -25,13 +26,23 @@ export function makeUnit(charId: string, side: 'A' | 'B', slot: 1 | 2 | 3, start
   for (const m of charMoves) moveMap[m.slot] = m
 
   const flags = {}
-  // Apply staticFlag passives immediately
+  const initStatuses: StatusEntry[] = []
+
+  // Apply battleStart passive: staticFlags + initial statuses
   const passive = charMoves.find(m => m.slot === 'passive')
-  if (passive) {
+  if (passive?.effectTrigger === 'battleStart') {
     for (const op of passive.effectOps) {
       if (op.op === 'staticFlag') {
         // @ts-ignore
         flags[op.flag as string] = op.value
+      } else if (op.op === 'status') {
+        const dur = (op.duration as number) ?? 9999
+        initStatuses.push({
+          key:       op.key as StatusEntry['key'],
+          mode:      ((op.mode as string) ?? 'flat') as StatusEntry['mode'],
+          value:     (op.value as number) ?? 0,
+          expiresAt: startAt + dur * 10,
+        })
       }
     }
   }
@@ -51,7 +62,7 @@ export function makeUnit(charId: string, side: 'A' | 'B', slot: 1 | 2 | 3, start
     moves: moveMap,
     alive: true,
     nextActionAt: startAt + Math.max(1, Math.floor(10 * (10 / char.spd))),
-    statuses: [],
+    statuses: initStatuses,
     moveCooldownUntil: {},
     flags,
     _didNotMoveThisTurn: false,
@@ -182,6 +193,7 @@ export function tickATB(gs: GameState): GameState {
   // round advance every 100 ticks (=10 seconds)
   if (s.clock % 100 === 0) {
     s.round++
+    runRoundPassives(s, 'roundStart')  // SA E4: roundStart passives (e.g. 縫合)
     runRoundEndPassives(s)
     dealRoundCards(s)
   }
@@ -198,21 +210,21 @@ export function tickATB(gs: GameState): GameState {
   return s
 }
 
-function runRoundEndPassives(s: GameState) {
+function runRoundPassives(s: GameState, trigger: 'roundStart' | 'roundEnd') {
   const log: LogLine[] = []
   for (const u of [...s.teamA, ...s.teamB]) {
     if (!u.alive) continue
     const passive = u.moves['passive']
-    if (!passive || !passive.effectTrigger) continue
-    if (passive.effectTrigger === 'roundEnd') {
-      const chance = passive.effectChance ?? 1
-      if (Math.random() < chance) {
-        runEffectOps(passive.effectOps, u, null, s, s.clock, 1, log)
-      }
+    if (!passive || passive.effectTrigger !== trigger) continue
+    const chance = passive.effectChance ?? 1
+    if (Math.random() < chance) {
+      runEffectOps(passive.effectOps, u, null, s, s.clock, 1, log)
     }
   }
   for (const l of log) s.log.push(l)
 }
+
+function runRoundEndPassives(s: GameState) { runRoundPassives(s, 'roundEnd') }
 
 function checkWinner(s: GameState): { winner: 'A' | 'B' | 'draw'; reason: string } | null {
   const aAlive = s.teamA.some(u => u.alive)
@@ -287,6 +299,12 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
   // Check cooldown
   if ((u.moveCooldownUntil[move.id] ?? 0) > s.clock) {
     s.log.push({ html: `<b>${u.name}</b> 的 ${move.name} 冷卻中` })
+    return gs
+  }
+
+  // SA A5: Sword requires attacker to be in front row
+  if (move.rangeType === 'sword' && u.slot !== 1) {
+    s.log.push({ html: `<b>${u.name}</b> 劍技需在近距才能使用` })
     return gs
   }
 
@@ -459,14 +477,43 @@ export function findUnit(s: GameState, id: string): Unit | undefined {
 }
 
 function resolveTargetUnits(move: Move, actor: Unit, targetId: string | null, s: GameState): Unit[] {
-  if (move.scope === 'group') {
-    return (actor.side === 'A' ? s.teamB : s.teamA).filter(u => u.alive)
+  const isHidden = (u: Unit) => u.statuses.some(st => st.key === 'hidden')
+  const enemies  = (actor.side === 'A' ? s.teamB : s.teamA).filter(u => u.alive && !isHidden(u))
+
+  // SA A5: Sword targets only front-row (slot 1) enemies
+  if (move.rangeType === 'sword') {
+    const front = enemies.filter(e => e.slot === 1)
+    if (move.scope === 'group') return front
+    if (targetId) {
+      const t = findUnit(s, targetId)
+      if (t && t.alive && t.slot === 1 && !isHidden(t)) return [t]
+    }
+    return front.slice(0, 1)
   }
+
+  // SA A4: Magic targets mirror slot (近→遠, 中→中, 遠→近)
+  if (move.rangeType === 'magic') {
+    const mirrorSlot = (4 - actor.slot) as 1 | 2 | 3
+    const mirror = enemies.filter(e => e.slot === mirrorSlot)
+    if (move.scope === 'group') return mirror
+    return mirror.slice(0, 1)
+  }
+
+  if (move.scope === 'group') return enemies
+
+  // SA A6: Gun single-target → nearest enemy (lowest slot number)
+  if (move.rangeType === 'gun') {
+    if (enemies.length === 0) return []
+    const nearestSlot = Math.min(...enemies.map(e => e.slot))
+    return enemies.filter(e => e.slot === nearestSlot).slice(0, 1)
+  }
+
+  // Default single-target: explicit targetId or first alive
   if (targetId) {
     const t = findUnit(s, targetId)
-    return t ? [t] : []
+    return t && t.alive && !isHidden(t) ? [t] : []
   }
-  return (actor.side === 'A' ? s.teamB : s.teamA).filter(u => u.alive).slice(0, 1)
+  return enemies.slice(0, 1)
 }
 
 export function doToggleAuto(gs: GameState, side: 'A' | 'B'): GameState {
@@ -513,11 +560,13 @@ function kitPreferredSlot(unit: Unit, enemies: Unit[], hand: Card[], clock: numb
   const total = swordPwr + gunPwr + magicPwr
   if (total === 0) return 3  // pure support — retreat to back row
 
-  // Magic-dominant: mirror the slot where most enemies cluster
+  // Magic-dominant: SA A4 magic hits mirror slot (近↔遠, 中↔中)
+  // Position at the mirror of where most enemies cluster so magic can reach them
   if (magicPwr >= swordPwr && magicPwr >= gunPwr) {
     const count: Record<number, number> = { 1: 0, 2: 0, 3: 0 }
     for (const e of enemies) count[e.slot] = (count[e.slot] ?? 0) + 1
-    return ([1, 2, 3] as const).reduce((a, b) => (count[b] ?? 0) > (count[a] ?? 0) ? b : a)
+    const enemySlot = ([1, 2, 3] as const).reduce((a, b) => (count[b] ?? 0) > (count[a] ?? 0) ? b : a)
+    return (4 - enemySlot) as 1 | 2 | 3
   }
 
   // Sword dominant → front row
@@ -570,8 +619,14 @@ function scoreMoves(
     let reachable = enemies.filter(e => !e.statuses.some(s => s.key === 'hidden'))
 
     if (move.rangeType === 'sword') {
-      if (fromSlot !== 1) continue           // sword: attacker must be front
-      reachable = reachable.filter(e => e.slot === 1)  // sword: target front-row only
+      if (fromSlot !== 1) continue           // SA A5: sword attacker must be front
+      reachable = reachable.filter(e => e.slot === 1)  // SA A5: sword hits front-row only
+    }
+
+    // SA A4: Magic hits mirror slot (4 - fromSlot)
+    if (move.rangeType === 'magic') {
+      const mirrorSlot = (4 - fromSlot) as 1 | 2 | 3
+      reachable = reachable.filter(e => e.slot === mirrorSlot)
     }
 
     if (reachable.length === 0) continue     // no valid targets → skip
@@ -584,9 +639,16 @@ function scoreMoves(
         s + elementMult(move.rangeType as any, e.element), 0) / reachable.length
       score = move.powerRatio * reachable.length * avgEl
     } else {
-      // Single target: prefer lowest HP% enemy (finish kills first)
-      const best = reachable.reduce((a, b) =>
-        (a.hp / a.maxHp) <= (b.hp / b.maxHp) ? a : b)
+      // SA A6: Gun single-target hits nearest enemy (lowest slot)
+      let best: Unit
+      if (move.rangeType === 'gun') {
+        const nearestSlot = Math.min(...reachable.map(e => e.slot))
+        const nearEnemies = reachable.filter(e => e.slot === nearestSlot)
+        best = nearEnemies.reduce((a, b) => (a.hp / a.maxHp) <= (b.hp / b.maxHp) ? a : b)
+      } else {
+        // Other single-target: prefer lowest HP% (finish kills first)
+        best = reachable.reduce((a, b) => (a.hp / a.maxHp) <= (b.hp / b.maxHp) ? a : b)
+      }
       const elBonus = elementMult(move.rangeType as any, best.element)
       score = move.powerRatio * elBonus * (best.hp / best.maxHp < 0.3 ? 1.4 : 1)
       targetId = best.id
@@ -632,6 +694,25 @@ export function autoPlayUnit(gs: GameState, unit: Unit): GameState {
     if (shouldMove) {
       workGS   = doMoveUnit(gs, unit.id, preferredSlot)
       execMove = thereBest
+    }
+  }
+
+  // SA C3: if no move can reach anyone, randomly use any affordable move (can't be stuck)
+  if (!execMove) {
+    const suitFallback: Record<string, string> = { sword: 'red', gun: 'green', magic: 'blue', wish: 'yellow' }
+    const liberatedFb  = unit.statuses.some(st => st.key === 'liberated')
+    const fallbackSlots = (['sword', 'gun', 'magic', 'wish'] as MoveSlot[]).filter(sl => {
+      const m = unit.moves[sl]
+      if (!m) return false
+      if ((unit.moveCooldownUntil[m.id] ?? 0) > gs.clock) return false
+      const color = suitFallback[sl]
+      if (!color) return false
+      const needed = liberatedFb ? 1 : (m.condition ?? 1)
+      return hand.filter(c => c.color === color).length >= needed
+    })
+    if (fallbackSlots.length > 0) {
+      const sl = fallbackSlots[Math.floor(Math.random() * fallbackSlots.length)]
+      execMove = { slot: sl, score: 0, targetId: null }
     }
   }
 

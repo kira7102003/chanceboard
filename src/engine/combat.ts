@@ -74,7 +74,13 @@ export function resolveHit(attacker: Unit, target: Unit, move: Move): HitResult 
   const ratio = move.powerRatio ?? 1
   const el = elementMult(move.rangeType as Element | null, target.element)
 
-  let dmg = Math.max(1, Math.round(atk * ratio * el / def))
+  // SA A7: minimum 2 damage
+  let dmg = Math.max(2, Math.round(atk * ratio * el / def))
+  // SA A3: element advantage must yield at least +1 over non-boosted (prevents rounding wash)
+  if (el > 1) {
+    const baseDmg = Math.max(2, Math.round(atk * ratio / def))
+    if (dmg <= baseDmg) dmg = baseDmg + 1
+  }
   if (crit) dmg = Math.floor(dmg * 1.5)
 
   // sameMove reduction (法蘭克 passive)
