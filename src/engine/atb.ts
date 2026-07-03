@@ -331,18 +331,21 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
     }
   }
 
-  // Announce move with animation marker
-  const SLOT_COLOR: Record<string, string> = { sword:'#e87733', gun:'#22cc77', magic:'#9955ee', wish:'#ddaa22', passive:'#666' }
-  const moveColor = SLOT_COLOR[action.moveSlot] ?? '#aaa'
-  const moveAnim = { moveId: move.id, moveName: move.name, moveSlot: action.moveSlot, charName: u.name }
-  s.log.push({
-    html: `<span style="color:${moveColor}">【${move.name}】</span> <b>${u.name}</b> 準備出招`,
-    moveAnim,
-  })
-
-  // Pre-hit effects
+  // Resolve targets first so the announcement can include who is being targeted
   const log: LogLine[] = []
   const targets = resolveTargetUnits(move, u, action.targetId, s)
+
+  // Announce move: show attacker → target (or group label)
+  const SLOT_COLOR: Record<string, string> = { sword:'#e87733', gun:'#22cc77', magic:'#9955ee', wish:'#ddaa22', passive:'#666' }
+  const moveColor = SLOT_COLOR[action.moveSlot] ?? '#aaa'
+  const moveLabel = `<span style="color:${moveColor}">【${move.name}】</span>`
+  const moveAnim  = { moveId: move.id, moveName: move.name, moveSlot: action.moveSlot, charName: u.name }
+  const targetDesc = move.scope === 'group'
+    ? '⚔ 群體'
+    : targets.length > 0
+      ? `→ <b>${targets[0].name}</b>`
+      : '（無目標）'
+  s.log.push({ html: `${moveLabel} <b>${u.name}</b> ${targetDesc}`, moveAnim })
 
   if (move.effectTrigger === 'preHit') {
     for (const t of targets) runEffectOps(move.effectOps, u, t, s, s.clock, 1, log)
@@ -350,6 +353,7 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
 
   // Resolve hits
   let killedAny = false
+  const isGroup = move.scope === 'group'
   for (const t of targets) {
     // Confused: 50% chance attack self
     if (u.statuses.some(st => st.key === 'confused') && Math.random() < 0.5) {
@@ -361,18 +365,23 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
     } else {
       const { hit, crit, rawDamage } = resolveHit(u, t, move)
       if (!hit) {
-        log.push({ html: `<b>${u.name}</b> → <b>${t.name}</b> ✦ <span class="dmg-miss">Miss！</span>` })
+        // Group: show per-target miss; single: attacker→target already in announcement
+        log.push({ html: isGroup
+          ? `<b>${t.name}</b> ✦ <span class="dmg-miss">Miss！</span>`
+          : `✦ <span class="dmg-miss">Miss！</span>`
+        })
         continue
       }
 
-      let dmg = rawDamage
-      // reflectHalfHeal: heal self by half dmg dealt
       const hasReflect = move.effectOps.some(op => op.op === 'reflectHalfHeal')
-
-      const { hpLost } = applyDamage(t, dmg)
+      const { hpLost } = applyDamage(t, rawDamage)
       t._lastHitMoveId = move.id
       const critTag = crit ? ' <span class="dmg-crit">💥爆擊</span>' : ''
-      log.push({ html: `<b>${u.name}</b> → <b>${t.name}</b> <span class="dmg-num">-${hpLost}</span>${critTag}` })
+      // Group: show target name per line; single: attacker→target already in announcement
+      log.push({ html: isGroup
+        ? `<b>${t.name}</b> <span class="dmg-num">-${hpLost}</span>${critTag}`
+        : `<span class="dmg-num">-${hpLost}</span>${critTag}`
+      })
 
       if (hasReflect) {
         const healAmt = Math.floor(hpLost / 2)
