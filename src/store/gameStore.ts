@@ -184,6 +184,8 @@ export const useGameStore = create<Store>((set, get) => ({
   tick: () => {
     const { game, isHost } = get()
     if (!game || !isHost || game.phase === 'end') return
+    // SA doc 7.1: 輪到 A 方(玩家)且未開啟自動時，整個暫停等待輸入，不推時鐘
+    if (!game.autoBattleA && getReadyUnits(game).some(u => u.side === 'A')) return
     let next = tickATB(game)
     // Auto-play ready units for sides that have auto enabled
     const ready = getReadyUnits(next)
