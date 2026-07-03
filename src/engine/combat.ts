@@ -21,13 +21,15 @@ export function effectiveATK(u: Unit): number {
   return Math.max(1, Math.floor(v))
 }
 
-export function effectiveDEF(u: Unit): number {
+export function effectiveDEF(u: Unit, slotAllies: Unit[] = []): number {
   let v = u.baseDef
   for (const s of u.statuses) {
     if (s.key === 'defPlus')  v += s.mode === 'pct' ? u.baseDef * s.value / 100 : s.value
     if (s.key === 'defMinus') v -= s.mode === 'pct' ? u.baseDef * s.value / 100 : s.value
   }
   if (u.flags.defBonusWhenClean && u.statuses.length === 0) v *= 1.25
+  // SA D1: 小寶 lightSourceAura — same-slot allies gain +15% DEF at calc time
+  if (slotAllies.some(a => a.alive && (a.flags as any).lightSourceAura)) v *= 1.15
   return Math.max(1, Math.floor(v))
 }
 
@@ -52,11 +54,12 @@ export interface HitResult {
   rawDamage: number // before shield/reduction applied at caller
 }
 
-export function resolveHit(attacker: Unit, target: Unit, move: Move): HitResult {
-  if (attacker.flags.alwaysMiss) return { hit: false, crit: false, rawDamage: 0 }
+export function resolveHit(attacker: Unit, target: Unit, move: Move, targetSlotAllies: Unit[] = []): HitResult {
+  const sureHit = attacker.statuses.some(s => s.key === 'sureHit')
+  // SA: sureHit (血藥機體) overrides alwaysMiss so 雙色球 can land hits
+  if (attacker.flags.alwaysMiss && !sureHit) return { hit: false, crit: false, rawDamage: 0 }
   if (target.statuses.some(s => s.key === 'hidden')) return { hit: false, crit: false, rawDamage: 0 }
 
-  const sureHit = attacker.statuses.some(s => s.key === 'sureHit')
   const evasion = target.statuses.find(s => s.key === 'evasion')
 
   let hitChance = move.hitRate ?? 1
@@ -70,7 +73,7 @@ export function resolveHit(attacker: Unit, target: Unit, move: Move): HitResult 
   const crit = Math.random() < critChance
 
   const atk = effectiveATK(attacker) * (1 + (attacker.flags.powerRatioBonus ?? 0))
-  const def = effectiveDEF(target)
+  const def = effectiveDEF(target, targetSlotAllies)
   const ratio = move.powerRatio ?? 1
   const el = elementMult(move.rangeType as Element | null, target.element)
 

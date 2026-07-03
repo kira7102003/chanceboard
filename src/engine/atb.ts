@@ -273,6 +273,8 @@ export function doMoveUnit(gs: GameState, unitId: string, toSlot: 1 | 2 | 3): Ga
   const u = findUnit(s, unitId)
   if (!u || !u.alive) return gs
   if (u.statuses.some(st => st.key === 'rooted') && !u.flags.immuneToRooted) return gs
+  // SA A2: can only move 1 slot at a time, no jumping across 2 slots
+  if (Math.abs(toSlot - u.slot) > 1) return gs
   u.slot = toSlot
   u._didNotMoveThisTurn = false
   s.log.push({ html: `<b>${u.name}</b> 移至 ${['近', '中', '遠'][toSlot - 1]}距離` })
@@ -305,6 +307,12 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
   // SA A5: Sword requires attacker to be in front row
   if (move.rangeType === 'sword' && u.slot !== 1) {
     s.log.push({ html: `<b>${u.name}</b> 劍技需在近距才能使用` })
+    return gs
+  }
+
+  // 封招 (sealed): cannot use any moves
+  if (u.statuses.some(st => st.key === 'sealed')) {
+    s.log.push({ html: `<b>${u.name}</b> 被封招，無法出招` })
     return gs
   }
 
@@ -363,7 +371,10 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
         log.push({ html: `🔄 混亂！<b>${u.name}</b> 攻擊自己 <span class="dmg-num">-${hpLost}</span>` })
       }
     } else {
-      const { hit, crit, rawDamage } = resolveHit(u, t, move)
+      // SA D1: collect same-slot allies of defender for lightSourceAura DEF boost
+      const defTeam = t.side === 'A' ? s.teamA : s.teamB
+      const targetSlotAllies = defTeam.filter(a => a.alive && a.slot === t.slot && a.id !== t.id)
+      const { hit, crit, rawDamage } = resolveHit(u, t, move, targetSlotAllies)
       if (!hit) {
         // Group: show per-target miss; single: attacker→target already in announcement
         log.push({ html: isGroup
@@ -439,8 +450,10 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
 
   // Advance ATB timer
   const bat = calcBAT(u)
+  const batMinusSt = u.statuses.find(st => st.key === 'batMinus')
+  const effBat = batMinusSt ? Math.max(1, bat - batMinusSt.value) : bat
   const linked = u.statuses.some(st => st.key === 'linked')
-  u.nextActionAt = s.clock + (linked ? Math.floor(bat / 2) : bat)
+  u.nextActionAt = s.clock + (linked ? Math.floor(effBat / 2) : effBat)
 
   // Check winner
   const winCheck = checkWinner(s)
@@ -474,7 +487,8 @@ export function doPass(gs: GameState, unitId: string): GameState {
   s.log.push({ html: `<b>${u.name}</b> PASS` })
 
   const bat = calcBAT(u)
-  u.nextActionAt = s.clock + bat
+  const batMinusSt = u.statuses.find(st => st.key === 'batMinus')
+  u.nextActionAt = s.clock + (batMinusSt ? Math.max(1, bat - batMinusSt.value) : bat)
 
   return s
 }
@@ -672,6 +686,9 @@ function scoreMoves(
 // Smart AI: scores moves from current position, optionally repositions if it
 // would unlock meaningfully better moves, then executes the best candidate.
 export function autoPlayUnit(gs: GameState, unit: Unit): GameState {
+  // 封招 (sealed): can't use moves, pass immediately
+  if (unit.statuses.some(s => s.key === 'sealed')) return doPass(gs, unit.id)
+
   const side    = unit.side
   const enemies = (side === 'A' ? gs.teamB : gs.teamA).filter(u => u.alive)
   const allies  = (side === 'A' ? gs.teamA : gs.teamB).filter(u => u.alive && u.id !== unit.id)
@@ -684,16 +701,19 @@ export function autoPlayUnit(gs: GameState, unit: Unit): GameState {
   const hereCandidates = scoreMoves(unit, unit.slot, enemies, allies, hand, gs.clock)
   const hereBest       = hereCandidates[0] ?? null
 
-  // Try preferred slot (based on current hand) — only if not rooted and would change position
+  // SA A2: only 1 slot at a time — clamp preferred slot to at most 1 step away
   const preferredSlot = isRooted
     ? unit.slot
     : kitPreferredSlot(unit, enemies, hand, gs.clock)
+  const moveToSlot = (unit.slot < preferredSlot
+    ? Math.min(unit.slot + 1, preferredSlot)
+    : Math.max(unit.slot - 1, preferredSlot)) as 1 | 2 | 3
 
   let workGS   = gs
   let execMove = hereBest
 
-  if (!isRooted && preferredSlot !== unit.slot) {
-    const thereCandidates = scoreMoves(unit, preferredSlot, enemies, allies, hand, gs.clock)
+  if (!isRooted && moveToSlot !== unit.slot) {
+    const thereCandidates = scoreMoves(unit, moveToSlot, enemies, allies, hand, gs.clock)
     const thereBest       = thereCandidates[0] ?? null
 
     // Only move if repositioning unlocks a move AND it's at least 10% better
@@ -701,7 +721,7 @@ export function autoPlayUnit(gs: GameState, unit: Unit): GameState {
       hereBest == null || thereBest.score > hereBest.score * 1.1
     )
     if (shouldMove) {
-      workGS   = doMoveUnit(gs, unit.id, preferredSlot)
+      workGS   = doMoveUnit(gs, unit.id, moveToSlot)
       execMove = thereBest
     }
   }
