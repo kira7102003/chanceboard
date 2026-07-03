@@ -527,77 +527,122 @@ function kitPreferredSlot(unit: Unit, enemies: Unit[], hand: Card[], clock: numb
   return 2
 }
 
-// Smart AI: first determines ideal position from the character's move kit,
-// repositions if needed, then scores and executes the best available move.
+// Score all usable moves from a given slot position.
+// Returns sorted list (highest score first); empty list means no usable moves.
+function scoreMoves(
+  unit: Unit,
+  fromSlot: 1 | 2 | 3,
+  enemies: Unit[],
+  allies: Unit[],
+  hand: Card[],
+  clock: number,
+): Array<{ slot: MoveSlot; score: number; targetId: string | null }> {
+  const suitOf: Record<string, string>    = { sword: 'red', gun: 'green', magic: 'blue', wish: 'yellow' }
+  const attackSlots: MoveSlot[]           = ['sword', 'gun', 'magic', 'wish']
+  const liberated = unit.statuses.some(st => st.key === 'liberated')
+  const result: Array<{ slot: MoveSlot; score: number; targetId: string | null }> = []
+
+  for (const slot of attackSlots) {
+    const move = unit.moves[slot]
+    if (!move) continue
+    // Cooldown check
+    if ((unit.moveCooldownUntil[move.id] ?? 0) > clock) continue
+    // Suit-card affordability
+    const color = suitOf[slot]
+    if (color) {
+      const needed = liberated ? 1 : (move.condition ?? 1)
+      if (hand.filter(c => c.color === color).length < needed) continue
+    }
+
+    // Support / wish moves (no powerRatio): score by how hurt the team is
+    if (!move.powerRatio) {
+      const minHpPct = Math.min(
+        unit.hp / unit.maxHp,
+        ...allies.map(a => a.hp / a.maxHp),
+      )
+      // Only queue support when someone is actually hurt; 0.7+ means barely needed
+      const score = 0.15 + (1 - minHpPct) * 0.65
+      result.push({ slot, score, targetId: null })
+      continue
+    }
+
+    // Attack moves: build reachable enemy list
+    let reachable = enemies.filter(e => !e.statuses.some(s => s.key === 'hidden'))
+
+    if (move.rangeType === 'sword') {
+      if (fromSlot !== 1) continue           // sword: attacker must be front
+      reachable = reachable.filter(e => e.slot === 1)  // sword: target front-row only
+    }
+
+    if (reachable.length === 0) continue     // no valid targets → skip
+
+    let score = 0
+    let targetId: string | null = null
+
+    if (move.scope === 'group') {
+      const avgEl = reachable.reduce((s, e) =>
+        s + elementMult(move.rangeType as any, e.element), 0) / reachable.length
+      score = move.powerRatio * reachable.length * avgEl
+    } else {
+      // Single target: prefer lowest HP% enemy (finish kills first)
+      const best = reachable.reduce((a, b) =>
+        (a.hp / a.maxHp) <= (b.hp / b.maxHp) ? a : b)
+      const elBonus = elementMult(move.rangeType as any, best.element)
+      score = move.powerRatio * elBonus * (best.hp / best.maxHp < 0.3 ? 1.4 : 1)
+      targetId = best.id
+    }
+
+    if (score > 0) result.push({ slot, score, targetId })
+  }
+
+  return result.sort((a, b) => b.score - a.score)
+}
+
+// Smart AI: scores moves from current position, optionally repositions if it
+// would unlock meaningfully better moves, then executes the best candidate.
 export function autoPlayUnit(gs: GameState, unit: Unit): GameState {
   const side    = unit.side
   const enemies = (side === 'A' ? gs.teamB : gs.teamA).filter(u => u.alive)
+  const allies  = (side === 'A' ? gs.teamA : gs.teamB).filter(u => u.alive && u.id !== unit.id)
   if (enemies.length === 0) return doPass(gs, unit.id)
 
   const isRooted = unit.statuses.some(s => s.key === 'rooted') && !unit.flags.immuneToRooted
   const hand     = side === 'A' ? gs.handA : gs.handB
-  const preferredSlot = kitPreferredSlot(unit, enemies, hand, gs.clock)
 
-  // Reposition first based on kit analysis, then pick a move
-  let workGS = gs
-  let movedSlot: 1 | 2 | 3 = unit.slot
+  // Score moves from current slot
+  const hereCandidates = scoreMoves(unit, unit.slot, enemies, allies, hand, gs.clock)
+  const hereBest       = hereCandidates[0] ?? null
+
+  // Try preferred slot (based on current hand) — only if not rooted and would change position
+  const preferredSlot = isRooted
+    ? unit.slot
+    : kitPreferredSlot(unit, enemies, hand, gs.clock)
+
+  let workGS   = gs
+  let execMove = hereBest
+
   if (!isRooted && preferredSlot !== unit.slot) {
-    workGS    = doMoveUnit(gs, unit.id, preferredSlot)
-    movedSlot = preferredSlot
-  }
+    const thereCandidates = scoreMoves(unit, preferredSlot, enemies, allies, hand, gs.clock)
+    const thereBest       = thereCandidates[0] ?? null
 
-  // Score all available moves from the new position (hand unchanged by move)
-  const handAfter = side === 'A' ? workGS.handA : workGS.handB
-  const suitOf: Record<string, string> = { sword: 'red', gun: 'green', magic: 'blue', wish: 'yellow' }
-  const slots: MoveSlot[] = ['sword', 'gun', 'magic', 'wish']
-
-  type Candidate = { slot: MoveSlot; score: number; targetId: string | null }
-  const candidates: Candidate[] = []
-
-  for (const slot of slots) {
-    const move = unit.moves[slot]
-    if (!move) continue
-    if ((unit.moveCooldownUntil[move.id] ?? 0) > workGS.clock) continue
-
-    const color = suitOf[slot]
-    if (color) {
-      const liberated = unit.statuses.some(st => st.key === 'liberated')
-      const needed = liberated ? 1 : (move.condition ?? 1)
-      if (handAfter.filter(c => c.color === color).length < needed) continue
-    }
-
-    let reachable = enemies.filter(e => !e.statuses.some(s => s.key === 'hidden'))
-
-    if (move.rangeType === 'sword') {
-      // Sword: attacker must be in slot 1 and target must be slot 1
-      if (movedSlot !== 1) continue
-      reachable = reachable.filter(e => e.slot === 1)
-      if (reachable.length === 0) continue
-    }
-
-    if (move.scope === 'group') {
-      const avgEl = reachable.reduce((s, e) =>
-        s + elementMult(move.rangeType as any, e.element), 0) / (reachable.length || 1)
-      const score = (move.powerRatio ?? 0) * reachable.length * avgEl
-      candidates.push({ slot, score, targetId: null })
-    } else if (move.powerRatio) {
-      const best = reachable.reduce((a, b) =>
-        (a.hp / a.maxHp) <= (b.hp / b.maxHp) ? a : b)
-      const elBonus = elementMult(move.rangeType as any, best.element)
-      const score   = (move.powerRatio ?? 0) * elBonus *
-        (best.hp / best.maxHp < 0.3 ? 1.4 : 1)
-      candidates.push({ slot, score, targetId: best.id })
-    } else {
-      candidates.push({ slot, score: 0.3, targetId: null })
+    // Only move if repositioning unlocks a move AND it's at least 10% better
+    const shouldMove = thereBest != null && (
+      hereBest == null || thereBest.score > hereBest.score * 1.1
+    )
+    if (shouldMove) {
+      workGS   = doMoveUnit(gs, unit.id, preferredSlot)
+      execMove = thereBest
     }
   }
 
-  if (candidates.length === 0) return doPass(workGS, unit.id)
+  if (!execMove) return doPass(workGS, unit.id)
 
-  candidates.sort((a, b) => b.score - a.score)
-  const pick = candidates[0]
-
-  return doExecuteMove(workGS, { unitId: unit.id, moveSlot: pick.slot, targetId: pick.targetId, cardId: null })
+  return doExecuteMove(workGS, {
+    unitId:   unit.id,
+    moveSlot: execMove.slot,
+    targetId: execMove.targetId,
+    cardId:   null,
+  })
 }
 
 export function getReadyUnits(gs: GameState): Unit[] {
