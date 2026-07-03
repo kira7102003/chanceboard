@@ -184,8 +184,11 @@ export const useGameStore = create<Store>((set, get) => ({
   tick: () => {
     const { game, isHost } = get()
     if (!game || !isHost || game.phase === 'end') return
-    // SA doc 7.1: 輪到 A 方(玩家)且未開啟自動時，整個暫停等待輸入，不推時鐘
-    if (!game.autoBattleA && getReadyUnits(game).some(u => u.side === 'A')) return
+    // SA doc 7.1: 任何一方有 ready 單位且未開啟自動時，整個暫停等待該方輸入
+    const readyNow = getReadyUnits(game)
+    const aPending = !game.autoBattleA && readyNow.some(u => u.side === 'A')
+    const bPending = !game.autoBattleB && readyNow.some(u => u.side === 'B')
+    if (aPending || bPending) return
     let next = tickATB(game)
     // Auto-play ready units for sides that have auto enabled
     const ready = getReadyUnits(next)
