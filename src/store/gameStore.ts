@@ -190,14 +190,12 @@ export const useGameStore = create<Store>((set, get) => ({
     const bPending = !game.autoBattleB && readyNow.some(u => u.side === 'B')
     if (aPending || bPending) return
     let next = tickATB(game)
-    // Auto-play ready units for sides that have auto enabled
+    // SA doc 7.10: one AI action per tick so every move is visible (not batched)
     const ready = getReadyUnits(next)
-    for (const unit of ready) {
-      if ((unit.side === 'A' && next.autoBattleA) || (unit.side === 'B' && next.autoBattleB)) {
-        next = autoPlayUnit(next, unit)
-        if (next.phase === 'end') break
-      }
-    }
+    const toPlay = ready.find(u =>
+      (u.side === 'A' && next.autoBattleA) || (u.side === 'B' && next.autoBattleB)
+    )
+    if (toPlay) next = autoPlayUnit(next, toPlay)
     get()._applyGame(next)
   },
 
