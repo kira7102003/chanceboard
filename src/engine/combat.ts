@@ -28,8 +28,8 @@ export function effectiveDEF(u: Unit, slotAllies: Unit[] = []): number {
     if (s.key === 'defMinus') v -= s.mode === 'pct' ? u.baseDef * s.value / 100 : s.value
   }
   if (u.flags.defBonusWhenClean && u.statuses.length === 0) v *= 1.25
-  // SA D1: 小寶 lightSourceAura — same-slot allies gain +15% DEF at calc time
-  if (slotAllies.some(a => a.alive && (a.flags as any).lightSourceAura)) v *= 1.15
+  // SA D1: 小可 lightSourceAura — self and same-slot allies gain +15% DEF at calc time
+  if ((u.flags as any).lightSourceAura || slotAllies.some(a => a.alive && (a.flags as any).lightSourceAura)) v *= 1.15
   return Math.max(1, Math.floor(v))
 }
 

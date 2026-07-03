@@ -75,9 +75,12 @@ export function runEffectOps(
 
     switch (op.op) {
       case 'status': {
+        // SA: 日夜詩 _orAlternate — randomly choose between base op and alternate params
+        const alt = op._orAlternate as Record<string, unknown> | undefined
+        const effectiveOp = (alt && Math.random() < 0.5) ? { ...op, ...alt } : op
         for (const t of targets) {
-          addStatus(t, op, clock, effectMult)
-          log.push({ html: `<b>${t.name}</b> 獲得 ${op.key} 狀態` })
+          addStatus(t, effectiveOp, clock, effectMult)
+          log.push({ html: `<b>${t.name}</b> 獲得 ${effectiveOp.key} 狀態` })
         }
         break
       }
@@ -137,11 +140,29 @@ export function runEffectOps(
       case 'draw': {
         const side  = actor.side
         const count = (op.count as number) ?? 1
-        const pub   = gs.drawPublic
         const hand  = side === 'A' ? gs.handA : gs.handB
-        const drawn = pub.splice(0, count)
-        hand.push(...drawn)
-        if (drawn.length) log.push({ html: `${side === 'A' ? 'A' : 'B'} 抽 ${drawn.length} 張牌` })
+
+        if (op.fromOpponent) {
+          // SA 惡意: draw from opponent's hand
+          const oppHand = side === 'A' ? gs.handB : gs.handA
+          const stolen  = oppHand.splice(0, Math.min(count, oppHand.length))
+          hand.push(...stolen)
+          if (stolen.length) log.push({ html: `${side} 奪取對手 ${stolen.length} 張手牌` })
+        } else if (op.type === 'flower') {
+          // SA 賺錢本能: draw specifically a flower card from the public draw pile
+          let drawn = 0
+          for (let i = 0; i < count; i++) {
+            const idx = gs.drawPublic.findIndex(c => c.color === 'flower')
+            if (idx === -1) break
+            hand.push(gs.drawPublic.splice(idx, 1)[0])
+            drawn++
+          }
+          if (drawn) log.push({ html: `${side} 抽了 ${drawn} 張花牌` })
+        } else {
+          const drawn = gs.drawPublic.splice(0, count)
+          hand.push(...drawn)
+          if (drawn.length) log.push({ html: `${side} 抽 ${drawn.length} 張牌` })
+        }
         break
       }
 

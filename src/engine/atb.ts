@@ -192,9 +192,9 @@ export function tickATB(gs: GameState): GameState {
 
   // round advance every 100 ticks (=10 seconds)
   if (s.clock % 100 === 0) {
+    runRoundEndPassives(s)              // SA 7.7: roundEnd fires BEFORE round increments
     s.round++
-    runRoundPassives(s, 'roundStart')  // SA E4: roundStart passives (e.g. 縫合)
-    runRoundEndPassives(s)
+    runRoundPassives(s, 'roundStart')   // SA 7.7: roundStart fires at start of new round
     dealRoundCards(s)
   }
 
@@ -405,6 +405,18 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
         killedAny = true
       }
 
+      // SA 7.5 結冰: being hit cancels frozen status
+      if (t.statuses.some(st => st.key === 'frozen')) {
+        t.statuses = t.statuses.filter(st => st.key !== 'frozen')
+        log.push({ html: `<b>${t.name}</b> 結冰解除` })
+      }
+
+      // SA 7.5 還手(counter): when hit, unit acts immediately (nextActionAt reset)
+      if (t.alive && t.statuses.some(st => st.key === 'counter')) {
+        t.nextActionAt = s.clock
+        log.push({ html: `<b>${t.name}</b> 還手！` })
+      }
+
       // onHit effects
       if (move.effectTrigger === 'onHit') {
         const chance = move.effectChance ?? 1
@@ -503,15 +515,32 @@ function resolveTargetUnits(move: Move, actor: Unit, targetId: string | null, s:
   const isHidden = (u: Unit) => u.statuses.some(st => st.key === 'hidden')
   const enemies  = (actor.side === 'A' ? s.teamB : s.teamA).filter(u => u.alive && !isHidden(u))
 
+  const isAwakened = actor.statuses.some(st => st.key === 'awakened')
+
+  // SA 7.2: within a valid target pool, prefer taunting units first,
+  // then tie-break by HP (awakened → lowest HP, default → highest HP)
+  function pickBest(pool: Unit[]): Unit | undefined {
+    if (pool.length === 0) return undefined
+    const taunting = pool.filter(u => (u.flags as any).taunt)
+    const cands    = taunting.length > 0 ? taunting : pool
+    if (cands.length === 1) return cands[0]
+    return cands.reduce((b, u) => isAwakened ? (u.hp < b.hp ? u : b) : (u.hp > b.hp ? u : b))
+  }
+
   // SA A5: Sword targets only front-row (slot 1) enemies
   if (move.rangeType === 'sword') {
     const front = enemies.filter(e => e.slot === 1)
     if (move.scope === 'group') return front
     if (targetId) {
       const t = findUnit(s, targetId)
-      if (t && t.alive && t.slot === 1 && !isHidden(t)) return [t]
+      if (t && t.alive && t.slot === 1 && !isHidden(t)) {
+        // SA 7.2: redirect to taunter if player did not pick the taunter
+        const taunterAtFront = front.find(u => (u.flags as any).taunt)
+        return [taunterAtFront && taunterAtFront.id !== t.id ? taunterAtFront : t]
+      }
     }
-    return front.slice(0, 1)
+    const best = pickBest(front)
+    return best ? [best] : []
   }
 
   // SA A4: Magic targets mirror slot (近→遠, 中→中, 遠→近)
@@ -519,24 +548,36 @@ function resolveTargetUnits(move: Move, actor: Unit, targetId: string | null, s:
     const mirrorSlot = (4 - actor.slot) as 1 | 2 | 3
     const mirror = enemies.filter(e => e.slot === mirrorSlot)
     if (move.scope === 'group') return mirror
-    return mirror.slice(0, 1)
+    const best = pickBest(mirror)
+    return best ? [best] : []
   }
 
   if (move.scope === 'group') return enemies
 
-  // SA A6: Gun single-target → nearest enemy (lowest slot number)
+  // SA A6: Gun single-target → nearest enemy (lowest slot), then HP tie-break
   if (move.rangeType === 'gun') {
     if (enemies.length === 0) return []
     const nearestSlot = Math.min(...enemies.map(e => e.slot))
-    return enemies.filter(e => e.slot === nearestSlot).slice(0, 1)
+    const near = enemies.filter(e => e.slot === nearestSlot)
+    const best = pickBest(near)
+    return best ? [best] : []
   }
 
-  // Default single-target: explicit targetId or first alive
+  // Default single-target: explicit targetId (taunt-redirect) or HP tie-break
   if (targetId) {
     const t = findUnit(s, targetId)
-    return t && t.alive && !isHidden(t) ? [t] : []
+    if (t && t.alive && !isHidden(t)) {
+      // SA 7.2: redirect to taunter if target is not the taunter
+      const taunting = enemies.filter(u => (u.flags as any).taunt)
+      if (taunting.length > 0 && !(t.flags as any).taunt) {
+        const best = pickBest(taunting)
+        return best ? [best] : []
+      }
+      return [t]
+    }
   }
-  return enemies.slice(0, 1)
+  const best = pickBest(enemies)
+  return best ? [best] : []
 }
 
 export function doToggleAuto(gs: GameState, side: 'A' | 'B'): GameState {
