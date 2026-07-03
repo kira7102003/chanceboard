@@ -95,7 +95,7 @@ export function buildPublicDeck(piece: PieceType): Card[] {
   return shuffleArr(pool)
 }
 
-const HAND_LIMIT = 4
+const HAND_LIMIT = 5
 
 // ─── Initial deal ────────────────────────────────────────────────────────────────
 
@@ -192,10 +192,10 @@ export function tickATB(gs: GameState): GameState {
 
   // round advance every 100 ticks (=10 seconds)
   if (s.clock % 100 === 0) {
-    runRoundEndPassives(s)              // SA 7.7: roundEnd fires BEFORE round increments
-    s.round++
-    runRoundPassives(s, 'roundStart')   // SA 7.7: roundStart fires at start of new round
-    dealRoundCards(s)
+    runRoundEndPassives(s)             // SA 7.7: roundEnd passives first
+    dealRoundCards(s)                  // SA 7.8: refill hands, then
+    s.round++                          // advance counter, then
+    runRoundPassives(s, 'roundStart')  // SA 7.7: roundStart with fresh hand
   }
 
   // check winner
@@ -277,7 +277,7 @@ export function doMoveUnit(gs: GameState, unitId: string, toSlot: 1 | 2 | 3): Ga
   if (Math.abs(toSlot - u.slot) > 1) return gs
   u.slot = toSlot
   u._didNotMoveThisTurn = false
-  s.log.push({ html: `<b>${u.name}</b> 移至 ${['近', '中', '遠'][toSlot - 1]}距離` })
+  s.log.push({ html: `<b>${u.name}</b> 移至 ${['前', '中', '後'][toSlot - 1]}距離` })
   return s
 }
 
@@ -306,7 +306,7 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
 
   // SA A5: Sword requires attacker to be in front row
   if (move.rangeType === 'sword' && u.slot !== 1) {
-    s.log.push({ html: `<b>${u.name}</b> 劍技需在近距才能使用` })
+    s.log.push({ html: `<b>${u.name}</b> 劍技需在前排才能使用` })
     return gs
   }
 

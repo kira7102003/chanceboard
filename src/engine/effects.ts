@@ -252,7 +252,7 @@ export function runEffectOps(
         for (const t of targets) {
           if (t.statuses.some(s => s.key === 'rooted') && !actor.flags.immuneToRooted) continue
           t.slot = toSlot
-          log.push({ html: `<b>${t.name}</b> 被擊至 ${['近', '中', '遠'][toSlot - 1]}距離` })
+          log.push({ html: `<b>${t.name}</b> 被擊至 ${['前', '中', '後'][toSlot - 1]}距離` })
         }
         break
       }
@@ -260,7 +260,7 @@ export function runEffectOps(
       case 'selfMove': {
         if (!actor.statuses.some(s => s.key === 'rooted')) {
           actor.slot = op.to as 1 | 2 | 3
-          log.push({ html: `<b>${actor.name}</b> 移至 ${['近', '中', '遠'][(op.to as number) - 1]}距離` })
+          log.push({ html: `<b>${actor.name}</b> 移至 ${['前', '中', '後'][(op.to as number) - 1]}距離` })
         }
         break
       }

@@ -7,7 +7,7 @@ import { getReadyUnits } from '../engine/atb'
 import ScorePanel from './ScorePanel'
 import { getCharImg } from '../utils/charStore'
 
-const SLOT_NAME  = ['近', '中', '遠']
+const SLOT_NAME  = ['前', '中', '後']
 const SLOT_COLOR_POS = ['#e85533', '#ddaa22', '#33aacc']  // 近=red, 中=yellow, 遠=blue
 const EL_COLOR: Record<string, string> = { sword: '#e87733', gun: '#22cc77', magic: '#9955ee' }
 const SUIT_CLS: Record<string, string>  = { red: 'suit-red', green: 'suit-green', blue: 'suit-blue', yellow: 'suit-yellow', flower: 'suit-flower' }
@@ -350,7 +350,7 @@ function ReadyUnitPanel({ unit, clock, suitInHand, flowerHand, isOpen, selecting
               <button key={s}
                 className={`btn sm ${unit.slot === s ? 'primary' : ''}`}
                 onClick={() => onSelfMove(s)}>
-                {['後','中','前'][s-1]}
+                {['前','中','後'][s-1]}
               </button>
             ))}
           </div>
