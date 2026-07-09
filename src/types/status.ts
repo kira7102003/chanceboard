@@ -10,6 +10,7 @@ export type StatusKey =
   | 'damageReduction' | 'linked' | 'liberated'
   | 'shield' | 'paralyzed' | 'empowered'
   | 'awakened' | 'lucky' | 'counter'
+  | 'charged'
 
 export type StatusMode = 'flat' | 'pct'
 

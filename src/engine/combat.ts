@@ -2,8 +2,8 @@ import type { Unit } from '../types/unit'
 import type { Move } from '../types/move'
 import type { Element } from '../types/character'
 
-// sword > magic > gun > sword
-const BEATS: Record<Element, Element> = { sword: 'magic', magic: 'gun', gun: 'sword' }
+// 劍剋槍、槍剋法、法剋劍
+const BEATS: Record<Element, Element> = { sword: 'gun', gun: 'magic', magic: 'sword' }
 
 export function elementMult(moveEl: Element | null, targetEl: Element): number {
   if (!moveEl) return 1
@@ -84,7 +84,7 @@ export function resolveHit(attacker: Unit, target: Unit, move: Move, targetSlotA
     const baseDmg = Math.max(2, Math.round(atk * ratio / def))
     if (dmg <= baseDmg) dmg = baseDmg + 1
   }
-  if (crit) dmg = Math.floor(dmg * 1.5)
+  if (crit) dmg = dmg * 2
 
   // sameMove reduction (法蘭克 passive)
   if (target.flags.sameMoveDamageReduction && target._lastHitMoveId === move.id) {

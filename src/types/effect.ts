@@ -1,16 +1,17 @@
 export type EffectTarget =
   | 'self' | 'target' | 'enemyAll' | 'allyAll'
-  | 'sameCell' | 'allyLowestHp' | 'randomDeadAlly'
+  | 'sameCell' | 'sameCellAllies' | 'allyLowestHp' | 'randomDeadAlly'
   | 'bothHands' | 'opponent'
 
 export type EffectOpType =
-  | 'status' | 'damagePct' | 'healPct' | 'healFlat' | 'kill'
+  | 'status' | 'statusByDistance' | 'damagePct' | 'healPct' | 'healFlat' | 'kill'
   | 'discard' | 'draw' | 'fillToLimit'
   | 'swapHandsRandom' | 'swapHandsFull' | 'swapHP' | 'halveHP'
   | 'knockback' | 'selfMove' | 'drainStatus' | 'revive'
   | 'averageCellHP' | 'clearStatuses' | 'clearStatusKey' | 'staticFlag'
-  | 'vengeanceScaling' | 'condHeal' | 'condHealIfNoMove'
+  | 'vengeanceScaling' | 'deadAllyScaling' | 'condHeal' | 'condHealIfNoMove'
   | 'recoverDiscard' | 'reflectHalfHeal' | 'powerMult'
+  | 'chargeStack' | 'chargeSplash' | 'chargeDetonateIfThreeStacks' | 'chargeDetonate'
 
 export interface EffectOp {
   op: EffectOpType

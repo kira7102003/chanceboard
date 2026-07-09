@@ -5,7 +5,7 @@ import type { GameState } from '../types/game'
 import type { StatusEntry } from '../types/status'
 import { applyDamage } from './combat'
 
-export type LogLine = { html: string }
+export type LogLine = { html: string; moveAnim?: { moveId: string; moveName: string; moveSlot: string; charName: string } }
 
 function allUnits(gs: GameState): Unit[] {
   return [...gs.teamA, ...gs.teamB]
@@ -23,6 +23,7 @@ function resolveTarget(
     case 'enemyAll':     return (actor.side === 'A' ? gs.teamB : gs.teamA).filter(u => u.alive)
     case 'allyAll':      return (actor.side === 'A' ? gs.teamA : gs.teamB).filter(u => u.alive)
     case 'sameCell':     return allUnits(gs).filter(u => u.side === actor.side && u.slot === actor.slot && u.alive)
+    case 'sameCellAllies': return allUnits(gs).filter(u => u.side === actor.side && u.slot === actor.slot && u.alive && u.id !== actor.id)
     case 'allyLowestHp': {
       const allies = (actor.side === 'A' ? gs.teamA : gs.teamB).filter(u => u.alive)
       const min = Math.min(...allies.map(u => u.hp))
@@ -44,7 +45,6 @@ function addStatus(unit: Unit, op: EffectOp, clock: number, durationMult = 1) {
   const key    = op.key as StatusEntry['key']
   const value  = (op.value as number) ?? 0
   const mode   = (op.mode as StatusEntry['mode']) ?? 'flat'
-  // SA E5: durationRng picks a random duration in [min, max]
   const rng     = op.durationRng as [number, number] | undefined
   const baseDur = rng
     ? Math.floor(Math.random() * (rng[1] - rng[0] + 1)) + rng[0]
@@ -54,7 +54,12 @@ function addStatus(unit: Unit, op: EffectOp, clock: number, durationMult = 1) {
     : 1))
 
   unit.statuses = unit.statuses.filter(s => s.key !== key)
-  unit.statuses.push({ key, mode, value, expiresAt: clock + dur * 10 })
+  unit.statuses.push({ key, mode, value, expiresAt: clock + dur })
+
+  // 結冰 special: push action timer forward so the unit can't act while frozen
+  if (key === 'frozen' && unit.nextActionAt > clock) {
+    unit.nextActionAt += dur
+  }
 }
 
 function healUnit(unit: Unit, amount: number) {
@@ -62,15 +67,32 @@ function healUnit(unit: Unit, amount: number) {
 }
 
 // op.to uses distance convention (1=near/front, 2=mid, 3=far/back), not absolute slot.
-// Convert to the unit's actual slot number based on which side they're on.
 function distToSlot(dist: 1 | 2 | 3, side: 'A' | 'B'): 1 | 2 | 3 {
   if (dist === 2) return 2
-  if (dist === 1) return side === 'A' ? 3 : 1  // near = front (A:3, B:1)
-  return side === 'A' ? 1 : 3                   // far  = back  (A:1, B:3)
+  if (dist === 1) return side === 'A' ? 3 : 1
+  return side === 'A' ? 1 : 3
 }
 
 function slotLabel(side: 'A' | 'B', slot: 1 | 2 | 3): string {
   return side === 'A' ? ['後', '中', '前'][slot - 1] : ['前', '中', '後'][slot - 1]
+}
+
+const CHARGE_STACK_CAP = 3
+const CHARGE_STACK_DUR = 60
+const CHARGE_DETONATE_PCT_PER_STACK = 0.1
+
+function runChargeDetonate(_actor: Unit, gs: GameState, _clock: number, effectMult: number, log: LogLine[]) {
+  for (const u of allUnits(gs)) {
+    if (!u.alive) continue
+    const stacks = u.statuses.filter(s => s.key === 'charged').length
+    if (stacks === 0) continue
+    const isMaxed = stacks >= CHARGE_STACK_CAP
+    let dmg = Math.max(1, Math.floor(u.maxHp * CHARGE_DETONATE_PCT_PER_STACK * stacks * effectMult))
+    if (isMaxed) dmg *= 2
+    u.statuses = u.statuses.filter(s => s.key !== 'charged')
+    const { hpLost } = applyDamage(u, dmg)
+    log.push({ html: `<b>${u.name}</b> 帶電引爆(${stacks}層)${isMaxed ? '【滿層雙倍】' : ''} <span class="dmg-num">-${hpLost}</span>${!u.alive ? ' → <b>倒下！</b>' : ''}` })
+  }
 }
 
 export function runEffectOps(
@@ -87,12 +109,29 @@ export function runEffectOps(
 
     switch (op.op) {
       case 'status': {
-        // SA: 日夜詩 _orAlternate — randomly choose between base op and alternate params
         const alt = op._orAlternate as Record<string, unknown> | undefined
         const effectiveOp = (alt && Math.random() < 0.5) ? { ...op, ...alt } : op
         for (const t of targets) {
           addStatus(t, effectiveOp, clock, effectMult)
           log.push({ html: `<b>${t.name}</b> 獲得 ${effectiveOp.key} 狀態` })
+        }
+        break
+      }
+
+      // 依格距決定持續時間：durByDist[0]=同格, [1]=相鄰, [2]=最遠
+      case 'statusByDistance': {
+        const key    = op.key as StatusEntry['key']
+        const value  = (op.value as number) ?? 0
+        const mode   = (op.mode as StatusEntry['mode']) ?? 'flat'
+        const durByDist = (op.durByDist as number[]) ?? [10, 8, 5]
+        const ownTeam = actor.side === 'A' ? gs.teamA : gs.teamB
+        for (const unit of ownTeam) {
+          if (!unit.alive) continue
+          const dist = Math.abs(unit.slot - actor.slot)
+          const dur = durByDist[Math.min(dist, durByDist.length - 1)] ?? 5
+          unit.statuses = unit.statuses.filter(s => s.key !== key)
+          unit.statuses.push({ key, mode, value, expiresAt: clock + dur })
+          if (key === 'frozen' && unit.nextActionAt > clock) unit.nextActionAt += dur
         }
         break
       }
@@ -143,7 +182,7 @@ export function runEffectOps(
         for (const t of targets) {
           t.alive        = true
           t.hp           = Math.max(1, Math.floor(t.maxHp * pct))
-          t.nextActionAt = clock  // SA A9: revived unit can act immediately
+          t.nextActionAt = clock
           log.push({ html: `<b>${t.name}</b> 復活，HP ${t.hp}` })
         }
         break
@@ -155,13 +194,11 @@ export function runEffectOps(
         const hand  = side === 'A' ? gs.handA : gs.handB
 
         if (op.fromOpponent) {
-          // SA 惡意: draw from opponent's hand
           const oppHand = side === 'A' ? gs.handB : gs.handA
           const stolen  = oppHand.splice(0, Math.min(count, oppHand.length))
           hand.push(...stolen)
           if (stolen.length) log.push({ html: `${side} 奪取對手 ${stolen.length} 張手牌` })
         } else if (op.type === 'flower') {
-          // SA 賺錢本能: draw specifically a flower card from the public draw pile
           let drawn = 0
           for (let i = 0; i < count; i++) {
             const idx = gs.drawPublic.findIndex(c => c.color === 'flower')
@@ -180,7 +217,6 @@ export function runEffectOps(
 
       case 'discard': {
         if (op.target === 'bothHands') {
-          // discard both to count=1
           const toCount = (op.toCount as number) ?? 1
           while (gs.handA.length > toCount) {
             const c = gs.handA.splice(Math.floor(Math.random() * gs.handA.length), 1)[0]
@@ -295,28 +331,6 @@ export function runEffectOps(
         break
       }
 
-      case 'clearStatuses': {
-        let totalCleared = 0
-        for (const t of targets) {
-          const count = t.statuses.length
-          totalCleared += count
-          t.statuses = []
-          log.push({ html: `<b>${t.name}</b> 清除全部狀態` })
-        }
-        if (op.healPerStatus) {
-          healUnit(actor, totalCleared)
-          log.push({ html: `<b>${actor.name}</b> 回復 ${totalCleared} HP` })
-        }
-        break
-      }
-
-      case 'clearStatusKey': {
-        for (const t of targets) {
-          t.statuses = t.statuses.filter(s => s.key !== op.key)
-        }
-        break
-      }
-
       case 'averageCellHP': {
         const cell = allUnits(gs).filter(u => u.side === actor.side && u.slot === actor.slot && u.alive)
         if (cell.length < 2) break
@@ -326,17 +340,29 @@ export function runEffectOps(
         break
       }
 
-      case 'reflectHalfHeal': {
-        // caller already computed damage; here we heal actor by half
-        // This is called post-hit from atb.ts where rawDmg is known
+      case 'reflectHalfHeal':
         break
-      }
 
       case 'vengeanceScaling': {
         for (const t of targets) {
           const dmg = Math.floor(gs.round / 5)
           applyDamage(t, dmg)
           log.push({ html: `<b>${t.name}</b> 受到 ${dmg} 傷害（回合懲罰）` })
+        }
+        break
+      }
+
+      // 依己方陣亡人數追加目標最大HP百分比傷害
+      case 'deadAllyScaling': {
+        const ownTeam = actor.side === 'A' ? gs.teamA : gs.teamB
+        const deadCount = ownTeam.filter(u => !u.alive).length
+        if (deadCount === 0 || !primaryTarget || !primaryTarget.alive) break
+        const pct = (op.pct as number) ?? 0.1
+        const dmg = Math.floor(primaryTarget.maxHp * pct * deadCount)
+        if (dmg > 0) {
+          const { hpLost } = applyDamage(primaryTarget, dmg)
+          log.push({ html: `<b>${primaryTarget.name}</b> 受到亡者怒火 <span class="dmg-num">-${hpLost}</span>（${deadCount}位隊友陣亡）` })
+          if (!primaryTarget.alive) log.push({ html: `<b>${primaryTarget.name}</b> 倒下！` })
         }
         break
       }
@@ -372,12 +398,80 @@ export function runEffectOps(
       }
 
       case 'staticFlag':
-        // applied at unit init; no runtime effect here
         break
 
       case 'powerMult':
-        // handled by caller when crit occurs
         break
+
+      case 'clearStatuses': {
+        for (const t of targets) {
+          t.statuses = []
+          log.push({ html: `<b>${t.name}</b> 清除全部狀態` })
+        }
+        break
+      }
+
+      case 'clearStatusKey': {
+        const key = op.key as StatusEntry['key']
+        for (const t of targets) {
+          t.statuses = t.statuses.filter(s => s.key !== key)
+        }
+        break
+      }
+
+      // ── 帶電系列 ────────────────────────────────────────────────────────────
+
+      // 對目標疊加 1 層帶電狀態（上限 3 層）
+      case 'chargeStack': {
+        const t = primaryTarget
+        if (!t || !t.alive) break
+        const stacks = t.statuses.filter(s => s.key === 'charged').length
+        if (stacks < CHARGE_STACK_CAP) {
+          t.statuses.push({ key: 'charged', mode: 'flat', value: 1, expiresAt: clock + CHARGE_STACK_DUR })
+          log.push({ html: `<b>${t.name}</b> 帶電 (${stacks + 1}/${CHARGE_STACK_CAP}層)` })
+        }
+        break
+      }
+
+      // 若目標有帶電，對同格其他敵人造成擴散傷害並各疊一層帶電
+      case 'chargeSplash': {
+        const t = primaryTarget
+        if (!t || !t.alive) break
+        const stacks = t.statuses.filter(s => s.key === 'charged').length
+        if (stacks === 0) break
+        const pct = (op.pct as number) ?? 0.05
+        const splashDmg = Math.max(1, Math.floor(t.maxHp * pct * stacks))
+        const sameCell = allUnits(gs).filter(u =>
+          u.alive && u.side === t.side && u.slot === t.slot && u.id !== t.id
+        )
+        for (const s of sameCell) {
+          const { hpLost } = applyDamage(s, splashDmg)
+          log.push({ html: `<b>${s.name}</b> 帶電擴散 <span class="dmg-num">-${hpLost}</span>` })
+          if (!s.alive) log.push({ html: `<b>${s.name}</b> 倒下！` })
+          const curStacks = s.statuses.filter(x => x.key === 'charged').length
+          if (curStacks < CHARGE_STACK_CAP) {
+            s.statuses.push({ key: 'charged', mode: 'flat', value: 1, expiresAt: clock + CHARGE_STACK_DUR })
+          }
+        }
+        break
+      }
+
+      // 若目標帶電層數已達 3，引爆全場帶電
+      case 'chargeDetonateIfThreeStacks': {
+        const t = primaryTarget
+        if (!t) break
+        const stacks = t.statuses.filter(s => s.key === 'charged').length
+        if (stacks >= CHARGE_STACK_CAP) {
+          runChargeDetonate(actor, gs, clock, effectMult, log)
+        }
+        break
+      }
+
+      // 無條件引爆全場帶電
+      case 'chargeDetonate': {
+        runChargeDetonate(actor, gs, clock, effectMult, log)
+        break
+      }
     }
   }
 }
@@ -389,11 +483,9 @@ export function runCardEffects(card: Card, actor: Unit, gs: GameState, clock: nu
   runEffectOps(card.effectOps, actor, null, gs, clock, 1, log)
 }
 
-// Apply per-tick status DoT/HoT (hpPlus, hpMinus, burning handled here)
 export function tickStatuses(gs: GameState, clock: number, log: LogLine[]) {
   for (const u of allUnits(gs)) {
     if (!u.alive) continue
-    // expire statuses
     u.statuses = u.statuses.filter(s => {
       if (s.expiresAt !== -1 && s.expiresAt <= clock) {
         log.push({ html: `<b>${u.name}</b> 的 ${s.key} 狀態解除` })
@@ -401,7 +493,6 @@ export function tickStatuses(gs: GameState, clock: number, log: LogLine[]) {
       }
       return true
     })
-    // hp+/hp- DoT
     const hpPlus  = u.statuses.find(s => s.key === 'hpPlus')
     const hpMinus = u.statuses.find(s => s.key === 'hpMinus')
     if (hpPlus)  healUnit(u, hpPlus.value)

@@ -418,16 +418,32 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
         killedAny = true
       }
 
-      // SA 7.5 結冰: being hit cancels frozen status
+      // SA 7.5 結冰: being hit cancels frozen status, restore remaining freeze time
       if (t.statuses.some(st => st.key === 'frozen')) {
+        const frozenEntries = t.statuses.filter(st => st.key === 'frozen')
+        const maxExpiry = Math.max(...frozenEntries.map(st => st.expiresAt))
+        const remaining = maxExpiry - s.clock
+        if (remaining > 0) t.nextActionAt = Math.max(s.clock, t.nextActionAt - remaining)
         t.statuses = t.statuses.filter(st => st.key !== 'frozen')
         log.push({ html: `<b>${t.name}</b> 結冰解除` })
       }
 
-      // SA 7.5 還手(counter): when hit, unit acts immediately (nextActionAt reset)
-      if (t.alive && t.statuses.some(st => st.key === 'counter')) {
+      // SA 7.5 還手(counter): retaliate with powerRatio=1.0, attacker's element, no crit
+      if (t.alive && t.statuses.some(st => st.key === 'counter') && move.name !== '反擊' && u.id !== t.id) {
         t.nextActionAt = s.clock
-        log.push({ html: `<b>${t.name}</b> 還手！` })
+        const counterMove: Move = {
+          id: 'counter', ownerId: t.id, slot: 'sword', name: '反擊',
+          condition: null, rangeType: t.element, scope: 'single',
+          powerRatio: 1.0, hitRate: 1, critRate: 0, cooldown: null,
+          description: '', effectTrigger: null, effectOps: [], effectChance: 0,
+        }
+        const cResult = resolveHit(t, u, counterMove)
+        if (cResult.hit) {
+          const { hpLost: cHpLost } = applyDamage(u, cResult.rawDamage)
+          log.push({ html: `<b>${t.name}</b> 還手！→ <b>${u.name}</b> <span class="dmg-num">-${cHpLost}</span>${!u.alive ? ' → 倒下！' : ''}` })
+        } else {
+          log.push({ html: `<b>${t.name}</b> 還手未命中` })
+        }
       }
 
       // onHit effects
@@ -473,10 +489,13 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
     u.moveCooldownUntil[move.id] = s.clock + move.cooldown * 10
   }
 
-  // Advance ATB timer
+  // Advance ATB timer — BAT- shortens cooldown, BAT+ extends it
   const bat = calcBAT(u)
   const batMinusSt = u.statuses.find(st => st.key === 'batMinus')
-  const effBat = batMinusSt ? Math.max(1, bat - batMinusSt.value) : bat
+  const batPlusSt  = u.statuses.find(st => st.key === 'batPlus')
+  let effBat = bat
+  if (batMinusSt) effBat = Math.max(1, effBat - batMinusSt.value)
+  if (batPlusSt)  effBat += batPlusSt.value
   const linked = u.statuses.some(st => st.key === 'linked')
   u.nextActionAt = s.clock + (linked ? Math.floor(effBat / 2) : effBat)
   u._didNotMoveThisTurn = true  // reset move allowance for next turn
@@ -514,7 +533,11 @@ export function doPass(gs: GameState, unitId: string): GameState {
 
   const bat = calcBAT(u)
   const batMinusSt = u.statuses.find(st => st.key === 'batMinus')
-  u.nextActionAt = s.clock + (batMinusSt ? Math.max(1, bat - batMinusSt.value) : bat)
+  const batPlusSt  = u.statuses.find(st => st.key === 'batPlus')
+  let effBat = bat
+  if (batMinusSt) effBat = Math.max(1, effBat - batMinusSt.value)
+  if (batPlusSt)  effBat += batPlusSt.value
+  u.nextActionAt = s.clock + effBat
 
   return s
 }
