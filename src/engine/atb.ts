@@ -61,7 +61,7 @@ export function makeUnit(charId: string, side: 'A' | 'B', slot: 1 | 2 | 3, start
     baseSpd: char.spd,
     moves: moveMap,
     alive: true,
-    nextActionAt: startAt + Math.max(1, Math.floor(10 * (10 / char.spd))),
+    nextActionAt: startAt,
     statuses: initStatuses,
     moveCooldownUntil: {},
     flags,

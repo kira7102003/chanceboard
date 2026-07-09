@@ -61,6 +61,18 @@ function healUnit(unit: Unit, amount: number) {
   unit.hp = Math.min(unit.maxHp, unit.hp + Math.max(0, amount))
 }
 
+// op.to uses distance convention (1=near/front, 2=mid, 3=far/back), not absolute slot.
+// Convert to the unit's actual slot number based on which side they're on.
+function distToSlot(dist: 1 | 2 | 3, side: 'A' | 'B'): 1 | 2 | 3 {
+  if (dist === 2) return 2
+  if (dist === 1) return side === 'A' ? 3 : 1  // near = front (A:3, B:1)
+  return side === 'A' ? 1 : 3                   // far  = back  (A:1, B:3)
+}
+
+function slotLabel(side: 'A' | 'B', slot: 1 | 2 | 3): string {
+  return side === 'A' ? ['後', '中', '前'][slot - 1] : ['前', '中', '後'][slot - 1]
+}
+
 export function runEffectOps(
   ops: EffectOp[],
   actor: Unit,
@@ -248,22 +260,21 @@ export function runEffectOps(
       }
 
       case 'knockback': {
-        const toSlot = (op.to as 1 | 2 | 3)
+        const dist = (op.to as 1 | 2 | 3)
         for (const t of targets) {
           if (t.statuses.some(s => s.key === 'rooted') && !actor.flags.immuneToRooted) continue
+          const toSlot = distToSlot(dist, t.side)
           t.slot = toSlot
-          const kbLabel = t.side === 'A' ? ['後', '中', '前'][toSlot - 1] : ['前', '中', '後'][toSlot - 1]
-          log.push({ html: `<b>${t.name}</b> 被擊至 ${kbLabel}距離` })
+          log.push({ html: `<b>${t.name}</b> 被擊至 ${slotLabel(t.side, toSlot)}距離` })
         }
         break
       }
 
       case 'selfMove': {
         if (!actor.statuses.some(s => s.key === 'rooted')) {
-          const smSlot = op.to as number
-          actor.slot = smSlot as 1 | 2 | 3
-          const smLabel = actor.side === 'A' ? ['後', '中', '前'][smSlot - 1] : ['前', '中', '後'][smSlot - 1]
-          log.push({ html: `<b>${actor.name}</b> 移至 ${smLabel}距離` })
+          const toSlot = distToSlot(op.to as 1 | 2 | 3, actor.side)
+          actor.slot = toSlot
+          log.push({ html: `<b>${actor.name}</b> 移至 ${slotLabel(actor.side, toSlot)}距離` })
         }
         break
       }
