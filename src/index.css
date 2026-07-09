@@ -611,6 +611,23 @@ h2 {
 }
 .rup-row { display: flex; align-items: center; gap: 6px; }
 
+/* Two-column layout inside rup-body */
+.rup-cols {
+  display: flex; gap: 14px; align-items: flex-start;
+}
+.rup-left {
+  display: flex; flex-direction: column; gap: 5px;
+  flex-shrink: 0; min-width: 56px;
+}
+.rup-pass { margin-top: 6px; width: 100%; }
+.rup-right {
+  flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0;
+}
+.rup-skills-grid {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.rup-flowers { display: flex; flex-direction: column; }
+
 .section-label {
   font-size: 8px; color: rgba(200,161,90,.25); font-weight: 800;
   text-transform: uppercase; letter-spacing: 1.5px; white-space: nowrap; flex-shrink: 0;

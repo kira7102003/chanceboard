@@ -388,80 +388,82 @@ function ReadyUnitPanel({ unit, clock, suitInHand, flowerHand, isOpen, selecting
         <div className="rup-body">
           {selectingTarget && <div className="target-hint">↑ 點選上方敵方角色</div>}
 
-          {/* Pending position — one step at a time, can change before confirming */}
-          <div className="rup-row">
-            <span className="section-label">移動至</span>
-            {([1,2,3] as (1|2|3)[]).map(s => {
-              const tooFar = Math.abs(s - unit.slot) > 1
-              const label = getSlotLabel(unit.side, s)
-              return (
-                <button key={s}
-                  className={`btn sm ${pendingSlot === s ? 'primary' : ''}`}
-                  disabled={tooFar}
-                  onClick={() => !tooFar && onPendingMove(s)}>
-                  {label}
-                </button>
-              )
-            })}
-          </div>
-
-          {/* Skills */}
-          <div className="rup-row" style={{ flexWrap: 'wrap' }}>
-            <span className="section-label">招式</span>
-            {MOVE_SLOTS.map(slot => {
-              const move = unit.moves[slot]
-              if (!move) return null
-              const sKey   = SUIT_FOR[slot]
-              const have   = sKey ? (suitInHand[sKey] ?? 0) : 999
-              const lib    = unit.statuses.some(s => s.key === 'liberated')
-              const need   = lib ? 1 : (move.condition ?? 1)
-              const canUse = !sKey || have >= need
-              const onCD   = (unit.moveCooldownUntil[move.id] ?? 0) > clock
-              const ok     = canUse && !onCD
-              const skillImg = localStorage.getItem(`cb_move_img_${move.id}`)
-
-              return (
-                <button
-                  key={slot}
-                  className={`btn skill-btn ${!ok ? 'skill-dim' : ''}`}
-                  style={{ borderColor: ok ? SLOT_COLOR[slot] : '#2a2a3e' }}
-                  onClick={() => ok && onMove(slot)}
-                  title={move.description}
-                >
-                  {skillImg && (
-                    <div className="skill-img-wrap">
-                      <img src={skillImg} className="skill-img" alt="" />
-                      {onCD && <span className="skill-cd-overlay">CD</span>}
-                    </div>
-                  )}
-                  <div className="skill-top">
-                    <span style={{ color: ok ? SLOT_COLOR[slot] : '#444', fontWeight: 800 }}>
-                      {SLOT_LABEL[slot]}
-                    </span>
-                    {sKey && (
-                      <span className={canUse ? 'skill-ok' : 'skill-ng'}>{have}/{need}</span>
-                    )}
-                    {!skillImg && onCD && <span className="skill-cd">CD</span>}
-                  </div>
-                  <div className="skill-name">{move.name}</div>
-                </button>
-              )
-            })}
-          </div>
-
-          {/* Flower hand */}
-          {flowerHand.length > 0 && (
-            <div className="rup-row" style={{ flexWrap: 'wrap' }}>
-              <span className="section-label">花牌</span>
-              {flowerHand.map((c, i) => (
-                <CardChip key={`${c.id}-${i}`} card={c} onClick={() => onPlayCard(c.id)} />
-              ))}
+          <div className="rup-cols">
+            {/* Left: position buttons + PASS */}
+            <div className="rup-left">
+              <div className="section-label" style={{ marginBottom: 4 }}>移動</div>
+              {([1,2,3] as (1|2|3)[]).map(s => {
+                const tooFar = Math.abs(s - unit.slot) > 1
+                const label = getSlotLabel(unit.side, s)
+                return (
+                  <button key={s}
+                    className={`btn sm ${pendingSlot === s ? 'primary' : ''}`}
+                    disabled={tooFar}
+                    onClick={() => !tooFar && onPendingMove(s)}>
+                    {label}
+                  </button>
+                )
+              })}
+              <button className="btn danger rup-pass" onClick={onPass}>PASS</button>
             </div>
-          )}
 
-          <button className="btn danger" style={{ alignSelf: 'flex-start' }} onClick={onPass}>
-            PASS
-          </button>
+            {/* Right: skill image cards + flower cards */}
+            <div className="rup-right">
+              <div className="rup-skills-grid">
+                {MOVE_SLOTS.map(slot => {
+                  const move = unit.moves[slot]
+                  if (!move) return null
+                  const sKey   = SUIT_FOR[slot]
+                  const have   = sKey ? (suitInHand[sKey] ?? 0) : 999
+                  const lib    = unit.statuses.some(s => s.key === 'liberated')
+                  const need   = lib ? 1 : (move.condition ?? 1)
+                  const canUse = !sKey || have >= need
+                  const onCD   = (unit.moveCooldownUntil[move.id] ?? 0) > clock
+                  const ok     = canUse && !onCD
+                  const skillImg = localStorage.getItem(`cb_move_img_${move.id}`)
+
+                  return (
+                    <button
+                      key={slot}
+                      className={`btn skill-btn ${!ok ? 'skill-dim' : ''}`}
+                      style={{ borderColor: ok ? SLOT_COLOR[slot] : '#2a2a3e' }}
+                      onClick={() => ok && onMove(slot)}
+                      title={move.description}
+                    >
+                      {skillImg && (
+                        <div className="skill-img-wrap">
+                          <img src={skillImg} className="skill-img" alt="" />
+                          {onCD && <span className="skill-cd-overlay">CD</span>}
+                        </div>
+                      )}
+                      <div className="skill-top">
+                        <span style={{ color: ok ? SLOT_COLOR[slot] : '#444', fontWeight: 800 }}>
+                          {SLOT_LABEL[slot]}
+                        </span>
+                        {sKey && (
+                          <span className={canUse ? 'skill-ok' : 'skill-ng'}>{have}/{need}</span>
+                        )}
+                        {!skillImg && onCD && <span className="skill-cd">CD</span>}
+                      </div>
+                      <div className="skill-name">{move.name}</div>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Flower hand */}
+              {flowerHand.length > 0 && (
+                <div className="rup-flowers">
+                  <div className="section-label" style={{ marginBottom: 3 }}>花牌</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                    {flowerHand.map((c, i) => (
+                      <CardChip key={`${c.id}-${i}`} card={c} onClick={() => onPlayCard(c.id)} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
