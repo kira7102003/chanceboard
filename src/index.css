@@ -418,10 +418,20 @@ h2 {
 .atb-t { font-size: 9px; color: #1e2034; margin-left: 2px; }
 .atb-ready .atb-t { color: inherit; opacity: .8; }
 
-/* ── Battle main — two side panels ─────────────────────────── */
+/* ── Battle main — spotlight | 我方 | 敵方 ─────────────────── */
 .battle-main {
-  display: grid; grid-template-columns: 1fr 1fr;
-  flex: 1; overflow: hidden; min-height: 0;
+  display: flex; flex: 1; overflow: hidden; min-height: 0;
+}
+.unit-spotlight-panel {
+  width: 25%; flex-shrink: 0;
+  padding: 10px 8px; overflow-y: auto;
+  border-right: 1px solid rgba(200,161,90,.12);
+  background: linear-gradient(170deg, rgba(14,22,60,.97) 0%, rgba(6,8,20,.97) 100%);
+  display: flex; flex-direction: column; gap: 8px;
+  scrollbar-width: thin; scrollbar-color: rgba(200,161,90,.1) transparent;
+}
+.battle-sides {
+  flex: 1; display: grid; grid-template-columns: 1fr 1fr; overflow: hidden; min-height: 0;
 }
 .battle-side {
   padding: 10px 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
@@ -433,6 +443,39 @@ h2 {
 }
 .battle-side.enemy-side {
   background: linear-gradient(160deg, rgba(30,8,8,.7) 0%, var(--bg) 60%);
+}
+
+/* ── Spotlight card ─────────────────────────────────────────── */
+.spotlight-card {
+  background: linear-gradient(155deg, rgba(20,28,72,.95) 0%, rgba(10,12,32,.95) 100%);
+  border: 1px solid rgba(200,161,90,.22);
+  border-radius: 12px; padding: 10px;
+  box-shadow: 0 0 24px rgba(200,161,90,.08), 0 0 6px rgba(200,161,90,.15) inset;
+}
+.spotlight-portrait {
+  width: 100%; height: 140px; background-size: cover; background-position: center top;
+  border-radius: 8px; margin-bottom: 8px; position: relative; overflow: hidden;
+}
+.spotlight-name {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: linear-gradient(0deg, rgba(0,0,0,.8) 0%, transparent 100%);
+  font-size: 13px; font-weight: 800; padding: 12px 6px 4px; letter-spacing: .4px;
+}
+.spotlight-name-plain {
+  font-size: 15px; font-weight: 800; margin-bottom: 8px; letter-spacing: .4px;
+}
+.spotlight-ready {
+  font-size: 11px; font-weight: 800; color: var(--gold);
+  text-shadow: 0 0 10px rgba(200,161,90,.6); letter-spacing: 1px; text-align: center;
+}
+.spotlight-hp {
+  font-size: 11px; color: #8888aa; text-align: right;
+  margin-top: 3px; font-variant-numeric: tabular-nums;
+}
+.spotlight-pos {
+  font-size: 12px; font-weight: 900; letter-spacing: 3px;
+  text-align: center; margin-top: 8px;
+  text-shadow: 0 0 8px currentColor;
 }
 
 .side-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; }
@@ -451,9 +494,9 @@ h2 {
 
 @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .45 } }
 
-/* ── Slot layout ───────────────────────────────────────────── */
-.slots-row { display: flex; gap: 6px; align-items: flex-start; }
-.slot-col  { flex: 1; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+/* ── Slot layout — 階梯式：前=底 中=中 後=高 ────────────────── */
+.slots-row { display: flex; gap: 6px; align-items: flex-end; padding-top: 60px; }
+.slot-col  { flex: 1; display: flex; flex-direction: column; gap: 5px; min-width: 0; transition: transform .25s ease; }
 .slot-name {
   font-size: 11px; font-weight: 900; letter-spacing: 3px;
   text-align: center; padding: 3px 0;
@@ -1026,10 +1069,11 @@ h2 {
   /* char info popover full-width on mobile */
   .char-info-panel { min-width: min(90vw, 340px); max-width: 94vw; padding: 14px 14px; }
 
-  /* battle: stack sides vertically */
-  .battle-main { grid-template-columns: 1fr; }
-  .battle-side { padding: 8px 10px; }
-  .slots-row   { gap: 4px; }
+  /* battle: hide spotlight, stack sides vertically on mobile */
+  .unit-spotlight-panel { display: none; }
+  .battle-sides { grid-template-columns: 1fr; }
+  .battle-side  { padding: 8px 10px; }
+  .slots-row    { gap: 4px; padding-top: 40px; }
   .uc-portrait { height: 64px; }
   .unit-card   { padding: 5px 6px; }
   .unit-card-name { font-size: 11px; }

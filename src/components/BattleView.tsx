@@ -205,48 +205,62 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
         })}
       </div>
 
-      {/* ── Battle main: 我方 | 敵方 ── */}
+      {/* ── Battle main: spotlight | 我方 | 敵方 ── */}
       <div className="battle-main">
 
-        {/* 我方 */}
-        <div className="battle-side my-side">
-          <div className="side-hdr">
-            <span className={`side-badge side-${mySide}`}>{mySide} 方</span>
-            <span className="side-meta">手牌 {myHand.length} · 自訂剩 {myCustomLeft}</span>
+        {/* 左側 spotlight：輪到的角色放大顯示 */}
+        {!isAIBattle && readyUnits.length > 0 && (
+          <div className="unit-spotlight-panel">
+            <SpotlightUnitCard
+              unit={readyUnits.find(u => u.id === activeUnitId) ?? readyUnits[0]}
+              clock={game.clock}
+            />
           </div>
-          {/* my-side: show slots 3→2→1 so slot-3 (前) faces the center for A */}
-          <div className="slots-row">
-            {[3,2,1].map(slot => (
-              <div key={slot} className="slot-col">
-                <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(mySide, slot)] }}>{getSlotLabel(mySide, slot)}</div>
-                {myTeam.filter(u => u.slot === slot).map(u => (
-                  <UnitCard key={u.id} unit={u} clock={game.clock} />
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
+        )}
 
-        {/* 敵方 */}
-        <div className="battle-side enemy-side">
-          <div className="side-hdr">
-            <span className={`side-badge side-${oppSide}`}>{oppSide} 方</span>
-            {selectingTarget && <span className="pick-target-hint">← 點選目標</span>}
+        {/* 戰場兩側 */}
+        <div className="battle-sides">
+
+          {/* 我方 */}
+          <div className="battle-side my-side">
+            <div className="side-hdr">
+              <span className={`side-badge side-${mySide}`}>{mySide} 方</span>
+              <span className="side-meta">手牌 {myHand.length} · 自訂剩 {myCustomLeft}</span>
+            </div>
+            {/* 階梯式：前(idx0)=底，中(idx1)上移，後(idx2)最高 */}
+            <div className="slots-row">
+              {([3,2,1] as const).map((slot, idx) => (
+                <div key={slot} className="slot-col" style={{ transform: `translateY(${-idx * 28}px)` }}>
+                  <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(mySide, slot)] }}>{getSlotLabel(mySide, slot)}</div>
+                  {myTeam.filter(u => u.slot === slot).map(u => (
+                    <UnitCard key={u.id} unit={u} clock={game.clock} />
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
-          {/* enemy-side: show slots 1→2→3 so slot-1 (前) faces the center for B */}
-          <div className="slots-row">
-            {[1,2,3].map(slot => (
-              <div key={slot} className="slot-col">
-                <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(oppSide, slot)] }}>{getSlotLabel(oppSide, slot)}</div>
-                {enemyTeam.filter(u => u.slot === slot).map(u => (
-                  <UnitCard
-                    key={u.id} unit={u} clock={game.clock}
-                    onClick={selectingTarget && u.alive ? () => handleTargetClick(u) : undefined}
-                  />
-                ))}
-              </div>
-            ))}
+
+          {/* 敵方 */}
+          <div className="battle-side enemy-side">
+            <div className="side-hdr">
+              <span className={`side-badge side-${oppSide}`}>{oppSide} 方</span>
+              {selectingTarget && <span className="pick-target-hint">← 點選目標</span>}
+            </div>
+            <div className="slots-row">
+              {([1,2,3] as const).map((slot, idx) => (
+                <div key={slot} className="slot-col" style={{ transform: `translateY(${-idx * 28}px)` }}>
+                  <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(oppSide, slot)] }}>{getSlotLabel(oppSide, slot)}</div>
+                  {enemyTeam.filter(u => u.slot === slot).map(u => (
+                    <UnitCard
+                      key={u.id} unit={u} clock={game.clock}
+                      onClick={selectingTarget && u.alive ? () => handleTargetClick(u) : undefined}
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
+
         </div>
       </div>
 
@@ -319,6 +333,37 @@ function UnitCard({ unit, clock, onClick }: { unit: Unit; clock: number; onClick
       </div>
       {unit.statuses.length > 0 && (
         <div className="status-chips">
+          {unit.statuses.map((s, i) => <span key={i} className="status-chip">{s.key}</span>)}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── SpotlightUnitCard ───────────────────────────────────────────────────────
+
+function SpotlightUnitCard({ unit, clock }: { unit: Unit; clock: number }) {
+  const pct     = unit.alive ? (unit.hp / unit.maxHp) * 100 : 0
+  const hpColor = pct > 60 ? '#22cc66' : pct > 30 ? '#ccaa22' : '#cc3333'
+  const img     = getCharImg(unit.characterId)
+  const posLabel = getSlotLabel(unit.side, unit.slot)
+
+  return (
+    <div className="spotlight-card">
+      {img
+        ? <div className="spotlight-portrait" style={{ backgroundImage: `url(${img})` }}>
+            <span className="spotlight-name" style={{ color: EL_COLOR[unit.element] }}>{unit.name}</span>
+          </div>
+        : <div className="spotlight-name-plain" style={{ color: EL_COLOR[unit.element] }}>{unit.name}</div>
+      }
+      <div className="spotlight-ready">⚡ 行動中</div>
+      <div className="hp-bar-wrap" style={{ marginTop: 6 }}>
+        <div className="hp-bar" style={{ width: `${pct}%`, background: hpColor }} />
+      </div>
+      <div className="spotlight-hp">{unit.hp} / {unit.maxHp}</div>
+      <div className="spotlight-pos" style={{ color: DIST_COLOR[posLabel] }}>{posLabel} 距離</div>
+      {unit.statuses.length > 0 && (
+        <div className="status-chips" style={{ marginTop: 8 }}>
           {unit.statuses.map((s, i) => <span key={i} className="status-chip">{s.key}</span>)}
         </div>
       )}
