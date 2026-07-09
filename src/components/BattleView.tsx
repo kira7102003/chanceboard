@@ -46,7 +46,6 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
   const { game, mySide, isSolo, isAIBattle, soloScore } = useGameStore()
   const logRef      = useRef<HTMLDivElement>(null)
   const animTimer   = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [activeUnitId,    setActiveUnitId]    = useState<string|null>(null)
   const [selectingTarget, setSelectingTarget] = useState<MoveSlot|null>(null)
   const [moveAnim,  setMoveAnim]  = useState<MoveAnim | null>(null)
   const [animKey,   setAnimKey]   = useState(0)
@@ -152,19 +151,19 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
     if (move.scope === 'group' || !move.rangeType) {
       triggerAnim(unit, slot)
       onExecuteMove(unit.id, slot, null)
-      setActiveUnitId(null); setSelectingTarget(null)
+      setSelectingTarget(null)
     } else {
       setSelectingTarget(slot)
     }
   }
 
   const handleTargetClick = (target: Unit) => {
-    const active = readyUnits.find(u => u.id === activeUnitId) ?? readyUnits[0]
+    const active = readyUnits[0]
     if (!active || !selectingTarget) return
     applyPendingMove(active)
     triggerAnim(active, selectingTarget)
     onExecuteMove(active.id, selectingTarget, target.id)
-    setActiveUnitId(null); setSelectingTarget(null)
+    setSelectingTarget(null)
   }
 
   return (
@@ -238,11 +237,10 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
                 <div key={slot} className="slot-col" style={{ transform: `translateY(${-slotDepth(mySide ?? 'A', slot) * 28}px)` }}>
                   <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(mySide ?? 'A', slot)] }}>{getSlotLabel(mySide ?? 'A', slot)}</div>
                   {myTeam.filter(u => getPendingSlot(u) === slot).map(u => {
-                    const isReady = !isAIBattle && readyUnits.some(r => r.id === u.id)
+                    const isActive = !isAIBattle && readyUnits[0]?.id === u.id
                     return (
                       <UnitCard key={u.id} unit={u} clock={game.clock}
-                        selectable={isReady && !selectingTarget}
-                        onClick={isReady && !selectingTarget ? () => setActiveUnitId(u.id) : undefined}
+                        selectable={isActive && !selectingTarget}
                       />
                     )
                   })}
@@ -275,31 +273,43 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
         </div>
       </div>
 
-      {/* ── Action panels ── */}
-      {!isAIBattle && readyUnits.length > 0 && (
-        <div className="action-area">
-          {readyUnits.map((unit, idx) => {
-            const isOpen = activeUnitId ? activeUnitId === unit.id : idx === 0
-            return (
-              <ReadyUnitPanel
-                key={unit.id}
-                unit={unit}
-                clock={game.clock}
-                suitInHand={suitInHand}
-                flowerHand={flowerHand}
-                isOpen={isOpen}
-                selectingTarget={isOpen ? selectingTarget : null}
-                pendingSlot={getPendingSlot(unit)}
-                onToggle={() => setActiveUnitId(p => p === unit.id ? null : unit.id)}
-                onMove={slot => handleMoveClick(unit, slot)}
-                onPendingMove={s => setPendingSlots(prev => ({ ...prev, [unit.id]: s }))}
-                onPass={() => { applyPendingMove(unit); onPass(unit.id); setActiveUnitId(null) }}
-                onPlayCard={onPlayCard}
-              />
-            )
-          })}
-        </div>
-      )}
+      {/* ── Action panels — always shows first-in-ATB-order unit ── */}
+      {!isAIBattle && readyUnits.length > 0 && (() => {
+        const activeUnit = readyUnits[0]
+        const waitingUnits = readyUnits.slice(1)
+        return (
+          <div className="action-area">
+            {/* Waiting queue — other ready units */}
+            {waitingUnits.length > 0 && (
+              <div className="rup-queue">
+                <span className="rup-queue-label">待機</span>
+                {waitingUnits.map(u => (
+                  <div key={u.id} className="rup-queue-chip">
+                    <span style={{ color: EL_COLOR[u.element] }}>⬥</span>
+                    <span>{u.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* Active unit panel */}
+            <ReadyUnitPanel
+              key={activeUnit.id}
+              unit={activeUnit}
+              clock={game.clock}
+              suitInHand={suitInHand}
+              flowerHand={flowerHand}
+              isOpen={true}
+              selectingTarget={selectingTarget}
+              pendingSlot={getPendingSlot(activeUnit)}
+              onToggle={() => {}}
+              onMove={slot => handleMoveClick(activeUnit, slot)}
+              onPendingMove={s => setPendingSlots(prev => ({ ...prev, [activeUnit.id]: s }))}
+              onPass={() => { applyPendingMove(activeUnit); onPass(activeUnit.id); setSelectingTarget(null) }}
+              onPlayCard={onPlayCard}
+            />
+          </div>
+        )
+      })()}
 
       {/* ── Bottom row: log (left) + hand panel (right) ── */}
       <div className="battle-bottom">

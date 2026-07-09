@@ -816,9 +816,9 @@ export function autoPlayUnit(gs: GameState, unit: Unit): GameState {
 }
 
 export function getReadyUnits(gs: GameState): Unit[] {
-  return [...gs.teamA, ...gs.teamB].filter(
-    u => u.alive && !u.statuses.some(s => s.key === 'frozen') && u.nextActionAt <= gs.clock
-  )
+  return [...gs.teamA, ...gs.teamB]
+    .filter(u => u.alive && !u.statuses.some(s => s.key === 'frozen') && u.nextActionAt <= gs.clock)
+    .sort((a, b) => a.nextActionAt - b.nextActionAt)
 }
 
 function deepClone<T>(v: T): T {

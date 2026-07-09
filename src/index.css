@@ -591,6 +591,25 @@ h2 {
   scrollbar-width: thin; scrollbar-color: rgba(200,161,90,.1) transparent;
 }
 
+/* ── Ready unit queue row (other waiting units) ────────────── */
+.rup-queue {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 16px;
+  background: rgba(0,0,0,.18);
+  border-bottom: 1px solid rgba(200,161,90,.06);
+  flex-shrink: 0;
+}
+.rup-queue-label {
+  font-size: 7px; font-weight: 800; letter-spacing: 1.5px;
+  color: rgba(200,161,90,.18); text-transform: uppercase; white-space: nowrap; flex-shrink: 0;
+}
+.rup-queue-chip {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 10px; color: #2e2e4a; padding: 2px 9px;
+  background: rgba(255,255,255,.02); border-radius: 20px;
+  border: 1px solid rgba(255,255,255,.05);
+}
+
 /* ── Ready unit panel (RUP) ────────────────────────────────── */
 .rup { border-bottom: 1px solid rgba(200,161,90,.07); }
 .rup:last-child { border-bottom: none; }
