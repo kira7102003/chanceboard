@@ -207,16 +207,6 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
       {/* ── Battle main: spotlight | 我方 | 敵方 ── */}
       <div className="battle-main">
 
-        {/* 左側 spotlight：輪到的角色放大顯示 */}
-        {!isAIBattle && readyUnits.length > 0 && (
-          <div className="unit-spotlight-panel">
-            <SpotlightUnitCard
-              unit={readyUnits.find(u => u.id === activeUnitId) ?? readyUnits[0]}
-              clock={game.clock}
-            />
-          </div>
-        )}
-
         {/* 戰場兩側 */}
         <div className="battle-sides">
 
@@ -226,9 +216,9 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
               <span className={`side-badge side-${mySide}`}>{mySide} 方</span>
               <span className="side-meta">手牌 {myHand.length} · 自訂剩 {myCustomLeft}</span>
             </div>
-            {/* 階梯式：前(idx0)=底，中(idx1)上移，後(idx2)最高 */}
+            {/* 階梯式：後(idx0)=底，中(idx1)上移，前(idx2)最高 */}
             <div className="slots-row">
-              {([3,2,1] as const).map((slot, idx) => (
+              {([1,2,3] as const).map((slot, idx) => (
                 <div key={slot} className="slot-col" style={{ transform: `translateY(${-idx * 28}px)` }}>
                   <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(mySide ?? 'A', slot)] }}>{getSlotLabel(mySide ?? 'A', slot)}</div>
                   {myTeam.filter(u => u.slot === slot).map(u => (
