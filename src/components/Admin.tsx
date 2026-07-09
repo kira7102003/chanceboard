@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { moves as defaultMoves } from '../data/db'
-import { getChars, saveChars, resetChars, getCharImg } from '../utils/charStore'
+import { getChars, saveChars, resetChars, getCharImg, getUrlByKey, uploadByKey, removeByKey } from '../utils/charStore'
 import type { Character } from '../types/character'
 import type { Move } from '../types/move'
 
@@ -332,9 +332,10 @@ type CropDragState =
 // disp: rendered image bounds within fixed-height stage (coords relative to stage origin)
 // box:  crop box position/size relative to rendered image (NOT stage)
 function ImageCrop({ storageKey, outSize = 256, onSave }: CropProps) {
-  const [imgSrc, setImgSrc] = useState<string | null>(null)
-  const [saved,  setSaved]  = useState<string | null>(() => localStorage.getItem(storageKey))
-  const [disp,   setDisp]   = useState({ w: 0, h: 0, imgX: 0, imgY: 0 })
+  const [imgSrc,    setImgSrc]    = useState<string | null>(null)
+  const [saved,     setSaved]     = useState<string | null>(() => getUrlByKey(storageKey))
+  const [uploading, setUploading] = useState(false)
+  const [disp,      setDisp]      = useState({ w: 0, h: 0, imgX: 0, imgY: 0 })
   const [box,    setBox]    = useState({ x: 0, y: 0, size: 100 })
 
   const imgRef   = useRef<HTMLImageElement>(null)
@@ -346,7 +347,7 @@ function ImageCrop({ storageKey, outSize = 256, onSave }: CropProps) {
   useEffect(() => { dispRef.current = disp }, [disp])
 
   useEffect(() => {
-    setSaved(localStorage.getItem(storageKey))
+    setSaved(getUrlByKey(storageKey))
     setImgSrc(null)
   }, [storageKey])
 
@@ -438,7 +439,7 @@ function ImageCrop({ storageKey, outSize = 256, onSave }: CropProps) {
     reader.readAsDataURL(file); e.target.value = ''
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const img = imgRef.current; if (!img || !img.naturalWidth) return
     const d = dispRef.current; if (!d.w || !d.h) return
     const b = boxRef.current
@@ -448,11 +449,20 @@ function ImageCrop({ storageKey, outSize = 256, onSave }: CropProps) {
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'
     ctx.drawImage(img, b.x * sx, b.y * sy, b.size * sx, b.size * sy, 0, 0, outSize, outSize)
     const dataUrl = cv.toDataURL('image/webp', 0.95)
-    localStorage.setItem(storageKey, dataUrl)
-    setSaved(dataUrl); setImgSrc(null); onSave?.()
+    setUploading(true)
+    try {
+      const url = await uploadByKey(storageKey, dataUrl)
+      setSaved(url); setImgSrc(null); onSave?.()
+    } catch (e) {
+      console.error('上傳失敗，暫存本地', e)
+      localStorage.setItem(storageKey, dataUrl)
+      setSaved(dataUrl); setImgSrc(null); onSave?.()
+    } finally {
+      setUploading(false)
+    }
   }
 
-  const handleRemove = () => { localStorage.removeItem(storageKey); setSaved(null) }
+  const handleRemove = () => { removeByKey(storageKey); setSaved(null) }
 
   const { x, y, size } = box
   const { w, imgX, imgY } = disp
@@ -511,8 +521,10 @@ function ImageCrop({ storageKey, outSize = 256, onSave }: CropProps) {
 
           <div className="img-crop-hint">拖曳框內移動位置 · 拖曳四角縮放大小</div>
           <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-            <button className="btn primary sm" onClick={handleSave}>裁切並儲存</button>
-            <button className="btn sm" onClick={() => setImgSrc(null)}>取消</button>
+            <button className="btn primary sm" onClick={handleSave} disabled={uploading}>
+              {uploading ? '上傳中…' : '裁切並儲存'}
+            </button>
+            <button className="btn sm" onClick={() => setImgSrc(null)} disabled={uploading}>取消</button>
           </div>
         </div>
       )}
