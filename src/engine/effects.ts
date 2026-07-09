@@ -199,7 +199,7 @@ export function runEffectOps(
       }
 
       case 'fillToLimit': {
-        const limitA = 5; const limitB = 5
+        const limitA = 4; const limitB = 4
         while (gs.handA.length < limitA && gs.drawPublic.length > 0)
           gs.handA.push(gs.drawPublic.shift()!)
         while (gs.handB.length < limitB && gs.drawPublic.length > 0)
@@ -252,15 +252,18 @@ export function runEffectOps(
         for (const t of targets) {
           if (t.statuses.some(s => s.key === 'rooted') && !actor.flags.immuneToRooted) continue
           t.slot = toSlot
-          log.push({ html: `<b>${t.name}</b> 被擊至 ${['前', '中', '後'][toSlot - 1]}距離` })
+          const kbLabel = t.side === 'A' ? ['後', '中', '前'][toSlot - 1] : ['前', '中', '後'][toSlot - 1]
+          log.push({ html: `<b>${t.name}</b> 被擊至 ${kbLabel}距離` })
         }
         break
       }
 
       case 'selfMove': {
         if (!actor.statuses.some(s => s.key === 'rooted')) {
-          actor.slot = op.to as 1 | 2 | 3
-          log.push({ html: `<b>${actor.name}</b> 移至 ${['前', '中', '後'][(op.to as number) - 1]}距離` })
+          const smSlot = op.to as number
+          actor.slot = smSlot as 1 | 2 | 3
+          const smLabel = actor.side === 'A' ? ['後', '中', '前'][smSlot - 1] : ['前', '中', '後'][smSlot - 1]
+          log.push({ html: `<b>${actor.name}</b> 移至 ${smLabel}距離` })
         }
         break
       }
