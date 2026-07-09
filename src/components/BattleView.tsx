@@ -344,7 +344,7 @@ function UnitCard({ unit, clock, onClick, selectable }: { unit: Unit; clock: num
         ? (
           <div className="uc-portrait" style={{ backgroundImage: `url(${img})` }}>
             <span className="uc-portrait-name" style={{ color: EL_COLOR[unit.element] }}>{unit.name}</span>
-            {!unit.alive && <div className="uc-dead-overlay">✝</div>}
+            {!unit.alive && <div className="uc-dead-overlay">陣亡</div>}
           </div>
         )
         : <div className="unit-card-name" style={{ color: EL_COLOR[unit.element] }}>{unit.name}</div>
