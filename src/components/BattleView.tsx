@@ -14,6 +14,10 @@ function getSlotLabel(side: 'A' | 'B', slot: number): string {
   if (slot === 2) return '中'
   return slot === (side === 'A' ? 3 : 1) ? '前' : '後'
 }
+// depth 0=front(bottom) … 2=back(top); used for staircase height
+function slotDepth(side: 'A' | 'B', slot: number): number {
+  return side === 'A' ? 3 - slot : slot - 1
+}
 const EL_COLOR: Record<string, string> = { sword: '#e87733', gun: '#22cc77', magic: '#9955ee' }
 const SUIT_CLS: Record<string, string>  = { red: 'suit-red', green: 'suit-green', blue: 'suit-blue', yellow: 'suit-yellow', flower: 'suit-flower' }
 const MOVE_SLOTS: MoveSlot[] = ['sword', 'gun', 'magic', 'wish']
@@ -46,6 +50,8 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
   const [selectingTarget, setSelectingTarget] = useState<MoveSlot|null>(null)
   const [moveAnim,  setMoveAnim]  = useState<MoveAnim | null>(null)
   const [animKey,   setAnimKey]   = useState(0)
+  // pending destination slot per unit (preview before confirming with a skill/pass)
+  const [pendingSlots, setPendingSlots] = useState<Record<string, 1|2|3>>({})
 
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight
@@ -131,9 +137,18 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
     )
   }
 
+  const getPendingSlot = (unit: Unit): 1|2|3 => pendingSlots[unit.id] ?? unit.slot
+
+  const applyPendingMove = (unit: Unit) => {
+    const pending = getPendingSlot(unit)
+    if (pending !== unit.slot) onMoveUnit(unit.id, pending)
+    setPendingSlots(prev => { const n = {...prev}; delete n[unit.id]; return n })
+  }
+
   const handleMoveClick = (unit: Unit, slot: MoveSlot) => {
     const move = unit.moves[slot]
     if (!move) return
+    applyPendingMove(unit)
     if (move.scope === 'group' || !move.rangeType) {
       triggerAnim(unit, slot)
       onExecuteMove(unit.id, slot, null)
@@ -146,6 +161,7 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
   const handleTargetClick = (target: Unit) => {
     const active = readyUnits.find(u => u.id === activeUnitId) ?? readyUnits[0]
     if (!active || !selectingTarget) return
+    applyPendingMove(active)
     triggerAnim(active, selectingTarget)
     onExecuteMove(active.id, selectingTarget, target.id)
     setActiveUnitId(null); setSelectingTarget(null)
@@ -216,10 +232,10 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
               <span className={`side-badge side-${mySide}`}>{mySide} 方</span>
               <span className="side-meta">手牌 {myHand.length} · 自訂剩 {myCustomLeft}</span>
             </div>
-            {/* 階梯式：前排在底，後排(最遠)在頂 — A側後=slot1，B側後=slot3 */}
+            {/* 後=左+頂, 前=右+底 (A:slot1=後,B:slot1=前) — column order [1,2,3], height by slotDepth */}
             <div className="slots-row">
-              {((mySide === 'A' ? [3,2,1] : [1,2,3]) as (1|2|3)[]).map((slot, idx) => (
-                <div key={slot} className="slot-col" style={{ transform: `translateY(${-idx * 28}px)` }}>
+              {([1,2,3] as const).map(slot => (
+                <div key={slot} className="slot-col" style={{ transform: `translateY(${-slotDepth(mySide ?? 'A', slot) * 28}px)` }}>
                   <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(mySide ?? 'A', slot)] }}>{getSlotLabel(mySide ?? 'A', slot)}</div>
                   {myTeam.filter(u => u.slot === slot).map(u => (
                     <UnitCard key={u.id} unit={u} clock={game.clock} />
@@ -236,8 +252,8 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
               {selectingTarget && <span className="pick-target-hint">← 點選目標</span>}
             </div>
             <div className="slots-row">
-              {((oppSide === 'A' ? [3,2,1] : [1,2,3]) as (1|2|3)[]).map((slot, idx) => (
-                <div key={slot} className="slot-col" style={{ transform: `translateY(${-idx * 28}px)` }}>
+              {([1,2,3] as const).map(slot => (
+                <div key={slot} className="slot-col" style={{ transform: `translateY(${-slotDepth(oppSide, slot) * 28}px)` }}>
                   <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(oppSide, slot)] }}>{getSlotLabel(oppSide, slot)}</div>
                   {enemyTeam.filter(u => u.slot === slot).map(u => (
                     <UnitCard
@@ -267,10 +283,11 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
                 flowerHand={flowerHand}
                 isOpen={isOpen}
                 selectingTarget={isOpen ? selectingTarget : null}
+                pendingSlot={getPendingSlot(unit)}
                 onToggle={() => setActiveUnitId(p => p === unit.id ? null : unit.id)}
                 onMove={slot => handleMoveClick(unit, slot)}
-                onSelfMove={s => { onMoveUnit(unit.id, s); setActiveUnitId(null) }}
-                onPass={() => { onPass(unit.id); setActiveUnitId(null) }}
+                onPendingMove={s => setPendingSlots(prev => ({ ...prev, [unit.id]: s }))}
+                onPass={() => { applyPendingMove(unit); onPass(unit.id); setActiveUnitId(null) }}
                 onPlayCard={onPlayCard}
               />
             )
@@ -332,19 +349,27 @@ function UnitCard({ unit, clock, onClick }: { unit: Unit; clock: number; onClick
 // ─── ReadyUnitPanel ──────────────────────────────────────────────────────────
 
 function ReadyUnitPanel({ unit, clock, suitInHand, flowerHand, isOpen, selectingTarget,
-  onToggle, onMove, onSelfMove, onPass, onPlayCard }: {
+  pendingSlot, onToggle, onMove, onPendingMove, onPass, onPlayCard }: {
   unit: Unit; clock: number
   suitInHand: Record<string, number>; flowerHand: Card[]
   isOpen: boolean; selectingTarget: MoveSlot|null
+  pendingSlot: 1|2|3
   onToggle: () => void; onMove: (s: MoveSlot) => void
-  onSelfMove: (s: 1|2|3) => void; onPass: () => void
+  onPendingMove: (s: 1|2|3) => void; onPass: () => void
   onPlayCard: (id: string) => void
 }) {
+  const pendingLabel = getSlotLabel(unit.side, pendingSlot)
+  const moved = pendingSlot !== unit.slot
   return (
     <div className="rup">
       <div className="rup-hdr" onClick={onToggle}>
         <b style={{ color: EL_COLOR[unit.element] }}>{unit.name}</b>
-        <span className="rup-pos">目前在 {getSlotLabel(unit.side, unit.slot)}</span>
+        <span className="rup-pos">
+          {moved
+            ? <>{getSlotLabel(unit.side, unit.slot)} → <b style={{ color: DIST_COLOR[pendingLabel] }}>{pendingLabel}</b></>
+            : <>目前在 {getSlotLabel(unit.side, unit.slot)}</>
+          }
+        </span>
         <span className="rup-chev">{isOpen ? '▲' : '▼'}</span>
       </div>
 
@@ -352,7 +377,7 @@ function ReadyUnitPanel({ unit, clock, suitInHand, flowerHand, isOpen, selecting
         <div className="rup-body">
           {selectingTarget && <div className="target-hint">↑ 點選上方敵方角色</div>}
 
-          {/* Move — one slot at a time; labels depend on side per SA */}
+          {/* Pending position — one step at a time, can change before confirming */}
           <div className="rup-row">
             <span className="section-label">移動至</span>
             {([1,2,3] as (1|2|3)[]).map(s => {
@@ -360,9 +385,9 @@ function ReadyUnitPanel({ unit, clock, suitInHand, flowerHand, isOpen, selecting
               const label = getSlotLabel(unit.side, s)
               return (
                 <button key={s}
-                  className={`btn sm ${unit.slot === s ? 'primary' : ''}`}
+                  className={`btn sm ${pendingSlot === s ? 'primary' : ''}`}
                   disabled={tooFar}
-                  onClick={() => !tooFar && onSelfMove(s)}>
+                  onClick={() => !tooFar && onPendingMove(s)}>
                   {label}
                 </button>
               )
