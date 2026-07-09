@@ -237,7 +237,7 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
               {([1,2,3] as const).map(slot => (
                 <div key={slot} className="slot-col" style={{ transform: `translateY(${-slotDepth(mySide ?? 'A', slot) * 28}px)` }}>
                   <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(mySide ?? 'A', slot)] }}>{getSlotLabel(mySide ?? 'A', slot)}</div>
-                  {myTeam.filter(u => u.slot === slot).map(u => {
+                  {myTeam.filter(u => getPendingSlot(u) === slot).map(u => {
                     const isReady = !isAIBattle && readyUnits.some(r => r.id === u.id)
                     return (
                       <UnitCard key={u.id} unit={u} clock={game.clock}
