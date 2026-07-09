@@ -329,37 +329,6 @@ function UnitCard({ unit, clock, onClick }: { unit: Unit; clock: number; onClick
   )
 }
 
-// ─── SpotlightUnitCard ───────────────────────────────────────────────────────
-
-function SpotlightUnitCard({ unit }: { unit: Unit; clock: number }) {
-  const pct     = unit.alive ? (unit.hp / unit.maxHp) * 100 : 0
-  const hpColor = pct > 60 ? '#22cc66' : pct > 30 ? '#ccaa22' : '#cc3333'
-  const img     = getCharImg(unit.characterId)
-  const posLabel = getSlotLabel(unit.side, unit.slot)
-
-  return (
-    <div className="spotlight-card">
-      {img
-        ? <div className="spotlight-portrait" style={{ backgroundImage: `url(${img})` }}>
-            <span className="spotlight-name" style={{ color: EL_COLOR[unit.element] }}>{unit.name}</span>
-          </div>
-        : <div className="spotlight-name-plain" style={{ color: EL_COLOR[unit.element] }}>{unit.name}</div>
-      }
-      <div className="spotlight-ready">⚡ 行動中</div>
-      <div className="hp-bar-wrap" style={{ marginTop: 6 }}>
-        <div className="hp-bar" style={{ width: `${pct}%`, background: hpColor }} />
-      </div>
-      <div className="spotlight-hp">{unit.hp} / {unit.maxHp}</div>
-      <div className="spotlight-pos" style={{ color: DIST_COLOR[posLabel] }}>{posLabel} 距離</div>
-      {unit.statuses.length > 0 && (
-        <div className="status-chips" style={{ marginTop: 8 }}>
-          {unit.statuses.map((s, i) => <span key={i} className="status-chip">{s.key}</span>)}
-        </div>
-      )}
-    </div>
-  )
-}
-
 // ─── ReadyUnitPanel ──────────────────────────────────────────────────────────
 
 function ReadyUnitPanel({ unit, clock, suitInHand, flowerHand, isOpen, selectingTarget,
