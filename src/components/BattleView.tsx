@@ -418,6 +418,7 @@ function ReadyUnitPanel({ unit, clock, suitInHand, flowerHand, isOpen, selecting
               const canUse = !sKey || have >= need
               const onCD   = (unit.moveCooldownUntil[move.id] ?? 0) > clock
               const ok     = canUse && !onCD
+              const skillImg = localStorage.getItem(`cb_move_img_${move.id}`)
 
               return (
                 <button
@@ -427,6 +428,12 @@ function ReadyUnitPanel({ unit, clock, suitInHand, flowerHand, isOpen, selecting
                   onClick={() => ok && onMove(slot)}
                   title={move.description}
                 >
+                  {skillImg && (
+                    <div className="skill-img-wrap">
+                      <img src={skillImg} className="skill-img" alt="" />
+                      {onCD && <span className="skill-cd-overlay">CD</span>}
+                    </div>
+                  )}
                   <div className="skill-top">
                     <span style={{ color: ok ? SLOT_COLOR[slot] : '#444', fontWeight: 800 }}>
                       {SLOT_LABEL[slot]}
@@ -434,7 +441,7 @@ function ReadyUnitPanel({ unit, clock, suitInHand, flowerHand, isOpen, selecting
                     {sKey && (
                       <span className={canUse ? 'skill-ok' : 'skill-ng'}>{have}/{need}</span>
                     )}
-                    {onCD && <span className="skill-cd">CD</span>}
+                    {!skillImg && onCD && <span className="skill-cd">CD</span>}
                   </div>
                   <div className="skill-name">{move.name}</div>
                 </button>
