@@ -496,7 +496,7 @@ h2 {
 
 /* ── Slot layout — 階梯式：前=底 中=中 後=高 ────────────────── */
 .slots-row { display: flex; gap: 6px; align-items: flex-end; padding-top: 60px; }
-.slot-col  { flex: 1; display: flex; flex-direction: column; gap: 5px; min-width: 0; transition: transform .25s ease; }
+.slot-col  { flex: 1; display: flex; flex-direction: column; gap: 5px; min-width: 75px; transition: transform .25s ease; }
 .slot-name {
   font-size: 11px; font-weight: 900; letter-spacing: 3px;
   text-align: center; padding: 3px 0;
@@ -669,15 +669,68 @@ h2 {
 .suit-yellow:hover { box-shadow: 0 4px 14px rgba(221,170,34,.2); border-color: rgba(221,170,34,.7); }
 .suit-flower:hover { box-shadow: 0 4px 14px rgba(190,70,238,.2); border-color: rgba(190,70,238,.7); }
 
+/* ── Battle bottom row ──────────────────────────────────────── */
+.battle-bottom {
+  display: flex; flex-direction: row; flex-shrink: 0; height: 108px;
+  border-top: 1px solid rgba(200,161,90,.08);
+}
+
 /* ── Log panel ─────────────────────────────────────────────── */
 .log-panel {
-  height: 108px; flex-shrink: 0; overflow-y: auto;
+  flex: 1; overflow-y: auto;
   padding: 6px 14px;
   background: linear-gradient(180deg, rgba(8,9,20,.98) 0%, rgba(4,5,13,.98) 100%);
-  border-top: 1px solid rgba(200,161,90,.08);
   font-size: 10px; line-height: 1.8;
   scrollbar-width: thin; scrollbar-color: rgba(200,161,90,.1) transparent;
 }
+
+/* ── Hand panel ─────────────────────────────────────────────── */
+.hand-panel {
+  flex: 0 0 210px; display: flex; flex-direction: column; gap: 4px;
+  padding: 5px 8px; overflow: hidden;
+  background: linear-gradient(180deg, rgba(8,9,20,.98) 0%, rgba(4,5,13,.98) 100%);
+  border-left: 1px solid rgba(200,161,90,.08);
+}
+.hp-label {
+  font-size: 7px; font-weight: 800; letter-spacing: 1.5px;
+  color: rgba(200,161,90,.2); text-transform: uppercase; flex-shrink: 0;
+}
+.hp-chips {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  align-content: flex-start; overflow-y: auto;
+  scrollbar-width: thin; scrollbar-color: rgba(200,161,90,.1) transparent;
+}
+.hp-chip {
+  position: relative; width: 44px; height: 54px;
+  border-radius: 7px; border: 1px solid var(--border2);
+  background: linear-gradient(160deg, var(--bg4), var(--bg3));
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; cursor: default;
+  transition: border-color .15s, opacity .15s, transform .1s;
+}
+.hp-chip.hp-flower { cursor: pointer; }
+.hp-chip.hp-flower:hover { transform: translateY(-2px); }
+.hp-icon  { font-size: 15px; font-weight: 900; line-height: 1; }
+.hp-name  { font-size: 7px; color: var(--text); text-align: center; line-height: 1.2;
+             max-width: 40px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hp-count {
+  position: absolute; bottom: 2px; right: 3px;
+  font-size: 10px; font-weight: 700; color: var(--gold);
+  font-variant-numeric: tabular-nums; line-height: 1;
+}
+.hp-empty { opacity: .2; }
+
+.hp-chip.hp-red    { border-color: rgba(238,60,60,.3); }
+.hp-chip.hp-green  { border-color: rgba(34,204,119,.3); }
+.hp-chip.hp-blue   { border-color: rgba(68,90,238,.3); }
+.hp-chip.hp-yellow { border-color: rgba(221,170,34,.3); }
+.hp-chip.hp-flower { border-color: rgba(190,70,238,.3); }
+
+.hp-chip.hp-red    .hp-icon { color: #e87733; }
+.hp-chip.hp-green  .hp-icon { color: #22cc77; }
+.hp-chip.hp-blue   .hp-icon { color: #9955ee; }
+.hp-chip.hp-yellow .hp-icon { color: #ddaa22; }
+.hp-chip.hp-flower .hp-icon { color: #cc88ff; }
 .log-line { padding: 2px 6px; border-radius: 3px; color: #4a5070; font-size: 12px; }
 .log-line:nth-child(odd) { background: rgba(255,255,255,.018); }
 .log-line b { color: #8090b8; }

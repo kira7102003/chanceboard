@@ -295,11 +295,16 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
         </div>
       )}
 
-      {/* ── Log ── */}
-      <div className="log-panel" ref={logRef}>
-        {game.log.slice(-80).map((l, i) => (
-          <div key={i} className="log-line" dangerouslySetInnerHTML={{ __html: l.html }} />
-        ))}
+      {/* ── Bottom row: log (left) + hand panel (right) ── */}
+      <div className="battle-bottom">
+        <div className="log-panel" ref={logRef}>
+          {game.log.slice(-80).map((l, i) => (
+            <div key={i} className="log-line" dangerouslySetInnerHTML={{ __html: l.html }} />
+          ))}
+        </div>
+        {!isAIBattle && (
+          <HandPanel suitInHand={suitInHand} flowerHand={flowerHand} onPlayCard={onPlayCard} />
+        )}
       </div>
     </div>
   )
@@ -446,6 +451,48 @@ function ReadyUnitPanel({ unit, clock, suitInHand, flowerHand, isOpen, selecting
           </button>
         </div>
       )}
+    </div>
+  )
+}
+
+// ─── HandPanel ───────────────────────────────────────────────────────────────
+
+const HP_ICON: Record<string, string>  = { red: '劍', green: '槍', blue: '法', yellow: '院' }
+
+function HandPanel({ suitInHand, flowerHand, onPlayCard }: {
+  suitInHand: Record<string, number>
+  flowerHand: Card[]
+  onPlayCard: (id: string) => void
+}) {
+  // group flower cards by name so same cards stack
+  const flowerGroups = flowerHand.reduce<Record<string, { card: Card; count: number }>>((acc, c) => {
+    if (!acc[c.name]) acc[c.name] = { card: c, count: 0 }
+    acc[c.name].count++
+    return acc
+  }, {})
+
+  return (
+    <div className="hand-panel">
+      <div className="hp-label">手牌</div>
+      <div className="hp-chips">
+        {(['red','green','blue','yellow'] as const).map(suit => {
+          const count = suitInHand[suit] ?? 0
+          return (
+            <div key={suit} className={`hp-chip hp-${suit}${count === 0 ? ' hp-empty' : ''}`}>
+              <span className="hp-icon">{HP_ICON[suit]}</span>
+              <span className="hp-count">{count}</span>
+            </div>
+          )
+        })}
+        {Object.values(flowerGroups).map(({ card, count }) => (
+          <div key={card.name} className="hp-chip hp-flower"
+               onClick={() => onPlayCard(card.id)}>
+            <span className="hp-icon">花</span>
+            <span className="hp-name">{card.name}</span>
+            <span className="hp-count">{count}</span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
