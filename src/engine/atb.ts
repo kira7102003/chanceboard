@@ -65,7 +65,7 @@ export function makeUnit(charId: string, side: 'A' | 'B', slot: 1 | 2 | 3, start
     statuses: initStatuses,
     moveCooldownUntil: {},
     flags,
-    _didNotMoveThisTurn: false,
+    _didNotMoveThisTurn: true,
   }
   return unit
 }
@@ -285,6 +285,8 @@ export function doMoveUnit(gs: GameState, unitId: string, toSlot: 1 | 2 | 3): Ga
   if (u.statuses.some(st => st.key === 'rooted') && !u.flags.immuneToRooted) return gs
   // SA A2: can only move 1 slot at a time, no jumping across 2 slots
   if (Math.abs(toSlot - u.slot) > 1) return gs
+  // Prevent moving twice in the same turn
+  if (!u._didNotMoveThisTurn) return gs
   u.slot = toSlot
   u._didNotMoveThisTurn = false
   const moveLabel = u.side === 'A' ? ['後', '中', '前'][toSlot - 1] : ['前', '中', '後'][toSlot - 1]
@@ -477,6 +479,7 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
   const effBat = batMinusSt ? Math.max(1, bat - batMinusSt.value) : bat
   const linked = u.statuses.some(st => st.key === 'linked')
   u.nextActionAt = s.clock + (linked ? Math.floor(effBat / 2) : effBat)
+  u._didNotMoveThisTurn = true  // reset move allowance for next turn
 
   // Check winner
   const winCheck = checkWinner(s)

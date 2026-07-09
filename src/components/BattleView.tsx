@@ -216,9 +216,9 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
               <span className={`side-badge side-${mySide}`}>{mySide} 方</span>
               <span className="side-meta">手牌 {myHand.length} · 自訂剩 {myCustomLeft}</span>
             </div>
-            {/* 階梯式：後(idx0)=底，中(idx1)上移，前(idx2)最高 */}
+            {/* 階梯式：前排在底，後排(最遠)在頂 — A側後=slot1，B側後=slot3 */}
             <div className="slots-row">
-              {([1,2,3] as const).map((slot, idx) => (
+              {((mySide === 'A' ? [3,2,1] : [1,2,3]) as (1|2|3)[]).map((slot, idx) => (
                 <div key={slot} className="slot-col" style={{ transform: `translateY(${-idx * 28}px)` }}>
                   <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(mySide ?? 'A', slot)] }}>{getSlotLabel(mySide ?? 'A', slot)}</div>
                   {myTeam.filter(u => u.slot === slot).map(u => (
@@ -236,7 +236,7 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
               {selectingTarget && <span className="pick-target-hint">← 點選目標</span>}
             </div>
             <div className="slots-row">
-              {([1,2,3] as const).map((slot, idx) => (
+              {((oppSide === 'A' ? [3,2,1] : [1,2,3]) as (1|2|3)[]).map((slot, idx) => (
                 <div key={slot} className="slot-col" style={{ transform: `translateY(${-idx * 28}px)` }}>
                   <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(oppSide, slot)] }}>{getSlotLabel(oppSide, slot)}</div>
                   {enemyTeam.filter(u => u.slot === slot).map(u => (
