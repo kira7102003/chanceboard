@@ -7,7 +7,6 @@ import { getReadyUnits } from '../engine/atb'
 import ScorePanel from './ScorePanel'
 import { getCharImg } from '../utils/charStore'
 
-const SLOT_NAME  = ['前', '中', '後']
 const DIST_COLOR: Record<string, string> = { '前': '#e85533', '中': '#ddaa22', '後': '#33aacc' }
 
 // SA: slot2 always = 中; frontSlot(A)=3, frontSlot(B)=1
@@ -231,7 +230,7 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
             <div className="slots-row">
               {([3,2,1] as const).map((slot, idx) => (
                 <div key={slot} className="slot-col" style={{ transform: `translateY(${-idx * 28}px)` }}>
-                  <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(mySide, slot)] }}>{getSlotLabel(mySide, slot)}</div>
+                  <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(mySide ?? 'A', slot)] }}>{getSlotLabel(mySide ?? 'A', slot)}</div>
                   {myTeam.filter(u => u.slot === slot).map(u => (
                     <UnitCard key={u.id} unit={u} clock={game.clock} />
                   ))}
@@ -342,7 +341,7 @@ function UnitCard({ unit, clock, onClick }: { unit: Unit; clock: number; onClick
 
 // ─── SpotlightUnitCard ───────────────────────────────────────────────────────
 
-function SpotlightUnitCard({ unit, clock }: { unit: Unit; clock: number }) {
+function SpotlightUnitCard({ unit }: { unit: Unit; clock: number }) {
   const pct     = unit.alive ? (unit.hp / unit.maxHp) * 100 : 0
   const hpColor = pct > 60 ? '#22cc66' : pct > 30 ? '#ccaa22' : '#cc3333'
   const img     = getCharImg(unit.characterId)
