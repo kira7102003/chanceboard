@@ -31,7 +31,7 @@ export function useAIBattle() {
     store.startBattle()
     store.toggleAuto('A')   // AI controls A
     store.toggleAuto('B')   // AI controls B
-    store.startATBLoop(() => {})
+    store.startATBLoop(() => {}, 400)
   }
 
   return { startAIBattle }

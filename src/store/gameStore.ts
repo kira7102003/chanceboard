@@ -56,7 +56,7 @@ interface Store {
   applyRemoteState: (json: string) => void
 
   tick: () => void
-  startATBLoop: (onSync: (json: string, phase: AppPhase) => void) => void
+  startATBLoop: (onSync: (json: string, phase: AppPhase) => void, tickMs?: number) => void
   stopATBLoop: () => void
 
   playCard: (cardId: string, side?: 'A' | 'B') => void
@@ -167,12 +167,12 @@ export const useGameStore = create<Store>((set, get) => ({
     get()._applyGame(next)
   },
 
-  startATBLoop: (onSync) => {
+  startATBLoop: (onSync, tickMs = 100) => {
     const { isHost, intervalId } = get()
     if (intervalId) clearInterval(intervalId)
     set({ _syncCb: onSync })
     if (!isHost) return
-    const id = setInterval(() => { get().tick() }, 100)
+    const id = setInterval(() => { get().tick() }, tickMs)
     set({ intervalId: id })
   },
 
