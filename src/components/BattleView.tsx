@@ -63,7 +63,6 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
     if (!last?.moveAnim) return
     const { moveId, moveName, moveSlot, charName } = last.moveAnim
     const img = localStorage.getItem(`cb_move_img_${moveId}`)
-    if (!img) return   // only show overlay if image exists
     if (animTimer.current) clearTimeout(animTimer.current)
     setMoveAnim({ img, name: moveName, charName, color: SLOT_COLOR[moveSlot as MoveSlot] ?? '#aaa' })
     setAnimKey(k => k + 1)
