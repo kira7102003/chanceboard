@@ -495,8 +495,8 @@ h2 {
 @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .45 } }
 
 /* ── Slot layout — 階梯式：前=底 中=中 後=高 ────────────────── */
-.slots-row { display: flex; gap: 6px; align-items: flex-end; padding-top: 60px; }
-.slot-col  { flex: 1; display: flex; flex-direction: column; gap: 5px; min-width: 75px; transition: transform .25s ease; }
+.slots-row { display: flex; gap: 6px; align-items: flex-end; padding-top: 60px; overflow-x: auto; }
+.slot-col  { flex: 1 0 75px; display: flex; flex-direction: column; gap: 5px; min-width: 75px; transition: transform .25s ease; }
 .slot-name {
   font-size: 11px; font-weight: 900; letter-spacing: 3px;
   text-align: center; padding: 3px 0;
@@ -527,6 +527,12 @@ h2 {
   background: linear-gradient(155deg, rgba(30,6,6,.9) 0%, rgba(20,4,4,.9) 100%);
   box-shadow: 0 0 22px rgba(238,50,60,.28), 0 0 6px rgba(238,50,60,.2) inset;
   transform: scale(1.03);
+}
+.unit-card.selectable { cursor: pointer; }
+.unit-card.selectable:hover {
+  border-color: rgba(200,161,90,.45);
+  box-shadow: 0 0 16px rgba(200,161,90,.15), 0 0 4px rgba(200,161,90,.2) inset;
+  transform: scale(1.02);
 }
 .unit-card.dead { opacity: .12; filter: grayscale(1) blur(.5px); pointer-events: none; }
 

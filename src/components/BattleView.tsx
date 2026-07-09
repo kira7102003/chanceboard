@@ -237,9 +237,15 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
               {([1,2,3] as const).map(slot => (
                 <div key={slot} className="slot-col" style={{ transform: `translateY(${-slotDepth(mySide ?? 'A', slot) * 28}px)` }}>
                   <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(mySide ?? 'A', slot)] }}>{getSlotLabel(mySide ?? 'A', slot)}</div>
-                  {myTeam.filter(u => u.slot === slot).map(u => (
-                    <UnitCard key={u.id} unit={u} clock={game.clock} />
-                  ))}
+                  {myTeam.filter(u => u.slot === slot).map(u => {
+                    const isReady = !isAIBattle && readyUnits.some(r => r.id === u.id)
+                    return (
+                      <UnitCard key={u.id} unit={u} clock={game.clock}
+                        selectable={isReady && !selectingTarget}
+                        onClick={isReady && !selectingTarget ? () => setActiveUnitId(u.id) : undefined}
+                      />
+                    )
+                  })}
                 </div>
               ))}
             </div>
@@ -312,7 +318,7 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
 
 // ─── UnitCard ────────────────────────────────────────────────────────────────
 
-function UnitCard({ unit, clock, onClick }: { unit: Unit; clock: number; onClick?: () => void }) {
+function UnitCard({ unit, clock, onClick, selectable }: { unit: Unit; clock: number; onClick?: () => void; selectable?: boolean }) {
   const pct     = unit.alive ? (unit.hp / unit.maxHp) * 100 : 0
   const ticks   = Math.max(0, unit.nextActionAt - clock)
   const ready   = ticks === 0 && unit.alive
@@ -321,7 +327,7 @@ function UnitCard({ unit, clock, onClick }: { unit: Unit; clock: number; onClick
 
   return (
     <div
-      className={`unit-card ${!unit.alive ? 'dead' : ''} ${ready ? 'uc-ready' : ''} ${onClick ? 'targetable' : ''}`}
+      className={`unit-card ${!unit.alive ? 'dead' : ''} ${ready ? 'uc-ready' : ''} ${selectable ? 'selectable' : (onClick ? 'targetable' : '')}`}
       onClick={onClick}
     >
       {img
