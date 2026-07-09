@@ -118,7 +118,7 @@ export function initBattleState(
   piece: PieceType,
   deckAIds: string[] = [],
   deckBIds: string[] = [],
-): Partial<GameState> {
+): GameState {
   const startClock = 0
   const teamA = charIdsA.map((id, i) => makeUnit(id, 'A', (i + 1) as 1 | 2 | 3, startClock))
   const teamB = charIdsB.map((id, i) => makeUnit(id, 'B', (i + 1) as 1 | 2 | 3, startClock))
@@ -129,6 +129,11 @@ export function initBattleState(
 
   return {
     phase: 'act',
+    selectedIds: [],
+    selectedPiece: piece,
+    deckDraft: [],
+    customDeck: [],
+    customDeckB: [],
     teamA,
     teamB,
     drawPublic: finalDeck,
@@ -147,6 +152,8 @@ export function initBattleState(
     log: [],
     winner: null,
     winnerReason: null,
+    autoBattleA: false,
+    autoBattleB: false,
     customDeckOrder:  buildCustomDeckOrder(deckAIds),
     customDeckOrderB: buildCustomDeckOrder(deckBIds),
   }

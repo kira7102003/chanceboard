@@ -119,6 +119,21 @@ export default function CharSelect({ onConfirm }: Props) {
         </div>
       )}
 
+      {/* Show 前/中/後 assignment per pick order (SA: 1st pick=前, 2nd=中, 3rd=後) */}
+      {selectedCharIds.length > 0 && (
+        <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
+          {selectedCharIds.map((id, i) => {
+            const label  = ['前', '中', '後'][i]
+            const color  = [    '#e85533', '#ddaa22', '#33aacc'][i]
+            const char   = characters.find(c => c.id === id)
+            return (
+              <span key={id} style={{ fontSize: 13 }}>
+                {char?.name} → <b style={{ color }}>{label}</b>
+              </span>
+            )
+          })}
+        </div>
+      )}
       <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
         <button className="btn primary" disabled={!ready} onClick={() => onConfirm(selectedCharIds)}>
           確認選角 →

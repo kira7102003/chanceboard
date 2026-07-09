@@ -8,7 +8,13 @@ import ScorePanel from './ScorePanel'
 import { getCharImg } from '../utils/charStore'
 
 const SLOT_NAME  = ['前', '中', '後']
-const SLOT_COLOR_POS = ['#e85533', '#ddaa22', '#33aacc']  // 近=red, 中=yellow, 遠=blue
+const DIST_COLOR: Record<string, string> = { '前': '#e85533', '中': '#ddaa22', '後': '#33aacc' }
+
+// SA: slot2 always = 中; frontSlot(A)=3, frontSlot(B)=1
+function getSlotLabel(side: 'A' | 'B', slot: number): string {
+  if (slot === 2) return '中'
+  return slot === (side === 'A' ? 3 : 1) ? '前' : '後'
+}
 const EL_COLOR: Record<string, string> = { sword: '#e87733', gun: '#22cc77', magic: '#9955ee' }
 const SUIT_CLS: Record<string, string>  = { red: 'suit-red', green: 'suit-green', blue: 'suit-blue', yellow: 'suit-yellow', flower: 'suit-flower' }
 const MOVE_SLOTS: MoveSlot[] = ['sword', 'gun', 'magic', 'wish']
@@ -208,11 +214,11 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
             <span className={`side-badge side-${mySide}`}>{mySide} 方</span>
             <span className="side-meta">手牌 {myHand.length} · 自訂剩 {myCustomLeft}</span>
           </div>
-          {/* my-side: show slots 3→2→1 so slot-1 (近) faces the center */}
+          {/* my-side: show slots 3→2→1 so slot-3 (前) faces the center for A */}
           <div className="slots-row">
             {[3,2,1].map(slot => (
               <div key={slot} className="slot-col">
-                <div className="slot-name" style={{ color: SLOT_COLOR_POS[slot-1] }}>{SLOT_NAME[slot-1]}</div>
+                <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(mySide, slot)] }}>{getSlotLabel(mySide, slot)}</div>
                 {myTeam.filter(u => u.slot === slot).map(u => (
                   <UnitCard key={u.id} unit={u} clock={game.clock} />
                 ))}
@@ -227,11 +233,11 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
             <span className={`side-badge side-${oppSide}`}>{oppSide} 方</span>
             {selectingTarget && <span className="pick-target-hint">← 點選目標</span>}
           </div>
-          {/* enemy-side: show slots 1→2→3 so slot-1 (近) faces the center */}
+          {/* enemy-side: show slots 1→2→3 so slot-1 (前) faces the center for B */}
           <div className="slots-row">
             {[1,2,3].map(slot => (
               <div key={slot} className="slot-col">
-                <div className="slot-name" style={{ color: SLOT_COLOR_POS[slot-1] }}>{SLOT_NAME[slot-1]}</div>
+                <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(oppSide, slot)] }}>{getSlotLabel(oppSide, slot)}</div>
                 {enemyTeam.filter(u => u.slot === slot).map(u => (
                   <UnitCard
                     key={u.id} unit={u} clock={game.clock}
@@ -335,7 +341,7 @@ function ReadyUnitPanel({ unit, clock, suitInHand, flowerHand, isOpen, selecting
     <div className="rup">
       <div className="rup-hdr" onClick={onToggle}>
         <b style={{ color: EL_COLOR[unit.element] }}>{unit.name}</b>
-        <span className="rup-pos">目前在 {SLOT_NAME[unit.slot - 1]}</span>
+        <span className="rup-pos">目前在 {getSlotLabel(unit.side, unit.slot)}</span>
         <span className="rup-chev">{isOpen ? '▲' : '▼'}</span>
       </div>
 
@@ -343,16 +349,21 @@ function ReadyUnitPanel({ unit, clock, suitInHand, flowerHand, isOpen, selecting
         <div className="rup-body">
           {selectingTarget && <div className="target-hint">↑ 點選上方敵方角色</div>}
 
-          {/* Move */}
+          {/* Move — one slot at a time; labels depend on side per SA */}
           <div className="rup-row">
             <span className="section-label">移動至</span>
-            {([1,2,3] as (1|2|3)[]).map(s => (
-              <button key={s}
-                className={`btn sm ${unit.slot === s ? 'primary' : ''}`}
-                onClick={() => onSelfMove(s)}>
-                {['前','中','後'][s-1]}
-              </button>
-            ))}
+            {([1,2,3] as (1|2|3)[]).map(s => {
+              const tooFar = Math.abs(s - unit.slot) > 1
+              const label = getSlotLabel(unit.side, s)
+              return (
+                <button key={s}
+                  className={`btn sm ${unit.slot === s ? 'primary' : ''}`}
+                  disabled={tooFar}
+                  onClick={() => !tooFar && onSelfMove(s)}>
+                  {label}
+                </button>
+              )
+            })}
           </div>
 
           {/* Skills */}

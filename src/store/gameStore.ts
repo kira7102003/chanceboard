@@ -115,51 +115,19 @@ export const useGameStore = create<Store>((set, get) => ({
 
   startBattle: () => {
     const { selectedCharIds, opponentCharIds, mySide, myDeckIds, opponentDeckIds } = get()
-    const piece = randomPiece()   // SA doc: random at battle start, not player-chosen
-    const charA = mySide === 'A' ? selectedCharIds : opponentCharIds
-    const charB = mySide === 'A' ? opponentCharIds : selectedCharIds
+    const piece  = randomPiece()
+    const charA  = mySide === 'A' ? selectedCharIds : opponentCharIds
+    const charB  = mySide === 'A' ? opponentCharIds : selectedCharIds
     const deckAIds = mySide === 'A' ? myDeckIds : opponentDeckIds
     const deckBIds = mySide === 'A' ? opponentDeckIds : myDeckIds
-    console.log('[startBattle] charA:', charA, 'charB:', charB, 'piece:', piece, 'mySide:', mySide)
-    let init: ReturnType<typeof initBattleState>
+    let game: GameState
     try {
-      init = initBattleState(charA, charB, piece, deckAIds, deckBIds)
+      game = initBattleState(charA, charB, piece, deckAIds, deckBIds)
     } catch (err) {
       console.error('[startBattle] initBattleState THREW:', err)
       return
     }
-    const gs: GameState = {
-      phase: 'act',
-      selectedIds: [],
-      selectedPiece: piece,
-      deckDraft: [],
-      customDeck: [],
-      customDeckOrder: [],
-      customDeckB: [],
-      customDeckOrderB: [],
-      teamA: [],
-      teamB: [],
-      drawPublic: [],
-      discardPublic: [],
-      handA: [],
-      handB: [],
-      handCustomA: [],
-      handCustomB: [],
-      lastDiscardedA: null,
-      lastDiscardedB: null,
-      clock: 0,
-      dealtRound: 0,
-      round: 1,
-      actingUnitId: null,
-      actPending: { cardId: null, moveSlot: null },
-      log: [],
-      winner: null,
-      winnerReason: null,
-      autoBattleA: false,
-      autoBattleB: false,
-      ...init,
-    }
-    set({ game: gs, appPhase: 'battle' })
+    set({ game, appPhase: 'battle' })
   },
 
   applyRemoteState: (json) => {
