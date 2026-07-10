@@ -31,10 +31,11 @@ function discR(n: number) {
 
 interface Props {
   onConfirm: (ids: string[]) => void
+  onToggle:  (id: string) => void
 }
 
-export default function CharSelect({ onConfirm }: Props) {
-  const { selectedCharIds, toggleCharSelect, mySide, playerCount } = useGameStore()
+export default function CharSelect({ onConfirm, onToggle }: Props) {
+  const { selectedCharIds, mySide, playerCount } = useGameStore()
   const ready = selectedCharIds.length === 3
   const [elFilter, setElFilter] = useState<ElFilter>('all')
   const [infoId,   setInfoId]   = useState<string | null>(null)
@@ -132,7 +133,7 @@ export default function CharSelect({ onConfirm }: Props) {
                   height: PORT,
                   '--ecol': col,
                 } as React.CSSProperties}
-                onClick={e => { e.stopPropagation(); toggleCharSelect(c.id) }}
+                onClick={e => { e.stopPropagation(); onToggle(c.id) }}
                 onDoubleClick={e => { e.stopPropagation(); setInfoId(p => p === c.id ? null : c.id) }}
                 title={`${c.name}（雙擊查看招式）`}
               >

@@ -70,21 +70,7 @@ export default function App() {
   const handleAIBattleStart = () => startAIBattle()
 
   const handleAIReplay = () => {
-    const store = useGameStore.getState()
-    store.stopATBLoop()
-    useGameStore.setState({
-      game:            null,
-      appPhase:        'lobby',
-      selectedCharIds: [],
-      opponentCharIds: [],
-      myDeckIds:       [],
-      opponentDeckIds: [],
-      soloScore:       null,
-      pendingUnitId:   null,
-      isAIBattle:      false,
-      isSolo:          false,
-    })
-    // kick off a fresh AI battle immediately
+    useGameStore.getState().resetForAIReplay()
     setTimeout(() => startAIBattle(), 0)
   }
 
@@ -128,18 +114,7 @@ export default function App() {
   }
 
   const handleSoloReplay = () => {
-    const store = useGameStore.getState()
-    store.stopATBLoop()
-    useGameStore.setState({
-      game:            null,
-      appPhase:        'charSelect',
-      selectedCharIds: [],
-      opponentCharIds: [],
-      myDeckIds:       [],
-      opponentDeckIds: [],
-      soloScore:       null,
-      pendingUnitId:   null,
-    })
+    useGameStore.getState().resetForSoloReplay()
   }
 
   // ── Render ────────────────────────────────────────────────────────────────────
@@ -168,7 +143,10 @@ export default function App() {
 
       {/* 選角 */}
       {!showAdmin && isActive && appPhase === 'charSelect' && (
-        <CharSelect onConfirm={handleCharConfirm} />
+        <CharSelect
+          onConfirm={handleCharConfirm}
+          onToggle={id => useGameStore.getState().toggleCharSelect(id)}
+        />
       )}
 
       {/* 組牌 */}

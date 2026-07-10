@@ -68,6 +68,9 @@ interface Store {
 
   _syncCb: ((json: string, phase: AppPhase) => void) | null
   _applyGame: (g: GameState) => void
+
+  resetForSoloReplay: () => void
+  resetForAIReplay:   () => void
 }
 
 export const useGameStore = create<Store>((set, get) => ({
@@ -227,5 +230,26 @@ export const useGameStore = create<Store>((set, get) => ({
     if (!game) return
     const next = doToggleAuto(game, side)
     get()._applyGame(next)
+  },
+
+  resetForSoloReplay: () => {
+    get().stopATBLoop()
+    set({
+      game: null, appPhase: 'charSelect',
+      selectedCharIds: [], opponentCharIds: [],
+      myDeckIds: [], opponentDeckIds: [],
+      soloScore: null, pendingUnitId: null,
+    })
+  },
+
+  resetForAIReplay: () => {
+    get().stopATBLoop()
+    set({
+      game: null, appPhase: 'lobby',
+      selectedCharIds: [], opponentCharIds: [],
+      myDeckIds: [], opponentDeckIds: [],
+      soloScore: null, pendingUnitId: null,
+      isAIBattle: false, isSolo: false,
+    })
   },
 }))
