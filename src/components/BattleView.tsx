@@ -85,6 +85,23 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
   const isAutoMe  = mySide === 'A' ? game.autoBattleA : game.autoBattleB
   const isAutoOpp = mySide === 'A' ? game.autoBattleB : game.autoBattleA
 
+  // Compute valid target slots based on the currently selected move rangeType
+  const validTargetSlots: Set<number> | null = (() => {
+    if (!selectingTarget) return null
+    const actor = readyUnits[0]
+    if (!actor) return null
+    const move = actor.moves[selectingTarget]
+    if (!move) return null
+    if (move.rangeType === 'sword') return new Set([1])
+    if (move.rangeType === 'gun') {
+      const alive = enemyTeam.filter(u => u.alive)
+      if (alive.length === 0) return new Set()
+      return new Set([Math.min(...alive.map(u => u.slot))])
+    }
+    if (move.rangeType === 'magic') return new Set([4 - actor.slot])
+    return null  // null = all targets valid
+  })()
+
   const triggerAnim = useCallback((unit: Unit, slot: MoveSlot) => {
     const move = unit.moves[slot]; if (!move) return
     const img  = localStorage.getItem(`cb_move_img_${move.id}`)
@@ -270,7 +287,7 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
                   {enemyTeam.filter(u => u.slot === slot).map(u => (
                     <UnitCard
                       key={u.id} unit={u} clock={game.clock}
-                      onClick={selectingTarget && u.alive ? () => handleTargetClick(u) : undefined}
+                      onClick={selectingTarget && u.alive && (validTargetSlots === null || validTargetSlots.has(u.slot)) ? () => handleTargetClick(u) : undefined}
                     />
                   ))}
                 </div>
