@@ -74,7 +74,7 @@ export default function Admin({ onBack }: Props) {
               className={`adm-list-item ${c.id === selId ? 'active' : ''}`}
               onClick={() => { setSelId(c.id); setTab('basic') }}
             >
-              <CharPortrait id={c.id} size={38} />
+              <CharPortrait id={c.id} size={38} height={68} />
               <div className="adm-list-text">
                 <div className="adm-list-name" style={{ color: EL_COLOR[c.element] }}>{c.name}</div>
                 <div className="adm-list-sub">{c.title}</div>
@@ -106,13 +106,13 @@ export default function Admin({ onBack }: Props) {
 
 // ─── CharPortrait (exported for CharSelect) ───────────────────────────────────
 
-export function CharPortrait({ id, size = 48, style: sx }: {
-  id: string; size?: number; style?: React.CSSProperties
+export function CharPortrait({ id, size = 48, height: ht, style: sx }: {
+  id: string; size?: number; height?: number; style?: React.CSSProperties
 }) {
   const [src, setSrc] = useState(() => getCharImg(id) ?? `/chars/${id}.webp`)
   useEffect(() => { setSrc(getCharImg(id) ?? `/chars/${id}.webp`) }, [id])
   return (
-    <img src={src} width={size} height={size} alt=""
+    <img src={src} width={size} height={ht ?? size} alt=""
       style={{ borderRadius: 6, objectFit: 'cover', background: '#111122', flexShrink: 0, ...sx }}
       onError={() => setSrc('data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==')}
     />
@@ -285,11 +285,11 @@ function MoveImg({ storageKey, rev }: { storageKey: string; rev: number }) {
 
   return src && !failed
     ? <img src={src} alt=""
-        style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover',
+        style={{ width: 62, height: 111, borderRadius: 8, objectFit: 'cover',
                  border: '1px solid #333355', display: 'block' }}
         onError={() => setFailed(true)} />
     : <div style={{
-        width: 80, height: 80, borderRadius: 8, background: 'var(--bg3)',
+        width: 62, height: 111, borderRadius: 8, background: 'var(--bg3)',
         border: '2px dashed #252545', display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center', gap: 3,
         color: '#353560', fontSize: 10,
