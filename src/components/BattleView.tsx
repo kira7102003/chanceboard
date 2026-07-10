@@ -47,7 +47,6 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
   const { game, mySide, isSolo, isAIBattle, soloScore } = useGameStore()
   const logRef      = useRef<HTMLDivElement>(null)
   const animTimer   = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [selectingTarget, setSelectingTarget] = useState<MoveSlot|null>(null)
   const [moveAnim,  setMoveAnim]  = useState<MoveAnim | null>(null)
   const [animKey,   setAnimKey]   = useState(0)
   // pending destination slot per unit (preview before confirming with a skill/pass)
@@ -84,23 +83,6 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
   const readyUnits = getReadyUnits(game).filter(u => u.side === mySide)
   const isAutoMe  = mySide === 'A' ? game.autoBattleA : game.autoBattleB
   const isAutoOpp = mySide === 'A' ? game.autoBattleB : game.autoBattleA
-
-  // Compute valid target slots based on the currently selected move rangeType
-  const validTargetSlots: Set<number> | null = (() => {
-    if (!selectingTarget) return null
-    const actor = readyUnits[0]
-    if (!actor) return null
-    const move = actor.moves[selectingTarget]
-    if (!move) return null
-    if (move.rangeType === '劍') return new Set([1])
-    if (move.rangeType === '槍') {
-      const alive = enemyTeam.filter(u => u.alive)
-      if (alive.length === 0) return new Set()
-      return new Set([Math.min(...alive.map(u => u.slot))])
-    }
-    if (move.rangeType === '法') return new Set([4 - actor.slot])
-    return null  // null = all targets valid
-  })()
 
   const triggerAnim = useCallback((unit: Unit, slot: MoveSlot) => {
     const move = unit.moves[slot]; if (!move) return
@@ -168,22 +150,8 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
     const move = unit.moves[slot]
     if (!move) return
     applyPendingMove(unit)
-    if (move.scope === '群' || !move.rangeType) {
-      triggerAnim(unit, slot)
-      onExecuteMove(unit.id, slot, null)
-      setSelectingTarget(null)
-    } else {
-      setSelectingTarget(slot)
-    }
-  }
-
-  const handleTargetClick = (target: Unit) => {
-    const active = readyUnits[0]
-    if (!active || !selectingTarget) return
-    applyPendingMove(active)
-    triggerAnim(active, selectingTarget)
-    onExecuteMove(active.id, selectingTarget, target.id)
-    setSelectingTarget(null)
+    triggerAnim(unit, slot)
+    onExecuteMove(unit.id, slot, null)
   }
 
   return (
@@ -262,7 +230,7 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
                     const isActive = !isAIBattle && readyUnits[0]?.id === u.id
                     return (
                       <UnitCard key={u.id} unit={u} clock={game.clock}
-                        selectable={isActive && !selectingTarget}
+                        selectable={isActive}
                         highlighted={previewUnitId === u.id && !isActive}
                         isPreview={!isActive}
                         onClick={u.alive && !isAIBattle && (!isActive || previewUnitId !== null)
@@ -283,7 +251,6 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
           <div className="battle-side enemy-side">
             <div className="side-hdr">
               <span className={`side-badge side-${oppSide}`}>{oppSide} 方</span>
-              {selectingTarget && <span className="pick-target-hint">← 點選目標</span>}
             </div>
             <div className="slots-row">
               {([1,2,3] as const).map(slot => (
@@ -292,7 +259,6 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
                   {enemyTeam.filter(u => u.slot === slot).map(u => (
                     <UnitCard
                       key={u.id} unit={u} clock={game.clock}
-                      onClick={selectingTarget && u.alive && (validTargetSlots === null || validTargetSlots.has(u.slot)) ? () => handleTargetClick(u) : undefined}
                     />
                   ))}
                 </div>
@@ -341,12 +307,11 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
                             suitInHand={suitInHand}
                             flowerHand={flowerHand}
                             isOpen={true}
-                            selectingTarget={selectingTarget}
                             pendingSlot={getPendingSlot(activeUnit)}
                             onToggle={() => {}}
                             onMove={slot => handleMoveClick(activeUnit, slot)}
                             onPendingMove={s => setPendingSlots(prev => ({ ...prev, [activeUnit.id]: s }))}
-                            onPass={() => { applyPendingMove(activeUnit); onPass(activeUnit.id); setSelectingTarget(null) }}
+                            onPass={() => { applyPendingMove(activeUnit); onPass(activeUnit.id) }}
                             onPlayCard={onPlayCard}
                           />
                         </>
@@ -413,11 +378,11 @@ function UnitCard({ unit, clock, onClick, selectable, highlighted, isPreview }: 
 
 // ─── ReadyUnitPanel ──────────────────────────────────────────────────────────
 
-function ReadyUnitPanel({ unit, clock, suitInHand, flowerHand, isOpen, selectingTarget,
+function ReadyUnitPanel({ unit, clock, suitInHand, flowerHand, isOpen,
   pendingSlot, onToggle, onMove, onPendingMove, onPass, onPlayCard }: {
   unit: Unit; clock: number
   suitInHand: Record<string, number>; flowerHand: Card[]
-  isOpen: boolean; selectingTarget: MoveSlot|null
+  isOpen: boolean
   pendingSlot: 1|2|3
   onToggle: () => void; onMove: (s: MoveSlot) => void
   onPendingMove: (s: 1|2|3) => void; onPass: () => void
@@ -443,8 +408,6 @@ function ReadyUnitPanel({ unit, clock, suitInHand, flowerHand, isOpen, selecting
 
       {isOpen && (
         <div className="rup-body">
-          {selectingTarget && <div className="target-hint">↑ 點選上方敵方角色</div>}
-
           <div className="rup-cols">
             {/* Left: position buttons + PASS */}
             <div className="rup-left">
