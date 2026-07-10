@@ -5,7 +5,7 @@ import type { Card } from '../types/card'
 import type { MoveSlot } from '../types/move'
 import { getReadyUnits } from '../engine/atb'
 import ScorePanel from './ScorePanel'
-import { getCharImg } from '../utils/charStore'
+import { getCharImg, getMoveImg } from '../utils/charStore'
 
 const DIST_COLOR: Record<string, string> = { '近': '#e85533', '中': '#ddaa22', '遠': '#33aacc' }
 
@@ -65,7 +65,7 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
     const last = game.log[game.log.length - 1]
     if (!last?.moveAnim) return
     const { moveId, moveName, moveSlot, charName } = last.moveAnim
-    const img = localStorage.getItem(`cb_move_img_${moveId}`)
+    const img = getMoveImg(moveId)
     if (animTimer.current) clearTimeout(animTimer.current)
     setMoveAnim({ img, name: moveName, charName, color: SLOT_COLOR[moveSlot as MoveSlot] ?? '#aaa' })
     setAnimKey(k => k + 1)
@@ -465,7 +465,7 @@ function ReadyUnitPanel({ unit, clock, suitInHand, flowerHand, isOpen, selecting
                   const canUse = !sKey || have >= need
                   const onCD   = (unit.moveCooldownUntil[move.id] ?? 0) > clock
                   const ok     = canUse && !onCD
-                  const skillImg = localStorage.getItem(`cb_move_img_${move.id}`)
+                  const skillImg = getMoveImg(move.id)
 
                   return (
                     <button

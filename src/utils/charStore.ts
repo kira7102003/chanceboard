@@ -18,7 +18,10 @@ function storagePath(storageKey: string): string {
 
 export function getUrlByKey(storageKey: string): string | null {
   if (localStorage.getItem(FLAG(storageKey))) return storageUrl(storagePath(storageKey))
-  return localStorage.getItem(storageKey) // fallback: old base64
+  const local = localStorage.getItem(storageKey)
+  if (local) return local
+  // Fallback: try Supabase directly (bucket is public; 404 just leaves img blank)
+  return storageUrl(storagePath(storageKey))
 }
 
 export async function uploadByKey(storageKey: string, dataUrl: string): Promise<string> {
