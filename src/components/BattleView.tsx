@@ -28,6 +28,7 @@ const SUIT_FOR: Record<string, string> = { '劍': 'red', '槍': 'green', '法': 
 
 interface Props {
   onPlayCard:    (cardId: string) => void
+  onDiscardCard: (cardId: string) => void
   onMoveUnit:    (unitId: string, toSlot: 1|2|3) => void
   onExecuteMove: (unitId: string, moveSlot: MoveSlot, targetId: string|null) => void
   onPass:        (unitId: string) => void
@@ -49,7 +50,7 @@ interface MoveAnim {
   color: string
 }
 
-export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPass, onToggleAuto, onEnd, onSoloReplay }: Props) {
+export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onExecuteMove, onPass, onToggleAuto, onEnd, onSoloReplay }: Props) {
   const { game, mySide, isSolo, isAIBattle, soloScore } = useGameStore()
   const logRef         = useRef<HTMLDivElement>(null)
   const animTimer      = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -382,7 +383,7 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
               }
             </div>
             {/* Hand panel */}
-            <HandPanel suitInHand={suitInHand} flowerHand={flowerHand} onPlayCard={onPlayCard} />
+            <HandPanel hand={myHand} onPlayCard={onPlayCard} onDiscardCard={onDiscardCard} />
           </div>
         )}
       </div>
@@ -557,39 +558,25 @@ function ReadyUnitPanel({ unit, clock, suitInHand, flowerHand, isOpen,
 
 // ─── HandPanel ───────────────────────────────────────────────────────────────
 
-const HP_ICON: Record<string, string>  = { red: '劍', green: '槍', blue: '法', yellow: '院' }
+const HP_ICON: Record<string, string> = { red: '劍', green: '槍', blue: '法', yellow: '院' }
 
-function HandPanel({ suitInHand, flowerHand, onPlayCard }: {
-  suitInHand: Record<string, number>
-  flowerHand: Card[]
+function HandPanel({ hand, onPlayCard, onDiscardCard }: {
+  hand: Card[]
   onPlayCard: (id: string) => void
+  onDiscardCard: (id: string) => void
 }) {
-  // group flower cards by name so same cards stack
-  const flowerGroups = flowerHand.reduce<Record<string, { card: Card; count: number }>>((acc, c) => {
-    if (!acc[c.name]) acc[c.name] = { card: c, count: 0 }
-    acc[c.name].count++
-    return acc
-  }, {})
-
   return (
     <div className="hand-panel">
-      <div className="hp-label">手牌</div>
+      <div className="hp-label">手牌 <span className="hp-hint">（× 棄牌，下回合補）</span></div>
       <div className="hp-chips">
-        {(['red','green','blue','yellow'] as const).map(suit => {
-          const count = suitInHand[suit] ?? 0
-          return (
-            <div key={suit} className={`hp-chip hp-${suit}${count === 0 ? ' hp-empty' : ''}`}>
-              <span className="hp-icon">{HP_ICON[suit]}</span>
-              <span className="hp-count">{count}</span>
-            </div>
-          )
-        })}
-        {Object.values(flowerGroups).map(({ card, count }) => (
-          <div key={card.name} className="hp-chip hp-flower"
-               onClick={() => onPlayCard(card.id)}>
-            <span className="hp-icon">花</span>
-            <span className="hp-name">{card.name}</span>
-            <span className="hp-count">{count}</span>
+        {hand.map((card, i) => (
+          <div key={`${card.id}-${i}`}
+               className={`hp-chip hp-${card.color === 'flower' ? 'flower' : card.color}`}>
+            {card.isSuitCard
+              ? <span className="hp-icon">{HP_ICON[card.color]}</span>
+              : <span className="hp-icon hp-flower-name" onClick={() => onPlayCard(card.id)}>花 {card.name}</span>
+            }
+            <button className="hp-discard" title="棄牌" onClick={() => onDiscardCard(card.id)}>×</button>
           </div>
         ))}
       </div>

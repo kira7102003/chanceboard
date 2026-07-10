@@ -8,7 +8,7 @@ function randomPiece(): PieceType { return ALL_PIECES[Math.floor(Math.random() *
 import type { ScoreResult } from '../types/score'
 import {
   initBattleState, tickATB, doPlayCard, doMoveUnit,
-  doExecuteMove, doPass, doToggleAuto, autoPlayUnit, getReadyUnits,
+  doExecuteMove, doPass, doToggleAuto, autoPlayUnit, getReadyUnits, doDiscardCard,
 } from '../engine/atb'
 import { calcScore } from '../engine/score'
 
@@ -60,6 +60,7 @@ interface Store {
   stopATBLoop: () => void
 
   playCard: (cardId: string, side?: 'A' | 'B') => void
+  discardCard: (cardId: string, side?: 'A' | 'B') => void
   moveUnit: (unitId: string, toSlot: 1 | 2 | 3) => void
   executeMove: (unitId: string, moveSlot: MoveSlot, targetId: string | null) => void
   pass: (unitId: string) => void
@@ -188,6 +189,15 @@ export const useGameStore = create<Store>((set, get) => ({
     const effectiveSide = side ?? mySide
     if (!effectiveSide) return
     const next = doPlayCard(game, effectiveSide, cardId)
+    get()._applyGame(next)
+  },
+
+  discardCard: (cardId, side?) => {
+    const { game, mySide } = get()
+    if (!game) return
+    const effectiveSide = side ?? mySide
+    if (!effectiveSide) return
+    const next = doDiscardCard(game, effectiveSide, cardId)
     get()._applyGame(next)
   },
 

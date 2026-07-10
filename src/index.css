@@ -964,6 +964,18 @@ h2 {
 .hp-chip.hp-blue   .hp-icon { color: #9955ee; }
 .hp-chip.hp-yellow .hp-icon { color: #ddaa22; }
 .hp-chip.hp-flower .hp-icon { color: #cc88ff; }
+.hp-hint { font-size: 7px; opacity: .35; font-weight: 400; letter-spacing: 0; text-transform: none; }
+.hp-flower-name { font-size: 9px; font-weight: 700; cursor: pointer; text-align: center;
+  color: #cc88ff; line-height: 1.2; padding: 2px; }
+.hp-flower-name:hover { opacity: .75; }
+.hp-discard {
+  position: absolute; bottom: 2px; right: 3px;
+  background: none; border: none; padding: 0;
+  font-size: 10px; line-height: 1; cursor: pointer;
+  color: rgba(200,80,80,.35); transition: color .12s;
+}
+.hp-chip:hover .hp-discard { color: rgba(220,80,80,.85); }
+.hp-discard:hover { color: #ff4444 !important; }
 .log-line { padding: 2px 6px; border-radius: 3px; color: #4a5070; font-size: 12px; }
 .log-line:nth-child(odd) { background: rgba(255,255,255,.018); }
 .log-line b { color: #8090b8; }

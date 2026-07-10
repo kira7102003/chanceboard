@@ -626,6 +626,17 @@ function resolveTargetUnits(move: Move, actor: Unit, targetId: string | null, s:
   return best ? [best] : []
 }
 
+export function doDiscardCard(gs: GameState, side: 'A' | 'B', cardId: string): GameState {
+  const s = deepClone(gs)
+  const hand = side === 'A' ? s.handA : s.handB
+  const idx = hand.findIndex(c => c.id === cardId)
+  if (idx === -1) return gs
+  const [card] = hand.splice(idx, 1)
+  s.discardPublic.push(card)
+  s.log.push({ html: `${side} 棄牌 <b>${card.name}</b>（下回合補牌）` })
+  return s
+}
+
 export function doToggleAuto(gs: GameState, side: 'A' | 'B'): GameState {
   const s = deepClone(gs)
   if (side === 'A') s.autoBattleA = !s.autoBattleA

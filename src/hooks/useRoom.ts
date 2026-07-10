@@ -150,6 +150,11 @@ export function useRoom(roomId: string) {
     else send({ type: 'action', action: { type: 'playCard', side: gs().mySide, cardId } })
   }
 
+  const localDiscardCard = (cardId: string) => {
+    if (gs().isHost) gs().discardCard(cardId)
+    else send({ type: 'action', action: { type: 'discardCard', side: gs().mySide, cardId } })
+  }
+
   const localMoveUnit = (unitId: string, toSlot: 1 | 2 | 3) => {
     if (gs().isHost) gs().moveUnit(unitId, toSlot)
     else send({ type: 'action', action: { type: 'moveUnit', unitId, toSlot } })
@@ -175,13 +180,14 @@ export function useRoom(roomId: string) {
   const sendCharSelect  = (charIds: string[])  => send({ type: 'charSelect', charIds })
   const sendDeckSelect  = (deckIds: string[])  => send({ type: 'deckSelect', deckIds })
 
-  return { localPlayCard, localMoveUnit, localExecuteMove, localPass, localToggleAuto, sendCharSelect, sendDeckSelect }
+  return { localPlayCard, localDiscardCard, localMoveUnit, localExecuteMove, localPass, localToggleAuto, sendCharSelect, sendDeckSelect }
 }
 
 function applyRemoteAction(action: any) {
   const store = useGameStore.getState()
   switch (action.type) {
     case 'playCard':    store.playCard(action.cardId, action.side); break
+    case 'discardCard': store.discardCard(action.cardId, action.side); break
     case 'moveUnit':    store.moveUnit(action.unitId, action.toSlot); break
     case 'executeMove': store.executeMove(action.unitId, action.moveSlot, action.targetId); break
     case 'pass':        store.pass(action.unitId); break

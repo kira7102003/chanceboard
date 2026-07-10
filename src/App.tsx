@@ -47,7 +47,7 @@ export default function App() {
   // ── Controllers ──────────────────────────────────────────────────────────────
 
   // Online: WebSocket room (no-op when isSolo)
-  const { localPlayCard, localMoveUnit, localExecuteMove, localPass, localToggleAuto,
+  const { localPlayCard, localDiscardCard, localMoveUnit, localExecuteMove, localPass, localToggleAuto,
           sendCharSelect, sendDeckSelect } = useRoom(isSolo ? '' : onlineRoomId)
 
   // Solo: direct engine driver
@@ -180,6 +180,7 @@ export default function App() {
       {!showAdmin && isActive && (appPhase === 'battle' || appPhase === 'end') && (
         <BattleView
           onPlayCard={localPlayCard}
+          onDiscardCard={localDiscardCard}
           onMoveUnit={localMoveUnit}
           onExecuteMove={(u, s, t) => localExecuteMove(u, s, t)}
           onPass={localPass}
