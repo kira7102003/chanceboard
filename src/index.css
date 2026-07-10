@@ -711,8 +711,12 @@ h2 {
 .action-area {
   border-top: 1px solid rgba(200,161,90,.12);
   background: linear-gradient(180deg, rgba(10,13,28,.98) 0%, rgba(6,7,16,.98) 100%);
-  max-height: 36dvh; overflow-y: auto; flex-shrink: 0;
+  height: 28dvh; overflow-y: auto; flex-shrink: 0;
   scrollbar-width: thin; scrollbar-color: rgba(200,161,90,.1) transparent;
+}
+.action-idle {
+  display: flex; height: 100%; align-items: center; justify-content: center;
+  color: rgba(200,161,90,.1); font-size: 11px; letter-spacing: 2px; pointer-events: none;
 }
 
 /* ── Ready unit queue row (other waiting units) ────────────── */

@@ -298,47 +298,49 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
         </div>
       </div>
 
-      {/* ── Action panels — always shows first-in-ATB-order unit ── */}
-      {!isAIBattle && readyUnits.length > 0 && (() => {
-        const activeUnit = readyUnits[0]
-        const waitingUnits = readyUnits.slice(1)
-        return (
-          <div className="action-area">
-            {/* Waiting queue — other ready units */}
-            {waitingUnits.length > 0 && (
-              <div className="rup-queue">
-                <span className="rup-queue-label">待機</span>
-                {waitingUnits.map(u => (
-                  <div key={u.id} className="rup-queue-chip">
-                    <span style={{ color: EL_COLOR[u.element] }}>⬥</span>
-                    <span>{u.name}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            {/* Active unit panel */}
-            <ReadyUnitPanel
-              key={activeUnit.id}
-              unit={activeUnit}
-              clock={game.clock}
-              suitInHand={suitInHand}
-              flowerHand={flowerHand}
-              isOpen={true}
-              selectingTarget={selectingTarget}
-              pendingSlot={getPendingSlot(activeUnit)}
-              onToggle={() => {}}
-              onMove={slot => handleMoveClick(activeUnit, slot)}
-              onPendingMove={s => setPendingSlots(prev => ({ ...prev, [activeUnit.id]: s }))}
-              onPass={() => { applyPendingMove(activeUnit); onPass(activeUnit.id); setSelectingTarget(null) }}
-              onPlayCard={onPlayCard}
-            />
-          </div>
-        )
-      })()}
-
-      {/* ── Unit preview panel (click non-active ally to inspect) ── */}
-      {!isAIBattle && previewUnit && previewUnit.id !== readyUnits[0]?.id && (
-        <UnitPreviewPanel unit={previewUnit} clock={game.clock} onClose={() => setPreviewUnitId(null)} />
+      {/* ── Action / Preview area: fixed height, always rendered ── */}
+      {!isAIBattle && (
+        <div className="action-area">
+          {previewUnit && previewUnit.id !== readyUnits[0]?.id
+            ? <UnitPreviewPanel unit={previewUnit} clock={game.clock} onClose={() => setPreviewUnitId(null)} />
+            : readyUnits.length > 0
+              ? (() => {
+                  const activeUnit = readyUnits[0]
+                  const waitingUnits = readyUnits.slice(1)
+                  return (
+                    <>
+                      {waitingUnits.length > 0 && (
+                        <div className="rup-queue">
+                          <span className="rup-queue-label">待機</span>
+                          {waitingUnits.map(u => (
+                            <div key={u.id} className="rup-queue-chip">
+                              <span style={{ color: EL_COLOR[u.element] }}>⬥</span>
+                              <span>{u.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <ReadyUnitPanel
+                        key={activeUnit.id}
+                        unit={activeUnit}
+                        clock={game.clock}
+                        suitInHand={suitInHand}
+                        flowerHand={flowerHand}
+                        isOpen={true}
+                        selectingTarget={selectingTarget}
+                        pendingSlot={getPendingSlot(activeUnit)}
+                        onToggle={() => {}}
+                        onMove={slot => handleMoveClick(activeUnit, slot)}
+                        onPendingMove={s => setPendingSlots(prev => ({ ...prev, [activeUnit.id]: s }))}
+                        onPass={() => { applyPendingMove(activeUnit); onPass(activeUnit.id); setSelectingTarget(null) }}
+                        onPlayCard={onPlayCard}
+                      />
+                    </>
+                  )
+                })()
+              : <div className="action-idle">等待行動…</div>
+          }
+        </div>
       )}
 
       {/* ── Bottom row: log (left) + hand panel (right) ── */}
