@@ -7,13 +7,13 @@ import type { MoveSlot } from '../types/move'
 
 const characters = getChars()
 
-const EL_LABEL: Record<string, string> = { sword: '⚔ 劍', gun: '🔫 槍', magic: '✦ 魔' }
+const EL_LABEL: Record<string, string> = { '劍': '⚔ 劍', '槍': '🔫 槍', '法': '✦ 魔' }
 
-const SLOT_LABEL: Record<MoveSlot, string> = { sword: '刀', gun: '槍', magic: '法', wish: '願', passive: '被' }
-const SLOT_COLOR: Record<MoveSlot, string> = { sword: '#e85533', gun: '#22cc77', magic: '#9955ee', wish: '#ddaa22', passive: '#888' }
+const SLOT_LABEL: Record<MoveSlot, string> = { '劍': '刀', '槍': '槍', '法': '法', '願': '願', '被': '被' }
+const SLOT_COLOR: Record<MoveSlot, string> = { '劍': '#e85533', '槍': '#22cc77', '法': '#9955ee', '願': '#ddaa22', '被': '#888' }
 const SUIT_DOT:  Record<string, string>    = { red: '🔴', green: '🟢', blue: '🔵', yellow: '🟡' }
-const SUIT_OF:   Record<string, string>    = { sword: 'red', gun: 'green', magic: 'blue', wish: 'yellow' }
-const RANGE_LBL: Record<string, string>    = { sword: '近戰', gun: '遠程', magic: '魔法' }
+const SUIT_OF:   Record<string, string>    = { '劍': 'red', '槍': 'green', '法': 'blue', '願': 'yellow' }
+const RANGE_LBL: Record<string, string>    = { '劍': '近戰', '槍': '遠程', '法': '魔法' }
 
 interface Props {
   onConfirm: (ids: string[]) => void
@@ -85,7 +85,7 @@ export default function CharSelect({ onConfirm }: Props) {
               <button className="char-info-close" onClick={() => setInfoId(null)}>✕</button>
             </div>
             <div className="char-info-moves">
-              {(['sword','gun','magic','wish','passive'] as MoveSlot[]).map(slot => {
+              {(['劍','槍','法','願','被'] as MoveSlot[]).map(slot => {
                 const mv = infoMoves.find(m => m.slot === slot)
                 if (!mv) return null
                 const suitColor = SUIT_OF[slot]

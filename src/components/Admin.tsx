@@ -244,7 +244,7 @@ function MovesTab({ moves }: { moves: Move[] }) {
 
                 <div className="adm-move-stats">
                   {m.rangeType  != null && <Pill label="範圍" val={RANGE_LBL[m.rangeType] ?? m.rangeType} />}
-                  {m.scope      != null && <Pill label="目標" val={m.scope === 'group' ? '群體' : '單體'} />}
+                  {m.scope      != null && <Pill label="目標" val={m.scope === '群' ? '群體' : '單體'} />}
                   {m.powerRatio != null && <Pill label="威力" val={`×${m.powerRatio}`} />}
                   {m.hitRate    != null && <Pill label="命中" val={`${Math.round(m.hitRate * 100)}%`} />}
                   {m.critRate   != null && <Pill label="爆擊" val={`${Math.round(m.critRate * 100)}%`} />}

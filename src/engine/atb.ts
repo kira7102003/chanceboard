@@ -812,9 +812,9 @@ export function autoPlayUnit(gs: GameState, unit: Unit): GameState {
 
   // SA C3: if no move can reach anyone, randomly use any affordable move (can't be stuck)
   if (!execMove) {
-    const suitFallback: Record<string, string> = { sword: 'red', gun: 'green', magic: 'blue', wish: 'yellow' }
+    const suitFallback: Record<string, string> = { '劍': 'red', '槍': 'green', '法': 'blue', '願': 'yellow' }
     const liberatedFb  = unit.statuses.some(st => st.key === 'liberated')
-    const fallbackSlots = (['sword', 'gun', 'magic', 'wish'] as MoveSlot[]).filter(sl => {
+    const fallbackSlots = (['劍', '槍', '法', '願'] as MoveSlot[]).filter(sl => {
       const m = unit.moves[sl]
       if (!m) return false
       if ((unit.moveCooldownUntil[m.id] ?? 0) > gs.clock) return false
