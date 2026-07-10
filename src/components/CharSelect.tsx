@@ -7,8 +7,6 @@ import type { MoveSlot } from '../types/move'
 
 type ElFilter = '劍' | '槍' | '法' | 'all'
 
-const characters = getChars()
-
 const EL_COLOR: Record<string, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee' }
 const EL_LABEL: Record<string, string> = { '劍': '⚔ 劍', '槍': '🔫 槍', '法': '✦ 法' }
 
@@ -35,6 +33,7 @@ interface Props {
 }
 
 export default function CharSelect({ onConfirm, onToggle }: Props) {
+  const characters = getChars()
   const { selectedCharIds, mySide, playerCount } = useGameStore()
   const ready = selectedCharIds.length === 3
   const [elFilter, setElFilter] = useState<ElFilter>('all')

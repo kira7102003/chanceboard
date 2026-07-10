@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Lobby      from './components/Lobby'
 import CharSelect  from './components/CharSelect'
 import DeckBuild   from './components/DeckBuild'
@@ -6,6 +6,7 @@ import BattleView  from './components/BattleView'
 import Admin       from './components/Admin'
 import { useGameStore }           from './store/gameStore'
 import { useRoom, loadSession, clearSession } from './hooks/useRoom'
+import { initFromCloud } from './utils/charStore'
 import { useSolo }                from './hooks/useSolo'
 import { useAIBattle }           from './hooks/useAIBattle'
 
@@ -41,6 +42,11 @@ export default function App() {
   const saved = loadSession()
   const [onlineRoomId, setOnlineRoomId] = useState('')
   const [showAdmin,    setShowAdmin]    = useState(false)
+  const [, setCloudSynced] = useState(false)
+
+  useEffect(() => {
+    initFromCloud().finally(() => setCloudSynced(true))
+  }, [])
 
   const { appPhase, mySide, isSolo, isAIBattle } = useGameStore()
 

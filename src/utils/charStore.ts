@@ -1,8 +1,18 @@
 import { characters as defaultChars } from '../data/db'
 import type { Character } from '../types/character'
-import { uploadDataUrl, deleteStorageFile, storageUrl } from './supabase'
+import { uploadDataUrl, uploadBlob, deleteStorageFile, storageUrl } from './supabase'
 
-const LS_CHARS = 'cb_chars'
+const LS_CHARS    = 'cb_chars'
+const CHARS_PATH  = 'chars.json'
+
+let _syncTimer: ReturnType<typeof setTimeout> | null = null
+function debouncedCloudSync(chars: Character[]): void {
+  if (_syncTimer) clearTimeout(_syncTimer)
+  _syncTimer = setTimeout(() => {
+    const blob = new Blob([JSON.stringify(chars)], { type: 'application/json' })
+    uploadBlob(CHARS_PATH, blob).catch(err => console.warn('[charStore] cloud sync failed:', err))
+  }, 2000)
+}
 
 // Flag: tiny marker stored in localStorage that says "this image is on Supabase"
 const FLAG = (key: string) => `${key}_sb`
@@ -54,10 +64,25 @@ export function getChars(): Character[] {
 
 export function saveChars(chars: Character[]): void {
   localStorage.setItem(LS_CHARS, JSON.stringify(chars))
+  debouncedCloudSync(chars)
 }
 
 export function resetChars(): void {
   localStorage.removeItem(LS_CHARS)
+}
+
+export async function initFromCloud(): Promise<boolean> {
+  try {
+    const url = storageUrl(CHARS_PATH)
+    const resp = await fetch(url, { cache: 'no-cache' })
+    if (!resp.ok) return false
+    const data: Character[] = await resp.json()
+    if (!Array.isArray(data) || !data.length) return false
+    localStorage.setItem(LS_CHARS, JSON.stringify(data))
+    return true
+  } catch {
+    return false
+  }
 }
 
 // ── Typed image helpers (convenience wrappers) ────────────────────────────────
