@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useGameStore } from '../store/gameStore'
 import type { Unit } from '../types/unit'
 import type { Card } from '../types/card'
@@ -40,6 +40,10 @@ interface MoveAnim {
   img: string | null
   name: string
   charName: string
+  charImg: string | null
+  targetName: string | null
+  targetCharImg: string | null
+  isGroup: boolean
   color: string
 }
 
@@ -63,10 +67,17 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
     if (!game) return
     const last = game.log[game.log.length - 1]
     if (!last?.moveAnim) return
-    const { moveId, moveName, moveSlot, charName } = last.moveAnim
+    const { moveId, moveName, moveSlot, charName, charId, targetName, targetCharId } = last.moveAnim
     const img = getMoveImg(moveId)
+    const charImg = charId ? (getCharWideImg(charId) ?? getCharImg(charId)) : null
+    const targetCharImg = targetCharId ? (getCharWideImg(targetCharId) ?? getCharImg(targetCharId)) : null
     if (animTimer.current) clearTimeout(animTimer.current)
-    setMoveAnim({ img, name: moveName, charName, color: SLOT_COLOR[moveSlot as MoveSlot] ?? '#aaa' })
+    setMoveAnim({
+      img, name: moveName, charName, charImg,
+      targetName: targetName ?? null, targetCharImg,
+      isGroup: !targetName,
+      color: SLOT_COLOR[moveSlot as MoveSlot] ?? '#aaa',
+    })
     setAnimKey(k => k + 1)
     animTimer.current = setTimeout(() => setMoveAnim(null), 1900)
   }, [game?.log.length])
@@ -84,15 +95,6 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
   const isAutoMe  = mySide === 'A' ? game.autoBattleA : game.autoBattleB
   const isAutoOpp = mySide === 'A' ? game.autoBattleB : game.autoBattleA
 
-  const triggerAnim = useCallback((unit: Unit, slot: MoveSlot) => {
-    const move = unit.moves[slot]; if (!move) return
-    const img  = localStorage.getItem(`cb_move_img_${move.id}`)
-    if (animTimer.current) clearTimeout(animTimer.current)
-    // Always show overlay for player actions (img may be null → shows ⚡ fallback)
-    setMoveAnim({ img, name: move.name, charName: unit.name, color: SLOT_COLOR[slot] })
-    setAnimKey(k => k + 1)
-    animTimer.current = setTimeout(() => setMoveAnim(null), 1900)
-  }, [])
 
   const suitInHand: Record<string, number> = { red: 0, green: 0, blue: 0, yellow: 0 }
   for (const c of myHand) if (c.color in suitInHand) suitInHand[c.color]++
@@ -150,7 +152,6 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
     const move = unit.moves[slot]
     if (!move) return
     applyPendingMove(unit)
-    triggerAnim(unit, slot)
     onExecuteMove(unit.id, slot, null)
   }
 
@@ -159,12 +160,40 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
       {/* ── Move animation overlay ── */}
       {moveAnim && (
         <div className="move-anim-overlay" key={animKey}>
-          {moveAnim.img
-            ? <img src={moveAnim.img} className="move-anim-img" alt="" />
-            : <div className="move-anim-no-img" style={{ color: moveAnim.color }}>⚡</div>
-          }
-          <div className="move-anim-name" style={{ color: moveAnim.color }}>{moveAnim.name}</div>
-          <div className="move-anim-char">{moveAnim.charName}</div>
+          <div className="ma-vs-row">
+            {/* Attacker */}
+            <div className="ma-combatant ma-attacker">
+              {moveAnim.charImg
+                ? <img src={moveAnim.charImg} className="ma-char-img" alt="" />
+                : <div className="ma-char-placeholder">{moveAnim.charName[0]}</div>
+              }
+              <div className="ma-char-name">{moveAnim.charName}</div>
+            </div>
+
+            {/* Move */}
+            <div className="ma-move-center">
+              <div className="move-anim-name" style={{ color: moveAnim.color }}>{moveAnim.name}</div>
+              {moveAnim.img
+                ? <img src={moveAnim.img} className="move-anim-img" alt="" />
+                : <div className="move-anim-no-img" style={{ color: moveAnim.color }}>⚡</div>
+              }
+              {moveAnim.isGroup && <div className="ma-group-label">⚔ 群體</div>}
+            </div>
+
+            {/* Target */}
+            <div className="ma-combatant ma-target">
+              {moveAnim.targetName
+                ? <>
+                    {moveAnim.targetCharImg
+                      ? <img src={moveAnim.targetCharImg} className="ma-char-img ma-char-flip" alt="" />
+                      : <div className="ma-char-placeholder">{moveAnim.targetName[0]}</div>
+                    }
+                    <div className="ma-char-name">{moveAnim.targetName}</div>
+                  </>
+                : <div className="ma-char-placeholder" style={{ opacity: .25 }}>⚔</div>
+              }
+            </div>
+          </div>
         </div>
       )}
 

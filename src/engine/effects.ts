@@ -5,7 +5,7 @@ import type { GameState } from '../types/game'
 import type { StatusEntry } from '../types/status'
 import { applyDamage } from './combat'
 
-export type LogLine = { html: string; moveAnim?: { moveId: string; moveName: string; moveSlot: string; charName: string } }
+export type LogLine = { html: string; moveAnim?: { moveId: string; moveName: string; moveSlot: string; charName: string; charId?: string; targetName?: string; targetCharId?: string } }
 
 function allUnits(gs: GameState): Unit[] {
   return [...gs.teamA, ...gs.teamB]

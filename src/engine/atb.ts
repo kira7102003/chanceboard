@@ -359,7 +359,8 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
   const SLOT_COLOR: Record<string, string> = { sword:'#e87733', gun:'#22cc77', magic:'#9955ee', wish:'#ddaa22', passive:'#666' }
   const moveColor = SLOT_COLOR[action.moveSlot] ?? '#aaa'
   const moveLabel = `<span style="color:${moveColor}">【${move.name}】</span>`
-  const moveAnim  = { moveId: move.id, moveName: move.name, moveSlot: action.moveSlot, charName: u.name }
+  const firstTarget = move.scope === '群' ? undefined : targets[0]
+  const moveAnim  = { moveId: move.id, moveName: move.name, moveSlot: action.moveSlot, charName: u.name, charId: u.characterId, targetName: firstTarget?.name, targetCharId: firstTarget?.characterId }
   const targetDesc = move.scope === '群'
     ? '⚔ 群體'
     : targets.length > 0
