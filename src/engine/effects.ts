@@ -54,11 +54,11 @@ function addStatus(unit: Unit, op: EffectOp, clock: number, durationMult = 1) {
     : 1))
 
   unit.statuses = unit.statuses.filter(s => s.key !== key)
-  unit.statuses.push({ key, mode, value, expiresAt: clock + dur })
+  unit.statuses.push({ key, mode, value, expiresAt: clock + dur * 10 })
 
   // 結冰 special: push action timer forward so the unit can't act while frozen
   if (key === 'frozen' && unit.nextActionAt > clock) {
-    unit.nextActionAt += dur
+    unit.nextActionAt += dur * 10
   }
 }
 
@@ -128,8 +128,8 @@ export function runEffectOps(
           const dist = Math.abs(unit.slot - actor.slot)
           const dur = durByDist[Math.min(dist, durByDist.length - 1)] ?? 5
           unit.statuses = unit.statuses.filter(s => s.key !== key)
-          unit.statuses.push({ key, mode, value, expiresAt: clock + dur })
-          if (key === 'frozen' && unit.nextActionAt > clock) unit.nextActionAt += dur
+          unit.statuses.push({ key, mode, value, expiresAt: clock + dur * 10 })
+          if (key === 'frozen' && unit.nextActionAt > clock) unit.nextActionAt += dur * 10
         }
         break
       }
