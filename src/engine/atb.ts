@@ -120,10 +120,9 @@ export function initBattleState(
   deckBIds: string[] = [],
 ): GameState {
   const startClock = 0
-  // A side: slot 3=前(front), 2=中, 1=後(back) → place first char at slot 3
-  const slotOrderA = [3, 2, 1] as const
+  // Both sides: slot1=近(front), slot2=中, slot3=遠(back)
+  const slotOrderA: (1|2|3)[] = [1, 2, 3]
   const teamA = charIdsA.map((id, i) => makeUnit(id, 'A', slotOrderA[i], startClock))
-  // B side: slot 1=前(front), 2=中, 3=後(back) → place first char at slot 1
   const teamB = charIdsB.map((id, i) => makeUnit(id, 'B', (i + 1) as 1 | 2 | 3, startClock))
 
   const pubDeck = buildPublicDeck(piece)
@@ -289,7 +288,7 @@ export function doMoveUnit(gs: GameState, unitId: string, toSlot: 1 | 2 | 3): Ga
   if (!u._didNotMoveThisTurn) return gs
   u.slot = toSlot
   u._didNotMoveThisTurn = false
-  const moveLabel = u.side === 'A' ? ['後', '中', '前'][toSlot - 1] : ['前', '中', '後'][toSlot - 1]
+  const moveLabel = ['近', '中', '遠'][toSlot - 1]
   s.log.push({ html: `<b>${u.name}</b> 移至 ${moveLabel}距離` })
   return s
 }
@@ -317,9 +316,9 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
     return gs
   }
 
-  // SA A5: Sword requires attacker to be in front row (A=slot3, B=slot1)
-  if (move.rangeType === 'sword' && u.slot !== (u.side === 'A' ? 3 : 1)) {
-    s.log.push({ html: `<b>${u.name}</b> 劍技需在前排才能使用` })
+  // Sword requires attacker at 近(slot1) — same for both sides
+  if (move.rangeType === 'sword' && u.slot !== 1) {
+    s.log.push({ html: `<b>${u.name}</b> 劍技需在近距才能使用` })
     return gs
   }
 
@@ -564,9 +563,9 @@ function resolveTargetUnits(move: Move, actor: Unit, targetId: string | null, s:
     return cands.reduce((b, u) => isAwakened ? (u.hp < b.hp ? u : b) : (u.hp > b.hp ? u : b))
   }
 
-  // SA A5: Sword targets only front-row enemies (A attacks B slot1, B attacks A slot3)
+  // Sword targets enemy 近(slot1) — same for both sides
   if (move.rangeType === 'sword') {
-    const swordTargetSlot = actor.side === 'A' ? 1 : 3
+    const swordTargetSlot = 1
     const front = enemies.filter(e => e.slot === swordTargetSlot)
     if (move.scope === 'group') return front
     if (targetId) {
@@ -581,21 +580,19 @@ function resolveTargetUnits(move: Move, actor: Unit, targetId: string | null, s:
     return best ? [best] : []
   }
 
-  // SA A4: Magic uses crossOf — hits same slot number as attacker (近打近, 中打中, 遠打遠)
+  // Magic crossOf = 4-slot: 近打遠, 中打中, 遠打近 (交錯)
   if (move.rangeType === 'magic') {
-    const mirrorSlot = actor.slot
+    const mirrorSlot = (4 - actor.slot) as 1 | 2 | 3
     const mirror = enemies.filter(e => e.slot === mirrorSlot)
     if (move.scope === 'group') return mirror
     const best = pickBest(mirror)
     return best ? [best] : []
   }
 
-  // SA A6: Gun — nearest slot; group hits all enemies at that slot (not all enemies)
+  // Gun — nearest slot = min slot (slot1=近 is always nearest) for both sides
   if (move.rangeType === 'gun') {
     if (enemies.length === 0) return []
-    const nearestSlot = actor.side === 'A'
-      ? Math.min(...enemies.map(e => e.slot))
-      : Math.max(...enemies.map(e => e.slot))
+    const nearestSlot = Math.min(...enemies.map(e => e.slot))
     const near = enemies.filter(e => e.slot === nearestSlot)
     if (move.scope === 'group') return near
     const best = pickBest(near)
@@ -665,16 +662,16 @@ function kitPreferredSlot(unit: Unit, enemies: Unit[], hand: Card[], clock: numb
   const total = swordPwr + gunPwr + magicPwr
   if (total === 0) return 3  // pure support — retreat to back row
 
-  // Magic-dominant: SA A4 magic uses crossOf (same slot number) → position at same slot as most enemies
+  // Magic-dominant: crossOf=4-slot → position at mirror of most-populated enemy slot
   if (magicPwr >= swordPwr && magicPwr >= gunPwr) {
     const count: Record<number, number> = { 1: 0, 2: 0, 3: 0 }
     for (const e of enemies) count[e.slot] = (count[e.slot] ?? 0) + 1
     const enemySlot = ([1, 2, 3] as const).reduce((a, b) => (count[b] ?? 0) > (count[a] ?? 0) ? b : a)
-    return enemySlot
+    return (4 - enemySlot) as 1 | 2 | 3
   }
 
-  // Sword dominant → front row (A=slot3, B=slot1)
-  if (swordPwr >= gunPwr) return unit.side === 'A' ? 3 : 1
+  // Sword dominant → 近(slot1) for both sides
+  if (swordPwr >= gunPwr) return 1
 
   // Gun dominant → mid row (can hit anyone from slot 2, safer than front)
   return 2
@@ -723,22 +720,19 @@ function scoreMoves(
     let reachable = enemies.filter(e => !e.statuses.some(s => s.key === 'hidden'))
 
     if (move.rangeType === 'sword') {
-      if (fromSlot !== (unit.side === 'A' ? 3 : 1)) continue  // SA A5: sword attacker must be front
-      const swordTargetSlot = unit.side === 'A' ? 1 : 3
-      reachable = reachable.filter(e => e.slot === swordTargetSlot)
+      if (fromSlot !== 1) continue  // sword attacker must be at 近(slot1)
+      reachable = reachable.filter(e => e.slot === 1)  // hits enemy 近(slot1)
     }
 
-    // SA A4: Magic uses crossOf — hits same slot number as attacker
+    // Magic crossOf = 4-slot: 近打遠, 中打中, 遠打近
     if (move.rangeType === 'magic') {
-      const mirrorSlot = fromSlot
-      reachable = reachable.filter(e => e.slot === mirrorSlot)
+      const crossSlot = (4 - fromSlot) as 1 | 2 | 3
+      reachable = reachable.filter(e => e.slot === crossSlot)
     }
 
-    // SA A6: Gun hits nearest slot — filter for accurate group scoring
+    // Gun hits nearest slot = min slot for both sides
     if (move.rangeType === 'gun' && reachable.length > 0) {
-      const nearestSlot = unit.side === 'A'
-        ? Math.min(...reachable.map(e => e.slot))
-        : Math.max(...reachable.map(e => e.slot))
+      const nearestSlot = Math.min(...reachable.map(e => e.slot))
       reachable = reachable.filter(e => e.slot === nearestSlot)
     }
 
@@ -755,9 +749,7 @@ function scoreMoves(
       // SA A6: Gun single-target hits nearest enemy (lowest slot)
       let best: Unit
       if (move.rangeType === 'gun') {
-        const nearestSlot = unit.side === 'A'
-          ? Math.min(...reachable.map(e => e.slot))
-          : Math.max(...reachable.map(e => e.slot))
+        const nearestSlot = Math.min(...reachable.map(e => e.slot))
         const nearEnemies = reachable.filter(e => e.slot === nearestSlot)
         best = nearEnemies.reduce((a, b) => (a.hp / a.maxHp) <= (b.hp / b.maxHp) ? a : b)
       } else {

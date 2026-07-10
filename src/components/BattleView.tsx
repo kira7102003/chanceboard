@@ -7,16 +7,17 @@ import { getReadyUnits } from '../engine/atb'
 import ScorePanel from './ScorePanel'
 import { getCharImg } from '../utils/charStore'
 
-const DIST_COLOR: Record<string, string> = { '前': '#e85533', '中': '#ddaa22', '後': '#33aacc' }
+const DIST_COLOR: Record<string, string> = { '近': '#e85533', '中': '#ddaa22', '遠': '#33aacc' }
 
-// SA: slot2 always = 中; frontSlot(A)=3, frontSlot(B)=1
-function getSlotLabel(side: 'A' | 'B', slot: number): string {
+// Both sides: slot1=近(front), slot2=中, slot3=遠(back)
+function getSlotLabel(_side: 'A' | 'B', slot: number): string {
+  if (slot === 1) return '近'
   if (slot === 2) return '中'
-  return slot === (side === 'A' ? 3 : 1) ? '前' : '後'
+  return '遠'
 }
-// depth 0=front(bottom) … 2=back(top); used for staircase height
-function slotDepth(side: 'A' | 'B', slot: number): number {
-  return side === 'A' ? 3 - slot : slot - 1
+// depth 0=front/bottom(近), 2=back/top(遠); same for both sides
+function slotDepth(_side: 'A' | 'B', slot: number): number {
+  return slot - 1
 }
 const EL_COLOR: Record<string, string> = { sword: '#e87733', gun: '#22cc77', magic: '#9955ee' }
 const SUIT_CLS: Record<string, string>  = { red: 'suit-red', green: 'suit-green', blue: 'suit-blue', yellow: 'suit-yellow', flower: 'suit-flower' }
@@ -233,9 +234,9 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
               <span className={`side-badge side-${mySide}`}>{mySide} 方</span>
               <span className="side-meta">手牌 {myHand.length} · 自訂剩 {myCustomLeft}</span>
             </div>
-            {/* 後=左+頂, 前=右+底 (A:slot1=後,B:slot1=前) — column order [1,2,3], height by slotDepth */}
+            {/* my-side renders [3,2,1]: 遠 on left, 近 on right (facing enemy center) */}
             <div className="slots-row">
-              {([1,2,3] as const).map(slot => (
+              {([3,2,1] as const).map(slot => (
                 <div key={slot} className="slot-col" style={{ transform: `translateY(${-slotDepth(mySide ?? 'A', slot) * 28}px)` }}>
                   <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(mySide ?? 'A', slot)] }}>{getSlotLabel(mySide ?? 'A', slot)}</div>
                   {myTeam.filter(u => getPendingSlot(u) === slot).map(u => {

@@ -66,15 +66,13 @@ function healUnit(unit: Unit, amount: number) {
   unit.hp = Math.min(unit.maxHp, unit.hp + Math.max(0, amount))
 }
 
-// op.to uses distance convention (1=near/front, 2=mid, 3=far/back), not absolute slot.
-function distToSlot(dist: 1 | 2 | 3, side: 'A' | 'B'): 1 | 2 | 3 {
-  if (dist === 2) return 2
-  if (dist === 1) return side === 'A' ? 3 : 1
-  return side === 'A' ? 1 : 3
+// Both sides: slot1=近(front), slot2=中, slot3=遠(back) — direct 1:1 mapping
+function distToSlot(dist: 1 | 2 | 3, _side: 'A' | 'B'): 1 | 2 | 3 {
+  return dist
 }
 
-function slotLabel(side: 'A' | 'B', slot: 1 | 2 | 3): string {
-  return side === 'A' ? ['後', '中', '前'][slot - 1] : ['前', '中', '後'][slot - 1]
+function slotLabel(_side: 'A' | 'B', slot: 1 | 2 | 3): string {
+  return ['近', '中', '遠'][slot - 1]
 }
 
 const CHARGE_STACK_CAP = 3
