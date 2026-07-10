@@ -501,10 +501,10 @@ function ImageCrop({ storageKey, onSave }: CropProps) {
     try {
       const url = await uploadByKey(storageKey, dataUrl)
       setSaved(url); setImgSrc(null); onSave?.()
-    } catch (e) {
-      console.error('上傳失敗，暫存本地', e)
-      localStorage.setItem(storageKey, dataUrl)
-      setSaved(dataUrl); setImgSrc(null); onSave?.()
+    } catch (e: any) {
+      const msg = e?.message ?? String(e)
+      console.error('上傳失敗', msg)
+      alert(`圖片上傳失敗：${msg}\n\n請至 Supabase Dashboard → Storage → chanceboard → Policies，新增 anon INSERT 政策後重試。`)
     } finally {
       setUploading(false)
     }

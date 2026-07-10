@@ -11,11 +11,24 @@ export function storageUrl(path: string): string {
 }
 
 export async function uploadDataUrl(path: string, dataUrl: string): Promise<string> {
-  const res  = await fetch(dataUrl)
-  const blob = await res.blob()
-  const { error } = await supabase.storage.from(BUCKET).upload(path, blob, {
+  const blob = await fetch(dataUrl).then(r => r.blob())
+
+  // In production: get a presigned upload token from the Netlify function
+  // (service role key lives server-side; anon key cannot write to this bucket)
+  const signResp = await fetch('/.netlify/functions/sign-upload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path }),
+  })
+  if (!signResp.ok) {
+    const err = await signResp.json().catch(() => ({}))
+    throw new Error(err.error ?? `sign-upload HTTP ${signResp.status}`)
+  }
+  const { token } = await signResp.json()
+
+  // Upload directly to Supabase using the signed token (bypasses RLS, no size limit)
+  const { error } = await supabase.storage.from(BUCKET).uploadToSignedUrl(path, token, blob, {
     contentType: blob.type || 'image/webp',
-    upsert: true,
   })
   if (error) throw error
   return storageUrl(path)
