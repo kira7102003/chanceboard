@@ -126,12 +126,12 @@ function BasicTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<C
     <div className="adm-basic">
       <div className="adm-section">
         <div className="adm-section-label">角色圖片（頭像）</div>
-        <ImageCrop storageKey={`cb_img_${char.id}`} previewSize={220} outSize={600} />
+        <ImageCrop storageKey={`cb_img_${char.id}`} />
       </div>
 
       <div className="adm-section">
         <div className="adm-section-label">戰場寬幅圖（遊戲內卡片用，建議橫式）</div>
-        <ImageCrop storageKey={`cb_wide_img_${char.id}`} previewSize={220} outSize={900} />
+        <ImageCrop storageKey={`cb_wide_img_${char.id}`} />
       </div>
 
       <div className="adm-section">
@@ -264,8 +264,6 @@ function MovesTab({ moves }: { moves: Move[] }) {
               <div className="adm-move-crop">
                 <ImageCrop
                   storageKey={`cb_move_img_${m.id}`}
-                  previewSize={200}
-                  outSize={640}
                   onSave={() => markSaved(m.id)}
                 />
               </div>
@@ -308,7 +306,7 @@ function StoryTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<C
     <div className="adm-story">
       <div className="adm-section">
         <div className="adm-section-label">故事插圖</div>
-        <ImageCrop storageKey={`cb_story_img_${char.id}`} previewSize={240} outSize={800} />
+        <ImageCrop storageKey={`cb_story_img_${char.id}`} />
       </div>
 
       <div className="adm-section">
@@ -327,10 +325,13 @@ function StoryTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<C
 
 // ─── ImageCrop — visual crop-box UI ──────────────────────────────────────────
 
+const CROP_W = 768
+const CROP_H = 1376
+const CROP_RATIO = CROP_W / CROP_H   // ≈ 0.5581
+
 interface CropProps {
   storageKey: string
-  previewSize?: number   // unused (kept for API compat)
-  outSize?: number       // output image px
+  previewSize?: number   // unused
   onSave?: () => void
 }
 
@@ -342,14 +343,15 @@ type CropDragState =
 
 // disp: rendered image bounds within fixed-height stage (coords relative to stage origin)
 // box:  crop box position/size relative to rendered image (NOT stage)
-function ImageCrop({ storageKey, outSize = 256, onSave }: CropProps) {
+function ImageCrop({ storageKey, onSave }: CropProps) {
   const [imgSrc,      setImgSrc]      = useState<string | null>(null)
   const [saved,       setSaved]       = useState<string | null>(() => getUrlByKey(storageKey))
   const [uploading,   setUploading]   = useState(false)
   const [fetchingRe,  setFetchingRe]  = useState(false)
   const [savedFailed, setSavedFailed] = useState(false)
   const [disp,        setDisp]        = useState({ w: 0, h: 0, imgX: 0, imgY: 0 })
-  const [box,         setBox]         = useState({ x: 0, y: 0, size: 100 })
+  // box: x/y in rendered-image coords; w = box width; height = w / CROP_RATIO
+  const [box,         setBox]         = useState({ x: 0, y: 0, w: 100 })
 
   const imgRef    = useRef<HTMLImageElement>(null)
   const stageRef  = useRef<HTMLDivElement>(null)
@@ -381,8 +383,11 @@ function ImageCrop({ storageKey, outSize = 256, onSave }: CropProps) {
     }
     const d = { w: Math.round(rw), h: Math.round(rh), imgX: Math.round(imgX), imgY: Math.round(imgY) }
     setDisp(d); dispRef.current = d
-    const sz = Math.round(Math.min(rw, rh) * 0.7)
-    const nb = { x: Math.round((rw - sz) / 2), y: Math.round((rh - sz) / 2), size: sz }
+    // initialise portrait crop box: try 70% of stage height, clamp to 90% of width
+    let bh_init = Math.round(rh * 0.7)
+    let bw_init = Math.round(bh_init * CROP_RATIO)
+    if (bw_init > rw * 0.9) { bw_init = Math.round(rw * 0.9); bh_init = Math.round(bw_init / CROP_RATIO) }
+    const nb = { x: Math.round((rw - bw_init) / 2), y: Math.round((rh - bh_init) / 2), w: bw_init }
     setBox(nb); boxRef.current = nb
   }, [])
 
@@ -397,30 +402,31 @@ function ImageCrop({ storageKey, outSize = 256, onSave }: CropProps) {
         const dy = e.clientY - ds.startMy
         const { w, h } = dispRef.current
         const b = boxRef.current
+        const bh = b.w / CROP_RATIO
         const nb = { ...b,
-          x: Math.max(0, Math.min(w - b.size, ds.startBx + dx)),
-          y: Math.max(0, Math.min(h - b.size, ds.startBy + dy)),
+          x: Math.max(0, Math.min(w - b.w, ds.startBx + dx)),
+          y: Math.max(0, Math.min(h - bh, ds.startBy + dy)),
         }
         setBox(nb); boxRef.current = nb
       } else {
         const rect = stage.getBoundingClientRect()
-        // convert mouse → rendered-image coordinates
         const mx = e.clientX - rect.left - ds.imgX
         const my = e.clientY - rect.top  - ds.imgY
         const { corner, ax, ay, dw, dh } = ds
-        let nb: { x: number; y: number; size: number }
+        // convert constraints to width units (h_constraint * CROP_RATIO = equivalent width)
+        let nb: { x: number; y: number; w: number }
         if (corner === 'br') {
-          const sz = Math.max(MIN, Math.min(mx - ax, my - ay, dw - ax, dh - ay))
-          nb = { x: ax, y: ay, size: sz }
+          const bw = Math.max(MIN, Math.min(mx - ax, (my - ay) * CROP_RATIO, dw - ax, (dh - ay) * CROP_RATIO))
+          nb = { x: ax, y: ay, w: bw }
         } else if (corner === 'tl') {
-          const sz = Math.max(MIN, Math.min(ax - mx, ay - my, ax, ay))
-          nb = { x: ax - sz, y: ay - sz, size: sz }
+          const bw = Math.max(MIN, Math.min(ax - mx, (ay - my) * CROP_RATIO, ax, ay * CROP_RATIO))
+          nb = { x: ax - bw, y: ay - bw / CROP_RATIO, w: bw }
         } else if (corner === 'tr') {
-          const sz = Math.max(MIN, Math.min(mx - ax, ay - my, dw - ax, ay))
-          nb = { x: ax, y: ay - sz, size: sz }
-        } else {
-          const sz = Math.max(MIN, Math.min(ax - mx, my - ay, ax, dh - ay))
-          nb = { x: ax - sz, y: ay, size: sz }
+          const bw = Math.max(MIN, Math.min(mx - ax, (ay - my) * CROP_RATIO, dw - ax, ay * CROP_RATIO))
+          nb = { x: ax, y: ay - bw / CROP_RATIO, w: bw }
+        } else { // bl
+          const bw = Math.max(MIN, Math.min(ax - mx, (my - ay) * CROP_RATIO, ax, (dh - ay) * CROP_RATIO))
+          nb = { x: ax - bw, y: ay, w: bw }
         }
         setBox(nb); boxRef.current = nb
       }
@@ -443,8 +449,9 @@ function ImageCrop({ storageKey, outSize = 256, onSave }: CropProps) {
   const startResize = (corner: 'tl'|'tr'|'bl'|'br') => (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation()
     const b = boxRef.current; const d = dispRef.current
-    const ax = corner === 'br' || corner === 'tr' ? b.x : b.x + b.size
-    const ay = corner === 'br' || corner === 'bl' ? b.y : b.y + b.size
+    const bh = b.w / CROP_RATIO
+    const ax = corner === 'br' || corner === 'tr' ? b.x : b.x + b.w
+    const ay = corner === 'br' || corner === 'bl' ? b.y : b.y + bh
     dragRef.current = { mode: 'resize', corner, ax, ay, dw: d.w, dh: d.h, imgX: d.imgX, imgY: d.imgY }
   }
 
@@ -484,10 +491,11 @@ function ImageCrop({ storageKey, outSize = 256, onSave }: CropProps) {
     const d = dispRef.current; if (!d.w || !d.h) return
     const b = boxRef.current
     const sx = img.naturalWidth / d.w, sy = img.naturalHeight / d.h
-    const cv = document.createElement('canvas'); cv.width = outSize; cv.height = outSize
+    const bh = b.w / CROP_RATIO
+    const cv = document.createElement('canvas'); cv.width = CROP_W; cv.height = CROP_H
     const ctx = cv.getContext('2d')!
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'
-    ctx.drawImage(img, b.x * sx, b.y * sy, b.size * sx, b.size * sy, 0, 0, outSize, outSize)
+    ctx.drawImage(img, b.x * sx, b.y * sy, b.w * sx, bh * sy, 0, 0, CROP_W, CROP_H)
     const dataUrl = cv.toDataURL('image/webp', 0.95)
     setUploading(true)
     try {
@@ -510,9 +518,9 @@ function ImageCrop({ storageKey, outSize = 256, onSave }: CropProps) {
     setImgSrc(null)
   }
 
-  const { x, y, size } = box
-  const { w, imgX, imgY } = disp
-  // crop box in stage coords
+  const { x, y, w: bw } = box
+  const bh = Math.round(bw / CROP_RATIO)
+  const { w: dispW, imgX, imgY } = disp
   const absX = imgX + x, absY = imgY + y
 
   return (
@@ -544,19 +552,18 @@ function ImageCrop({ storageKey, outSize = 256, onSave }: CropProps) {
       {imgSrc && (
         <div className="img-crop-tool">
           <div ref={stageRef} className="img-crop-stage">
-            {/* image fills stage via object-fit:contain (CSS) */}
             <img ref={imgRef} src={imgSrc} className="img-crop-src"
               alt="" onLoad={initBox} draggable={false} />
 
-            {w > 0 && <>
-              {/* 4 masks inside rendered image, outside crop box */}
+            {dispW > 0 && <>
+              {/* 4 masks outside portrait crop box */}
               <div className="crop-mask" style={{ top: imgY, left: imgX, width: disp.w, height: y }} />
-              <div className="crop-mask" style={{ top: absY + size, left: imgX, width: disp.w, height: disp.h - y - size }} />
-              <div className="crop-mask" style={{ top: absY, left: imgX, width: x, height: size }} />
-              <div className="crop-mask" style={{ top: absY, left: absX + size, width: disp.w - x - size, height: size }} />
+              <div className="crop-mask" style={{ top: absY + bh, left: imgX, width: disp.w, height: disp.h - y - bh }} />
+              <div className="crop-mask" style={{ top: absY, left: imgX, width: x, height: bh }} />
+              <div className="crop-mask" style={{ top: absY, left: absX + bw, width: disp.w - x - bw, height: bh }} />
 
               <div className="crop-box"
-                style={{ left: absX, top: absY, width: size, height: size }}
+                style={{ left: absX, top: absY, width: bw, height: bh }}
                 onMouseDown={startMove}
               >
                 <div className="crop-grid-h" style={{ top: '33.3%' }} />
