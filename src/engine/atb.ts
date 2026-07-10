@@ -590,18 +590,19 @@ function resolveTargetUnits(move: Move, actor: Unit, targetId: string | null, s:
     return best ? [best] : []
   }
 
-  if (move.scope === 'group') return enemies
-
-  // SA A6: Gun single-target → nearest enemy (A→B: lowest slot; B→A: highest slot)
+  // SA A6: Gun — nearest slot; group hits all enemies at that slot (not all enemies)
   if (move.rangeType === 'gun') {
     if (enemies.length === 0) return []
     const nearestSlot = actor.side === 'A'
       ? Math.min(...enemies.map(e => e.slot))
       : Math.max(...enemies.map(e => e.slot))
     const near = enemies.filter(e => e.slot === nearestSlot)
+    if (move.scope === 'group') return near
     const best = pickBest(near)
     return best ? [best] : []
   }
+
+  if (move.scope === 'group') return enemies
 
   // Default single-target: explicit targetId (taunt-redirect) or HP tie-break
   if (targetId) {
@@ -731,6 +732,14 @@ function scoreMoves(
     if (move.rangeType === 'magic') {
       const mirrorSlot = fromSlot
       reachable = reachable.filter(e => e.slot === mirrorSlot)
+    }
+
+    // SA A6: Gun hits nearest slot — filter for accurate group scoring
+    if (move.rangeType === 'gun' && reachable.length > 0) {
+      const nearestSlot = unit.side === 'A'
+        ? Math.min(...reachable.map(e => e.slot))
+        : Math.max(...reachable.map(e => e.slot))
+      reachable = reachable.filter(e => e.slot === nearestSlot)
     }
 
     if (reachable.length === 0) continue     // no valid targets → skip

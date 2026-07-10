@@ -51,6 +51,8 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
   const [animKey,   setAnimKey]   = useState(0)
   // pending destination slot per unit (preview before confirming with a skill/pass)
   const [pendingSlots, setPendingSlots] = useState<Record<string, 1|2|3>>({})
+  // preview: clicking a non-active own unit shows their moves read-only
+  const [previewUnitId, setPreviewUnitId] = useState<string | null>(null)
 
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight
@@ -73,6 +75,7 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
 
   const myTeam    = mySide === 'A' ? game.teamA : game.teamB
   const enemyTeam = mySide === 'A' ? game.teamB : game.teamA
+  const previewUnit = previewUnitId ? myTeam.find(u => u.id === previewUnitId && u.alive) ?? null : null
   const myHand    = mySide === 'A' ? game.handA : game.handB
   const myCustomLeft = mySide === 'A' ? game.customDeckOrder.length : game.customDeckOrderB.length
   const oppSide = mySide === 'A' ? 'B' : 'A'
@@ -240,6 +243,11 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
                     return (
                       <UnitCard key={u.id} unit={u} clock={game.clock}
                         selectable={isActive && !selectingTarget}
+                        highlighted={previewUnitId === u.id && !isActive}
+                        isPreview={!isActive}
+                        onClick={!isActive && u.alive && !isAIBattle
+                          ? () => setPreviewUnitId(prev => prev === u.id ? null : u.id)
+                          : undefined}
                       />
                     )
                   })}
@@ -310,6 +318,11 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
         )
       })()}
 
+      {/* ── Unit preview panel (click non-active ally to inspect) ── */}
+      {!isAIBattle && previewUnit && previewUnit.id !== readyUnits[0]?.id && (
+        <UnitPreviewPanel unit={previewUnit} clock={game.clock} onClose={() => setPreviewUnitId(null)} />
+      )}
+
       {/* ── Bottom row: log (left) + hand panel (right) ── */}
       <div className="battle-bottom">
         <div className="log-panel" ref={logRef}>
@@ -327,16 +340,19 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
 
 // ─── UnitCard ────────────────────────────────────────────────────────────────
 
-function UnitCard({ unit, clock, onClick, selectable }: { unit: Unit; clock: number; onClick?: () => void; selectable?: boolean }) {
+function UnitCard({ unit, clock, onClick, selectable, highlighted, isPreview }: {
+  unit: Unit; clock: number; onClick?: () => void; selectable?: boolean; highlighted?: boolean; isPreview?: boolean
+}) {
   const pct     = unit.alive ? (unit.hp / unit.maxHp) * 100 : 0
   const ticks   = Math.max(0, unit.nextActionAt - clock)
   const ready   = ticks === 0 && unit.alive
   const hpColor = pct > 60 ? '#22cc66' : pct > 30 ? '#ccaa22' : '#cc3333'
   const img     = getCharImg(unit.characterId)
+  const stateClass = selectable ? 'selectable' : (onClick && isPreview ? 'previewable' : (onClick ? 'targetable' : ''))
 
   return (
     <div
-      className={`unit-card ${!unit.alive ? 'dead' : ''} ${ready ? 'uc-ready' : ''} ${selectable ? 'selectable' : (onClick ? 'targetable' : '')}`}
+      className={`unit-card ${!unit.alive ? 'dead' : ''} ${ready ? 'uc-ready' : ''} ${stateClass} ${highlighted ? 'uc-preview-active' : ''}`}
       onClick={onClick}
     >
       {img
@@ -378,6 +394,8 @@ function ReadyUnitPanel({ unit, clock, suitInHand, flowerHand, isOpen, selecting
   onPendingMove: (s: 1|2|3) => void; onPass: () => void
   onPlayCard: (id: string) => void
 }) {
+  const [hoveredSlot, setHoveredSlot] = useState<MoveSlot | null>(null)
+  const hoveredMove = hoveredSlot ? unit.moves[hoveredSlot] : null
   const pendingLabel = getSlotLabel(unit.side, pendingSlot)
   const moved = pendingSlot !== unit.slot
   return (
@@ -437,7 +455,8 @@ function ReadyUnitPanel({ unit, clock, suitInHand, flowerHand, isOpen, selecting
                       className={`btn skill-btn ${!ok ? 'skill-dim' : ''}`}
                       style={{ borderColor: ok ? SLOT_COLOR[slot] : '#2a2a3e' }}
                       onClick={() => ok && onMove(slot)}
-                      title={move.description}
+                      onMouseEnter={() => setHoveredSlot(slot)}
+                      onMouseLeave={() => setHoveredSlot(null)}
                     >
                       {skillImg && (
                         <div className="skill-img-wrap">
@@ -459,6 +478,10 @@ function ReadyUnitPanel({ unit, clock, suitInHand, flowerHand, isOpen, selecting
                   )
                 })}
               </div>
+
+              {hoveredMove && hoveredSlot && (
+                <MoveInfoBox move={hoveredMove} slot={hoveredSlot} />
+              )}
 
               {/* Flower hand */}
               {flowerHand.length > 0 && (
@@ -529,6 +552,92 @@ function CardChip({ card, onClick }: { card: Card; onClick: () => void }) {
          title={card.description ?? ''}>
       <span className="card-name">{card.name}</span>
       {!card.isSuitCard && <span className="card-badge">花</span>}
+    </div>
+  )
+}
+
+// ─── MoveInfoBox ─────────────────────────────────────────────────────────────
+
+const RANGE_LABEL: Record<string, string> = {
+  sword: '劍・前排近戰', gun: '槍・最近格', magic: '法・交錯格',
+}
+
+function MoveInfoBox({ move, slot }: { move: { name: string; description: string; powerRatio: number | null; hitRate: number | null; critRate: number | null; rangeType: string | null; scope: string | null; condition: number | null; cooldown: number | null; effectChance: number }; slot: MoveSlot }) {
+  return (
+    <div className="move-info-box">
+      <div className="mib-header">
+        <span style={{ color: SLOT_COLOR[slot], fontWeight: 800 }}>{SLOT_LABEL[slot]}</span>
+        <b style={{ marginLeft: 5 }}>{move.name}</b>
+        <span style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
+          {move.rangeType && <span className="mib-tag">{RANGE_LABEL[move.rangeType] ?? move.rangeType}</span>}
+          {move.scope === 'group' && <span className="mib-tag">群體</span>}
+        </span>
+      </div>
+      {move.description && <div className="mib-desc">{move.description}</div>}
+      <div className="mib-stats">
+        {move.powerRatio != null && <span className="mib-stat">威力 <b>{move.powerRatio}x</b></span>}
+        {move.hitRate   != null && move.hitRate  < 1 && <span className="mib-stat">命中 <b>{Math.round(move.hitRate*100)}%</b></span>}
+        {move.critRate  != null && move.critRate > 0 && <span className="mib-stat">爆擊 <b>{Math.round(move.critRate*100)}%</b></span>}
+        {move.condition != null && <span className="mib-stat">需 <b>{move.condition}</b> 張</span>}
+        {move.cooldown  != null && <span className="mib-stat">CD <b>{move.cooldown}s</b></span>}
+        {move.effectChance > 0 && move.effectChance < 1 && <span className="mib-stat">觸發 <b>{Math.round(move.effectChance * 100)}%</b></span>}
+      </div>
+    </div>
+  )
+}
+
+// ─── UnitPreviewPanel ────────────────────────────────────────────────────────
+
+function UnitPreviewPanel({ unit, clock, onClose }: { unit: Unit; clock: number; onClose: () => void }) {
+  const [hoveredSlot, setHoveredSlot] = useState<MoveSlot | null>(null)
+  const hoveredMove = hoveredSlot ? unit.moves[hoveredSlot] : null
+
+  return (
+    <div className="rup rup-preview">
+      <div className="rup-hdr" style={{ cursor: 'default' }}>
+        <b style={{ color: EL_COLOR[unit.element] }}>{unit.name}</b>
+        <span className="rup-pos">
+          {getSlotLabel(unit.side, unit.slot)} · 預覽（未行動）
+        </span>
+        <span style={{ marginLeft: 'auto', fontSize: 9, color: '#2c2c48' }}>
+          {unit.nextActionAt > clock ? `${Math.ceil((unit.nextActionAt - clock) / 10)}s 後行動` : '即將行動'}
+        </span>
+        <button className="btn sm" style={{ marginLeft: 8, padding: '1px 7px' }} onClick={onClose}>✕</button>
+      </div>
+      <div className="rup-body">
+        <div className="rup-skills-grid">
+          {MOVE_SLOTS.map(slot => {
+            const move = unit.moves[slot]
+            if (!move) return null
+            const onCD = (unit.moveCooldownUntil[move.id] ?? 0) > clock
+            const skillImg = localStorage.getItem(`cb_move_img_${move.id}`)
+            return (
+              <div
+                key={slot}
+                className="btn skill-btn"
+                style={{ borderColor: SLOT_COLOR[slot], cursor: 'default', opacity: onCD ? 0.4 : 0.82 }}
+                onMouseEnter={() => setHoveredSlot(slot)}
+                onMouseLeave={() => setHoveredSlot(null)}
+              >
+                {skillImg && (
+                  <div className="skill-img-wrap">
+                    <img src={skillImg} className="skill-img" alt="" />
+                    {onCD && <span className="skill-cd-overlay">CD</span>}
+                  </div>
+                )}
+                <div className="skill-top">
+                  <span style={{ color: SLOT_COLOR[slot], fontWeight: 800 }}>{SLOT_LABEL[slot]}</span>
+                  {!skillImg && onCD && <span className="skill-cd">CD</span>}
+                </div>
+                <div className="skill-name">{move.name}</div>
+              </div>
+            )
+          })}
+        </div>
+        {hoveredMove && hoveredSlot && (
+          <MoveInfoBox move={hoveredMove} slot={hoveredSlot} />
+        )}
+      </div>
     </div>
   )
 }

@@ -536,6 +536,16 @@ h2 {
   transform: scale(1.02);
 }
 .unit-card.dead { opacity: 0.55; filter: grayscale(1) brightness(0.5); pointer-events: none; }
+.unit-card.previewable { cursor: pointer; }
+.unit-card.previewable:hover {
+  border-color: rgba(90,174,238,.35);
+  box-shadow: 0 0 12px rgba(90,174,238,.1);
+  transform: scale(1.02);
+}
+.unit-card.uc-preview-active {
+  border-color: rgba(90,174,238,.55) !important;
+  box-shadow: 0 0 18px rgba(90,174,238,.18), 0 0 5px rgba(90,174,238,.25) inset;
+}
 
 .unit-card-name {
   font-size: 12px; font-weight: 700; margin-bottom: 5px; letter-spacing: .3px;
@@ -682,6 +692,36 @@ h2 {
 .skill-ng  { font-size: 8px; color: #cc2222; font-weight: 800; margin-left: auto; text-shadow: 0 0 8px rgba(220,30,30,.5); }
 .skill-cd  { font-size: 8px; color: #444; background: rgba(0,0,0,.5); padding: 1px 4px; border-radius: 3px; margin-left: auto; }
 .skill-name { font-size: 10px; color: #38386a; letter-spacing: .2px; }
+
+/* ── Move info box (shows below skill grid on hover) ─────────── */
+.move-info-box {
+  background: rgba(14,17,44,.96);
+  border: 1px solid rgba(200,161,90,.18);
+  border-radius: 6px; padding: 7px 10px; font-size: 11px;
+  animation: fadeInUp .12s ease;
+}
+.mib-header { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
+.mib-tag {
+  font-size: 8px; padding: 1px 6px; border-radius: 10px;
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08);
+  color: #666; white-space: nowrap;
+}
+.mib-desc { font-size: 10px; color: #555; line-height: 1.5; margin-bottom: 5px; }
+.mib-stats { display: flex; flex-wrap: wrap; gap: 4px; }
+.mib-stat {
+  font-size: 9px; color: #7a7a9a;
+  background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06);
+  border-radius: 3px; padding: 1px 5px;
+}
+.mib-stat b { color: #aaaccf; }
+
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+
+/* ── Preview panel (non-active unit peek) ────────────────────── */
+.rup.rup-preview { border-top: 1px solid rgba(90,174,238,.12); }
+.rup.rup-preview .rup-hdr {
+  background: linear-gradient(90deg, rgba(40,80,160,.06) 0%, transparent 60%);
+}
 
 /* skill image thumbnail */
 .skill-img-wrap {
