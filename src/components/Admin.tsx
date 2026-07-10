@@ -337,23 +337,28 @@ type CropDragState =
 // disp: rendered image bounds within fixed-height stage (coords relative to stage origin)
 // box:  crop box position/size relative to rendered image (NOT stage)
 function ImageCrop({ storageKey, outSize = 256, onSave }: CropProps) {
-  const [imgSrc,    setImgSrc]    = useState<string | null>(null)
-  const [saved,     setSaved]     = useState<string | null>(() => getUrlByKey(storageKey))
-  const [uploading, setUploading] = useState(false)
-  const [disp,      setDisp]      = useState({ w: 0, h: 0, imgX: 0, imgY: 0 })
-  const [box,    setBox]    = useState({ x: 0, y: 0, size: 100 })
+  const [imgSrc,      setImgSrc]      = useState<string | null>(null)
+  const [saved,       setSaved]       = useState<string | null>(() => getUrlByKey(storageKey))
+  const [uploading,   setUploading]   = useState(false)
+  const [fetchingRe,  setFetchingRe]  = useState(false)
+  const [savedFailed, setSavedFailed] = useState(false)
+  const [disp,        setDisp]        = useState({ w: 0, h: 0, imgX: 0, imgY: 0 })
+  const [box,         setBox]         = useState({ x: 0, y: 0, size: 100 })
 
-  const imgRef   = useRef<HTMLImageElement>(null)
-  const stageRef = useRef<HTMLDivElement>(null)
-  const dragRef  = useRef<CropDragState>(null)
-  const boxRef   = useRef(box)
-  const dispRef  = useRef(disp)
+  const imgRef    = useRef<HTMLImageElement>(null)
+  const stageRef  = useRef<HTMLDivElement>(null)
+  const dragRef   = useRef<CropDragState>(null)
+  const blobUrlRef = useRef<string | null>(null)
+  const boxRef    = useRef(box)
+  const dispRef   = useRef(disp)
   useEffect(() => { boxRef.current  = box  }, [box])
   useEffect(() => { dispRef.current = disp }, [disp])
 
   useEffect(() => {
     setSaved(getUrlByKey(storageKey))
+    setSavedFailed(false)
     setImgSrc(null)
+    if (blobUrlRef.current) { URL.revokeObjectURL(blobUrlRef.current); blobUrlRef.current = null }
   }, [storageKey])
 
   // compute object-fit:contain rendered size + letterbox offsets
@@ -444,6 +449,30 @@ function ImageCrop({ storageKey, outSize = 256, onSave }: CropProps) {
     reader.readAsDataURL(file); e.target.value = ''
   }
 
+  const handleReEdit = async () => {
+    if (!saved) return
+    setFetchingRe(true)
+    try {
+      const resp = await fetch(saved, { mode: 'cors' })
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+      const blob = await resp.blob()
+      if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current)
+      const url = URL.createObjectURL(blob)
+      blobUrlRef.current = url
+      setImgSrc(url)
+    } catch (err) {
+      console.error('重新裁切載入失敗', err)
+      alert('載入圖片失敗，請改用「上傳圖片」')
+    } finally {
+      setFetchingRe(false)
+    }
+  }
+
+  const handleCancel = () => {
+    if (blobUrlRef.current) { URL.revokeObjectURL(blobUrlRef.current); blobUrlRef.current = null }
+    setImgSrc(null)
+  }
+
   const handleSave = async () => {
     const img = imgRef.current; if (!img || !img.naturalWidth) return
     const d = dispRef.current; if (!d.w || !d.h) return
@@ -467,7 +496,13 @@ function ImageCrop({ storageKey, outSize = 256, onSave }: CropProps) {
     }
   }
 
-  const handleRemove = () => { removeByKey(storageKey); setSaved(null) }
+  const handleRemove = () => {
+    removeByKey(storageKey)
+    setSaved(null)
+    setSavedFailed(false)
+    if (blobUrlRef.current) { URL.revokeObjectURL(blobUrlRef.current); blobUrlRef.current = null }
+    setImgSrc(null)
+  }
 
   const { x, y, size } = box
   const { w, imgX, imgY } = disp
@@ -479,16 +514,22 @@ function ImageCrop({ storageKey, outSize = 256, onSave }: CropProps) {
       {!imgSrc && (
         <div className="img-crop-saved">
           <div className="img-crop-preview-box">
-            {saved
-              ? <img src={saved} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+            {saved && !savedFailed
+              ? <img src={saved} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt=""
+                  onError={() => setSavedFailed(true)} />
               : <div className="img-crop-empty">尚無圖片</div>
             }
           </div>
           <div className="img-crop-actions">
             <label className="btn sm" style={{ cursor: 'pointer' }}>
-              {saved ? '更換圖片' : '上傳圖片'}
+              {saved && !savedFailed ? '更換圖片' : '上傳圖片'}
               <input type="file" accept="image/*" onChange={handleFile} hidden />
             </label>
+            {saved && !savedFailed && (
+              <button className="btn sm" onClick={handleReEdit} disabled={fetchingRe}>
+                {fetchingRe ? '載入中…' : '重新裁切'}
+              </button>
+            )}
             {saved && <button className="btn sm danger" onClick={handleRemove}>移除</button>}
           </div>
         </div>
@@ -529,7 +570,7 @@ function ImageCrop({ storageKey, outSize = 256, onSave }: CropProps) {
             <button className="btn primary sm" onClick={handleSave} disabled={uploading}>
               {uploading ? '上傳中…' : '裁切並儲存'}
             </button>
-            <button className="btn sm" onClick={() => setImgSrc(null)} disabled={uploading}>取消</button>
+            <button className="btn sm" onClick={handleCancel} disabled={uploading}>取消</button>
           </div>
         </div>
       )}
