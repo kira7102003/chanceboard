@@ -298,60 +298,61 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
         </div>
       </div>
 
-      {/* ── Action / Preview area: fixed height, always rendered ── */}
-      {!isAIBattle && (
-        <div className="action-area">
-          {previewUnit && previewUnit.id !== readyUnits[0]?.id
-            ? <UnitPreviewPanel unit={previewUnit} clock={game.clock} onClose={() => setPreviewUnitId(null)} />
-            : readyUnits.length > 0
-              ? (() => {
-                  const activeUnit = readyUnits[0]
-                  const waitingUnits = readyUnits.slice(1)
-                  return (
-                    <>
-                      {waitingUnits.length > 0 && (
-                        <div className="rup-queue">
-                          <span className="rup-queue-label">待機</span>
-                          {waitingUnits.map(u => (
-                            <div key={u.id} className="rup-queue-chip">
-                              <span style={{ color: EL_COLOR[u.element] }}>⬥</span>
-                              <span>{u.name}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      <ReadyUnitPanel
-                        key={activeUnit.id}
-                        unit={activeUnit}
-                        clock={game.clock}
-                        suitInHand={suitInHand}
-                        flowerHand={flowerHand}
-                        isOpen={true}
-                        selectingTarget={selectingTarget}
-                        pendingSlot={getPendingSlot(activeUnit)}
-                        onToggle={() => {}}
-                        onMove={slot => handleMoveClick(activeUnit, slot)}
-                        onPendingMove={s => setPendingSlots(prev => ({ ...prev, [activeUnit.id]: s }))}
-                        onPass={() => { applyPendingMove(activeUnit); onPass(activeUnit.id); setSelectingTarget(null) }}
-                        onPlayCard={onPlayCard}
-                      />
-                    </>
-                  )
-                })()
-              : <div className="action-idle">等待行動…</div>
-          }
-        </div>
-      )}
-
-      {/* ── Bottom row: log (left) + hand panel (right) ── */}
-      <div className="battle-bottom">
+      {/* ── Lower section: log sidebar (left) | action + hand (right) ── */}
+      <div className="battle-lower">
         <div className="log-panel" ref={logRef}>
           {game.log.slice(-80).map((l, i) => (
             <div key={i} className="log-line" dangerouslySetInnerHTML={{ __html: l.html }} />
           ))}
         </div>
+
         {!isAIBattle && (
-          <HandPanel suitInHand={suitInHand} flowerHand={flowerHand} onPlayCard={onPlayCard} />
+          <div className="battle-right">
+            {/* Action / Preview area */}
+            <div className="action-area">
+              {previewUnit && previewUnit.id !== readyUnits[0]?.id
+                ? <UnitPreviewPanel unit={previewUnit} clock={game.clock} onClose={() => setPreviewUnitId(null)} />
+                : readyUnits.length > 0
+                  ? (() => {
+                      const activeUnit = readyUnits[0]
+                      const waitingUnits = readyUnits.slice(1)
+                      return (
+                        <>
+                          {waitingUnits.length > 0 && (
+                            <div className="rup-queue">
+                              <span className="rup-queue-label">待機</span>
+                              {waitingUnits.map(u => (
+                                <div key={u.id} className="rup-queue-chip">
+                                  <span style={{ color: EL_COLOR[u.element] }}>⬥</span>
+                                  <span>{u.name}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          <ReadyUnitPanel
+                            key={activeUnit.id}
+                            unit={activeUnit}
+                            clock={game.clock}
+                            suitInHand={suitInHand}
+                            flowerHand={flowerHand}
+                            isOpen={true}
+                            selectingTarget={selectingTarget}
+                            pendingSlot={getPendingSlot(activeUnit)}
+                            onToggle={() => {}}
+                            onMove={slot => handleMoveClick(activeUnit, slot)}
+                            onPendingMove={s => setPendingSlots(prev => ({ ...prev, [activeUnit.id]: s }))}
+                            onPass={() => { applyPendingMove(activeUnit); onPass(activeUnit.id); setSelectingTarget(null) }}
+                            onPlayCard={onPlayCard}
+                          />
+                        </>
+                      )
+                    })()
+                  : <div className="action-idle">等待行動…</div>
+              }
+            </div>
+            {/* Hand panel */}
+            <HandPanel suitInHand={suitInHand} flowerHand={flowerHand} onPlayCard={onPlayCard} />
+          </div>
         )}
       </div>
     </div>

@@ -711,7 +711,7 @@ h2 {
 .action-area {
   border-top: 1px solid rgba(200,161,90,.12);
   background: linear-gradient(180deg, rgba(10,13,28,.98) 0%, rgba(6,7,16,.98) 100%);
-  height: 28dvh; overflow-y: auto; flex-shrink: 0;
+  flex: 1; min-height: 0; overflow-y: auto;
   scrollbar-width: thin; scrollbar-color: rgba(200,161,90,.1) transparent;
 }
 .action-idle {
@@ -889,27 +889,36 @@ h2 {
 .suit-yellow:hover { box-shadow: 0 4px 14px rgba(221,170,34,.2); border-color: rgba(221,170,34,.7); }
 .suit-flower:hover { box-shadow: 0 4px 14px rgba(190,70,238,.2); border-color: rgba(190,70,238,.7); }
 
-/* ── Battle bottom row ──────────────────────────────────────── */
-.battle-bottom {
-  display: flex; flex-direction: row; flex-shrink: 0; height: 108px;
+/* ── Lower section: log | (action + hand) ───────────────────── */
+.battle-lower {
+  flex-shrink: 0; height: calc(28dvh + 108px);
+  display: flex; flex-direction: row;
   border-top: 1px solid rgba(200,161,90,.08);
+  min-height: 160px;
 }
 
-/* ── Log panel ─────────────────────────────────────────────── */
+/* ── Log panel (left sidebar) ──────────────────────────────── */
 .log-panel {
-  flex: 0 0 25%; min-width: 120px; max-width: 340px; overflow-y: auto;
+  flex: 0 0 200px; overflow-y: auto;
   padding: 6px 14px;
   background: linear-gradient(180deg, rgba(8,9,20,.98) 0%, rgba(4,5,13,.98) 100%);
+  border-right: 1px solid rgba(200,161,90,.07);
   font-size: 10px; line-height: 1.8;
   scrollbar-width: thin; scrollbar-color: rgba(200,161,90,.1) transparent;
 }
 
+/* ── Right column (action + hand stacked) ─────────────────── */
+.battle-right {
+  flex: 1; display: flex; flex-direction: column; min-width: 0;
+}
+
 /* ── Hand panel ─────────────────────────────────────────────── */
 .hand-panel {
-  flex: 1; display: flex; flex-direction: column; gap: 4px;
+  flex-shrink: 0; height: 108px;
+  display: flex; flex-direction: column; gap: 4px;
   padding: 5px 10px; overflow: hidden;
   background: linear-gradient(180deg, rgba(8,9,20,.98) 0%, rgba(4,5,13,.98) 100%);
-  border-left: 1px solid rgba(200,161,90,.08);
+  border-top: 1px solid rgba(200,161,90,.07);
 }
 .hp-label {
   font-size: 7px; font-weight: 800; letter-spacing: 1.5px;
