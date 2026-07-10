@@ -278,12 +278,18 @@ function MovesTab({ moves }: { moves: Move[] }) {
 }
 
 function MoveImg({ storageKey, rev }: { storageKey: string; rev: number }) {
-  void rev
-  const src = localStorage.getItem(storageKey)
-  return src
+  const [src,    setSrc]    = useState(() => getUrlByKey(storageKey))
+  const [failed, setFailed] = useState(false)
+  useEffect(() => {
+    setSrc(getUrlByKey(storageKey))
+    setFailed(false)
+  }, [storageKey, rev])
+
+  return src && !failed
     ? <img src={src} alt=""
         style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover',
-                 border: '1px solid #333355', display: 'block' }} />
+                 border: '1px solid #333355', display: 'block' }}
+        onError={() => setFailed(true)} />
     : <div style={{
         width: 80, height: 80, borderRadius: 8, background: 'var(--bg3)',
         border: '2px dashed #252545', display: 'flex', flexDirection: 'column',
