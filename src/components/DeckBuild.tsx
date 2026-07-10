@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { cards as allCards } from '../data/db'
 import { fillDeck } from '../engine/randomDeck'
+import { CARD_ICON } from '../data/cardIcons'
 
 const DECK_SIZE = 10
 
@@ -37,6 +38,7 @@ export default function DeckBuild({ onConfirm }: Props) {
         style={{ borderTopColor: cnt > 0 ? col : undefined, borderTopWidth: cnt > 0 ? 2 : 1 }}
       >
         <div className="deck-card-name" style={{ color: cnt > 0 ? col : undefined }}>
+          <span className="deck-card-icon">{CARD_ICON[card.id]}</span>
           {card.name}
         </div>
         <div className="deck-card-desc">{card.description}</div>
