@@ -74,13 +74,12 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
       if (!entry.moveAnim) continue
       lastAnimIdx.current = i
       const { moveId, moveName, moveSlot, charName, charId, targetName, targetCharId, targetUnitId } = entry.moveAnim
-      // getMoveImg always returns a URL; only use it when we know the image is stored locally or flagged
-      const rawImg = localStorage.getItem(`cb_move_img_${moveId}`) ?? (localStorage.getItem(`cb_move_img_${moveId}_sb`) ? getMoveImg(moveId) : null)
+      const img = getMoveImg(moveId)
       const charImg = charId ? (getCharWideImg(charId) ?? getCharImg(charId)) : null
       const targetCharImg = targetCharId ? (getCharWideImg(targetCharId) ?? getCharImg(targetCharId)) : null
       if (animTimer.current) clearTimeout(animTimer.current)
       setMoveAnim({
-        img: rawImg,
+        img,
         name: moveName, charName, charImg,
         targetName: targetName ?? null, targetCharImg,
         targetUnitId: targetUnitId ?? null,
@@ -186,7 +185,7 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
               {moveAnim.isGroup && <div className="ma-group-label">⚔ 群體</div>}
             </div>
 
-            <div className="ma-combatant">
+            <div className={`ma-combatant${moveAnim.targetName ? ' ma-target' : ''}`}>
               {moveAnim.targetName
                 ? <>
                     {moveAnim.targetCharImg
@@ -273,7 +272,6 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
                         selectable={isActive}
                         highlighted={previewUnitId === u.id && !isActive}
                         isPreview={!isActive}
-                        shaking={moveAnim?.targetUnitId === u.id}
                         onClick={u.alive && !isAIBattle && (!isActive || previewUnitId !== null)
                           ? () => {
                               if (isActive) { setPreviewUnitId(null) }
@@ -298,10 +296,7 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
                 <div key={slot} className="slot-col" style={{ transform: `translateY(${-slotDepth(oppSide, slot) * 28}px)` }}>
                   <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(oppSide, slot)] }}>{getSlotLabel(oppSide, slot)}</div>
                   {enemyTeam.filter(u => u.slot === slot).map(u => (
-                    <UnitCard
-                      key={u.id} unit={u} clock={game.clock}
-                      shaking={moveAnim?.targetUnitId === u.id}
-                    />
+                    <UnitCard key={u.id} unit={u} clock={game.clock} />
                   ))}
                 </div>
               ))}
@@ -373,8 +368,8 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
 
 // ─── UnitCard ────────────────────────────────────────────────────────────────
 
-function UnitCard({ unit, clock, onClick, selectable, highlighted, isPreview, shaking }: {
-  unit: Unit; clock: number; onClick?: () => void; selectable?: boolean; highlighted?: boolean; isPreview?: boolean; shaking?: boolean
+function UnitCard({ unit, clock, onClick, selectable, highlighted, isPreview }: {
+  unit: Unit; clock: number; onClick?: () => void; selectable?: boolean; highlighted?: boolean; isPreview?: boolean
 }) {
   const pct     = unit.alive ? (unit.hp / unit.maxHp) * 100 : 0
   const ticks   = Math.max(0, unit.nextActionAt - clock)
@@ -386,7 +381,7 @@ function UnitCard({ unit, clock, onClick, selectable, highlighted, isPreview, sh
 
   return (
     <div
-      className={`unit-card ${!unit.alive ? 'dead' : ''} ${ready ? 'uc-ready' : ''} ${stateClass} ${highlighted ? 'uc-preview-active' : ''} ${shaking ? 'uc-shaking' : ''}`}
+      className={`unit-card ${!unit.alive ? 'dead' : ''} ${ready ? 'uc-ready' : ''} ${stateClass} ${highlighted ? 'uc-preview-active' : ''}`}
       onClick={onClick}
     >
       {img

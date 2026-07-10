@@ -1135,9 +1135,9 @@ h2 {
   animation: maCombatantFade 1.9s ease-in-out forwards;
 }
 .move-anim-img {
-  width: min(860px, 92vw); aspect-ratio: 16/7; object-fit: cover; object-position: center top;
+  width: min(860px, 92vw); max-height: 38vh; object-fit: contain;
   border-radius: 6px;
-  box-shadow: 0 0 100px rgba(0,0,0,.98), 0 0 50px rgba(200,161,90,.13), 0 0 24px rgba(255,255,255,.03) inset;
+  box-shadow: 0 0 100px rgba(0,0,0,.98), 0 0 50px rgba(200,161,90,.13);
   animation: moveImgPop 1.9s cubic-bezier(.2,0,.1,1) forwards;
 }
 .move-anim-no-img {
@@ -1157,16 +1157,17 @@ h2 {
   78%  { opacity: 1; }
   100% { opacity: 0; }
 }
-
-/* ── Unit shake when targeted ── */
-.uc-shaking { animation: ucShake .55s ease-in-out; }
-@keyframes ucShake {
-  0%,100% { transform: translateX(0); }
-  12%  { transform: translateX(-7px) rotate(-1.5deg); }
-  28%  { transform: translateX(6px)  rotate(1.2deg); }
-  44%  { transform: translateX(-5px) rotate(-1deg); }
-  60%  { transform: translateX(4px)  rotate(.8deg); }
-  76%  { transform: translateX(-2px); }
+/* target combatant: fade-in same as attacker, plus shake after 0.38s */
+.ma-target {
+  animation: maCombatantFade 1.9s ease-in-out forwards, maTargetShake .52s .38s ease-in-out;
+}
+@keyframes maTargetShake {
+  0%,100% { transform: translateX(0) rotate(0); }
+  14%  { transform: translateX(-9px) rotate(-2.5deg); }
+  30%  { transform: translateX(7px)  rotate(1.8deg); }
+  48%  { transform: translateX(-5px) rotate(-1.2deg); }
+  66%  { transform: translateX(4px)  rotate(.8deg); }
+  82%  { transform: translateX(-2px); }
 }
 
 /* ══════════════════════════════════════════════════════════════
