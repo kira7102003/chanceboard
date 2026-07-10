@@ -415,6 +415,7 @@ function ReadyUnitPanel({ unit, clock, suitInHand, flowerHand, isOpen, selecting
   onPlayCard: (id: string) => void
 }) {
   const [hoveredSlot, setHoveredSlot] = useState<MoveSlot | null>(null)
+  const [popAnchor,  setPopAnchor]   = useState<DOMRect | null>(null)
   const hoveredMove = hoveredSlot ? unit.moves[hoveredSlot] : null
   const pendingLabel = getSlotLabel(unit.side, pendingSlot)
   const moved = pendingSlot !== unit.slot
@@ -475,8 +476,8 @@ function ReadyUnitPanel({ unit, clock, suitInHand, flowerHand, isOpen, selecting
                       className={`btn skill-btn ${!ok ? 'skill-dim' : ''}`}
                       style={{ borderColor: ok ? SLOT_COLOR[slot] : '#2a2a3e' }}
                       onClick={() => ok && onMove(slot)}
-                      onMouseEnter={() => setHoveredSlot(slot)}
-                      onMouseLeave={() => setHoveredSlot(null)}
+                      onMouseEnter={e => { setHoveredSlot(slot); setPopAnchor(e.currentTarget.getBoundingClientRect()) }}
+                      onMouseLeave={() => { setHoveredSlot(null); setPopAnchor(null) }}
                     >
                       {skillImg && (
                         <div className="skill-img-wrap">
@@ -499,10 +500,6 @@ function ReadyUnitPanel({ unit, clock, suitInHand, flowerHand, isOpen, selecting
                 })}
               </div>
 
-              {hoveredMove && hoveredSlot && (
-                <MoveInfoBox move={hoveredMove} slot={hoveredSlot} />
-              )}
-
               {/* Flower hand */}
               {flowerHand.length > 0 && (
                 <div className="rup-flowers">
@@ -517,6 +514,9 @@ function ReadyUnitPanel({ unit, clock, suitInHand, flowerHand, isOpen, selecting
             </div>
           </div>
         </div>
+      )}
+      {hoveredMove && hoveredSlot && popAnchor && (
+        <MoveInfoBox move={hoveredMove} slot={hoveredSlot} anchor={popAnchor} />
       )}
     </div>
   )
@@ -579,12 +579,23 @@ function CardChip({ card, onClick }: { card: Card; onClick: () => void }) {
 // ─── MoveInfoBox ─────────────────────────────────────────────────────────────
 
 const RANGE_LABEL: Record<string, string> = {
-  sword: '劍・前排近戰', gun: '槍・最近格', magic: '法・交錯格',
+  '劍': '劍・前排近戰', '槍': '槍・最近格', '法': '法・交錯格',
 }
 
-function MoveInfoBox({ move, slot }: { move: { name: string; description: string; powerRatio: number | null; hitRate: number | null; critRate: number | null; rangeType: string | null; scope: string | null; condition: number | null; cooldown: number | null; effectChance: number }; slot: MoveSlot }) {
+const POP_W = 252
+
+function MoveInfoBox({ move, slot, anchor }: {
+  move: { name: string; description: string; powerRatio: number | null; hitRate: number | null; critRate: number | null; rangeType: string | null; scope: string | null; condition: number | null; cooldown: number | null; effectChance: number }
+  slot: MoveSlot
+  anchor: DOMRect
+}) {
+  const left = anchor.right + 10 + POP_W > window.innerWidth
+    ? anchor.left - POP_W - 6
+    : anchor.right + 10
+  const top = Math.min(anchor.top, window.innerHeight - 230)
+
   return (
-    <div className="move-info-box">
+    <div className="move-info-box" style={{ position: 'fixed', top, left, width: POP_W, zIndex: 9200 }}>
       <div className="mib-header">
         <span style={{ color: SLOT_COLOR[slot], fontWeight: 800 }}>{SLOT_LABEL[slot]}</span>
         <b style={{ marginLeft: 5 }}>{move.name}</b>
@@ -610,6 +621,7 @@ function MoveInfoBox({ move, slot }: { move: { name: string; description: string
 
 function UnitPreviewPanel({ unit, clock, onClose }: { unit: Unit; clock: number; onClose: () => void }) {
   const [hoveredSlot, setHoveredSlot] = useState<MoveSlot | null>(null)
+  const [popAnchor,  setPopAnchor]   = useState<DOMRect | null>(null)
   const hoveredMove = hoveredSlot ? unit.moves[hoveredSlot] : null
 
   return (
@@ -636,8 +648,8 @@ function UnitPreviewPanel({ unit, clock, onClose }: { unit: Unit; clock: number;
                 key={slot}
                 className="btn skill-btn"
                 style={{ borderColor: SLOT_COLOR[slot], cursor: 'default', opacity: onCD ? 0.4 : 0.82 }}
-                onMouseEnter={() => setHoveredSlot(slot)}
-                onMouseLeave={() => setHoveredSlot(null)}
+                onMouseEnter={e => { setHoveredSlot(slot); setPopAnchor(e.currentTarget.getBoundingClientRect()) }}
+                onMouseLeave={() => { setHoveredSlot(null); setPopAnchor(null) }}
               >
                 {skillImg && (
                   <div className="skill-img-wrap">
@@ -654,10 +666,10 @@ function UnitPreviewPanel({ unit, clock, onClose }: { unit: Unit; clock: number;
             )
           })}
         </div>
-        {hoveredMove && hoveredSlot && (
-          <MoveInfoBox move={hoveredMove} slot={hoveredSlot} />
-        )}
       </div>
+      {hoveredMove && hoveredSlot && popAnchor && (
+        <MoveInfoBox move={hoveredMove} slot={hoveredSlot} anchor={popAnchor} />
+      )}
     </div>
   )
 }
