@@ -1,4 +1,4 @@
-export type Element = 'sword' | 'gun' | 'magic'
+export type Element = '劍' | '槍' | '法'
 export type Gender = 'male' | 'female'
 
 export interface Character {

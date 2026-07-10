@@ -1,8 +1,8 @@
 import type { EffectOp } from './effect'
 
-export type MoveSlot = 'sword' | 'gun' | 'magic' | 'wish' | 'passive'
-export type RangeType = 'sword' | 'gun' | 'magic' | null
-export type Scope = 'single' | 'group' | null
+export type MoveSlot = '劍' | '槍' | '法' | '願' | '被'
+export type RangeType = '劍' | '槍' | '法' | null
+export type Scope = '單' | '群' | null
 export type EffectTrigger =
   | 'battleStart' | 'roundStart' | 'roundEnd'
   | 'preHit' | 'onHit' | 'onCrit' | 'postAction'

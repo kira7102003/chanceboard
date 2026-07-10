@@ -29,7 +29,7 @@ export function makeUnit(charId: string, side: 'A' | 'B', slot: 1 | 2 | 3, start
   const initStatuses: StatusEntry[] = []
 
   // Apply battleStart passive: staticFlags + initial statuses
-  const passive = charMoves.find(m => m.slot === 'passive')
+  const passive = charMoves.find(m => m.slot === '被')
   if (passive?.effectTrigger === 'battleStart') {
     for (const op of passive.effectOps) {
       if (op.op === 'staticFlag') {
@@ -223,7 +223,7 @@ function runRoundPassives(s: GameState, trigger: 'roundStart' | 'roundEnd') {
   const log: LogLine[] = []
   for (const u of [...s.teamA, ...s.teamB]) {
     if (!u.alive) continue
-    const passive = u.moves['passive']
+    const passive = u.moves['被']
     if (!passive || passive.effectTrigger !== trigger) continue
     const chance = passive.effectChance ?? 1
     if (Math.random() < chance) {
@@ -317,7 +317,7 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
   }
 
   // Sword requires attacker at 近(slot1) — same for both sides
-  if (move.rangeType === 'sword' && u.slot !== 1) {
+  if (move.rangeType === '劍' && u.slot !== 1) {
     s.log.push({ html: `<b>${u.name}</b> 劍技需在近距才能使用` })
     return gs
   }
@@ -331,7 +331,7 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
   // Check condition: consume suit cards from hand
   const hand  = u.side === 'A' ? s.handA : s.handB
   const condN = move.condition ?? 1
-  const suitColor = { sword: 'red', gun: 'green', magic: 'blue', wish: 'yellow', passive: null }[action.moveSlot] as string | null
+  const suitColor = { '劍': 'red', '槍': 'green', '法': 'blue', '願': 'yellow', '被': null }[action.moveSlot] as string | null
 
   const liberated = u.statuses.some(st => st.key === 'liberated')
   const needed = liberated ? 1 : condN
@@ -360,7 +360,7 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
   const moveColor = SLOT_COLOR[action.moveSlot] ?? '#aaa'
   const moveLabel = `<span style="color:${moveColor}">【${move.name}】</span>`
   const moveAnim  = { moveId: move.id, moveName: move.name, moveSlot: action.moveSlot, charName: u.name }
-  const targetDesc = move.scope === 'group'
+  const targetDesc = move.scope === '群'
     ? '⚔ 群體'
     : targets.length > 0
       ? `→ <b>${targets[0].name}</b>`
@@ -373,7 +373,7 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
 
   // Resolve hits
   let killedAny = false
-  const isGroup = move.scope === 'group'
+  const isGroup = move.scope === '群'
   for (const t of targets) {
     // Confused: 50% chance attack self
     if (u.statuses.some(st => st.key === 'confused') && Math.random() < 0.5) {
@@ -431,8 +431,8 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
       if (t.alive && t.statuses.some(st => st.key === 'counter') && move.name !== '反擊' && u.id !== t.id) {
         t.nextActionAt = s.clock
         const counterMove: Move = {
-          id: 'counter', ownerId: t.id, slot: 'sword', name: '反擊',
-          condition: null, rangeType: t.element, scope: 'single',
+          id: 'counter', ownerId: t.id, slot: '劍', name: '反擊',
+          condition: null, rangeType: t.element, scope: '單',
           powerRatio: 1.0, hitRate: 1, critRate: 0, cooldown: null,
           description: '', effectTrigger: null, effectOps: [], effectChance: 0,
         }
@@ -521,7 +521,7 @@ export function doPass(gs: GameState, unitId: string): GameState {
   const log: LogLine[] = []
 
   // passive onPass
-  const passive = u.moves['passive']
+  const passive = u.moves['被']
   if (passive?.effectTrigger === 'onPass') {
     const chance = passive.effectChance ?? 1
     if (Math.random() < chance) runEffectOps(passive.effectOps, u, null, s, s.clock, 1, log)
@@ -564,10 +564,10 @@ function resolveTargetUnits(move: Move, actor: Unit, targetId: string | null, s:
   }
 
   // Sword targets enemy 近(slot1) — same for both sides
-  if (move.rangeType === 'sword') {
+  if (move.rangeType === '劍') {
     const swordTargetSlot = 1
     const front = enemies.filter(e => e.slot === swordTargetSlot)
-    if (move.scope === 'group') return front
+    if (move.scope === '群') return front
     if (targetId) {
       const t = findUnit(s, targetId)
       if (t && t.alive && t.slot === swordTargetSlot && !isHidden(t)) {
@@ -581,25 +581,25 @@ function resolveTargetUnits(move: Move, actor: Unit, targetId: string | null, s:
   }
 
   // Magic crossOf = 4-slot: 近打遠, 中打中, 遠打近 (交錯)
-  if (move.rangeType === 'magic') {
+  if (move.rangeType === '法') {
     const mirrorSlot = (4 - actor.slot) as 1 | 2 | 3
     const mirror = enemies.filter(e => e.slot === mirrorSlot)
-    if (move.scope === 'group') return mirror
+    if (move.scope === '群') return mirror
     const best = pickBest(mirror)
     return best ? [best] : []
   }
 
   // Gun — nearest slot = min slot (slot1=近 is always nearest) for both sides
-  if (move.rangeType === 'gun') {
+  if (move.rangeType === '槍') {
     if (enemies.length === 0) return []
     const nearestSlot = Math.min(...enemies.map(e => e.slot))
     const near = enemies.filter(e => e.slot === nearestSlot)
-    if (move.scope === 'group') return near
+    if (move.scope === '群') return near
     const best = pickBest(near)
     return best ? [best] : []
   }
 
-  if (move.scope === 'group') return enemies
+  if (move.scope === '群') return enemies
 
   // Default single-target: explicit targetId (taunt-redirect) or HP tie-break
   if (targetId) {
@@ -628,8 +628,8 @@ export function doToggleAuto(gs: GameState, side: 'A' | 'B'): GameState {
 // Determine ideal slot based on what moves the unit can ACTUALLY USE right now
 // (has the cards in hand + not on cooldown). Falls back to full kit if nothing affordable.
 function kitPreferredSlot(unit: Unit, enemies: Unit[], hand: Card[], clock: number): 1 | 2 | 3 {
-  const suitOf: Record<string, string> = { sword: 'red', gun: 'green', magic: 'blue', wish: 'yellow' }
-  const attackSlots: MoveSlot[] = ['sword', 'gun', 'magic', 'wish']
+  const suitOf: Record<string, string> = { '劍': 'red', '槍': 'green', '法': 'blue', '願': 'yellow' }
+  const attackSlots: MoveSlot[] = ['劍', '槍', '法', '願']
   const liberated = unit.statuses.some(st => st.key === 'liberated')
 
   function sumPwr(affordableOnly: boolean) {
@@ -645,9 +645,9 @@ function kitPreferredSlot(unit: Unit, enemies: Unit[], hand: Card[], clock: numb
           if (hand.filter(c => c.color === color).length < needed) continue
         }
       }
-      if (m.rangeType === 'sword')       swordPwr += m.powerRatio
-      else if (m.rangeType === 'gun')    gunPwr   += m.powerRatio
-      else if (m.rangeType === 'magic')  magicPwr += m.powerRatio
+      if (m.rangeType === '劍')       swordPwr += m.powerRatio
+      else if (m.rangeType === '槍')    gunPwr   += m.powerRatio
+      else if (m.rangeType === '法')  magicPwr += m.powerRatio
     }
     return { swordPwr, gunPwr, magicPwr }
   }
@@ -687,8 +687,8 @@ function scoreMoves(
   hand: Card[],
   clock: number,
 ): Array<{ slot: MoveSlot; score: number; targetId: string | null }> {
-  const suitOf: Record<string, string>    = { sword: 'red', gun: 'green', magic: 'blue', wish: 'yellow' }
-  const attackSlots: MoveSlot[]           = ['sword', 'gun', 'magic', 'wish']
+  const suitOf: Record<string, string>    = { '劍': 'red', '槍': 'green', '法': 'blue', '願': 'yellow' }
+  const attackSlots: MoveSlot[]           = ['劍', '槍', '法', '願']
   const liberated = unit.statuses.some(st => st.key === 'liberated')
   const result: Array<{ slot: MoveSlot; score: number; targetId: string | null }> = []
 
@@ -719,19 +719,19 @@ function scoreMoves(
     // Attack moves: build reachable enemy list
     let reachable = enemies.filter(e => !e.statuses.some(s => s.key === 'hidden'))
 
-    if (move.rangeType === 'sword') {
+    if (move.rangeType === '劍') {
       if (fromSlot !== 1) continue  // sword attacker must be at 近(slot1)
       reachable = reachable.filter(e => e.slot === 1)  // hits enemy 近(slot1)
     }
 
     // Magic crossOf = 4-slot: 近打遠, 中打中, 遠打近
-    if (move.rangeType === 'magic') {
+    if (move.rangeType === '法') {
       const crossSlot = (4 - fromSlot) as 1 | 2 | 3
       reachable = reachable.filter(e => e.slot === crossSlot)
     }
 
     // Gun hits nearest slot = min slot for both sides
-    if (move.rangeType === 'gun' && reachable.length > 0) {
+    if (move.rangeType === '槍' && reachable.length > 0) {
       const nearestSlot = Math.min(...reachable.map(e => e.slot))
       reachable = reachable.filter(e => e.slot === nearestSlot)
     }
@@ -741,14 +741,14 @@ function scoreMoves(
     let score = 0
     let targetId: string | null = null
 
-    if (move.scope === 'group') {
+    if (move.scope === '群') {
       const avgEl = reachable.reduce((s, e) =>
         s + elementMult(move.rangeType as any, e.element), 0) / reachable.length
       score = move.powerRatio * reachable.length * avgEl
     } else {
       // SA A6: Gun single-target hits nearest enemy (lowest slot)
       let best: Unit
-      if (move.rangeType === 'gun') {
+      if (move.rangeType === '槍') {
         const nearestSlot = Math.min(...reachable.map(e => e.slot))
         const nearEnemies = reachable.filter(e => e.slot === nearestSlot)
         best = nearEnemies.reduce((a, b) => (a.hp / a.maxHp) <= (b.hp / b.maxHp) ? a : b)

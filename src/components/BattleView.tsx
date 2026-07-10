@@ -19,12 +19,12 @@ function getSlotLabel(_side: 'A' | 'B', slot: number): string {
 function slotDepth(_side: 'A' | 'B', slot: number): number {
   return slot - 1
 }
-const EL_COLOR: Record<string, string> = { sword: '#e87733', gun: '#22cc77', magic: '#9955ee' }
+const EL_COLOR: Record<string, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee' }
 const SUIT_CLS: Record<string, string>  = { red: 'suit-red', green: 'suit-green', blue: 'suit-blue', yellow: 'suit-yellow', flower: 'suit-flower' }
-const MOVE_SLOTS: MoveSlot[] = ['sword', 'gun', 'magic', 'wish']
-const SLOT_LABEL: Record<MoveSlot, string> = { sword: '刀', gun: '槍', magic: '法', wish: '願', passive: '' }
-const SLOT_COLOR: Record<MoveSlot, string> = { sword: '#e87733', gun: '#22cc77', magic: '#9955ee', wish: '#ddaa22', passive: '#666' }
-const SUIT_FOR: Record<string, string> = { sword: 'red', gun: 'green', magic: 'blue', wish: 'yellow' }
+const MOVE_SLOTS: MoveSlot[] = ['劍', '槍', '法', '願']
+const SLOT_LABEL: Record<MoveSlot, string> = { '劍': '刀', '槍': '槍', '法': '法', '願': '願', '被': '' }
+const SLOT_COLOR: Record<MoveSlot, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee', '願': '#ddaa22', '被': '#666' }
+const SUIT_FOR: Record<string, string> = { '劍': 'red', '槍': 'green', '法': 'blue', '願': 'yellow' }
 
 interface Props {
   onPlayCard:    (cardId: string) => void
@@ -92,13 +92,13 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
     if (!actor) return null
     const move = actor.moves[selectingTarget]
     if (!move) return null
-    if (move.rangeType === 'sword') return new Set([1])
-    if (move.rangeType === 'gun') {
+    if (move.rangeType === '劍') return new Set([1])
+    if (move.rangeType === '槍') {
       const alive = enemyTeam.filter(u => u.alive)
       if (alive.length === 0) return new Set()
       return new Set([Math.min(...alive.map(u => u.slot))])
     }
-    if (move.rangeType === 'magic') return new Set([4 - actor.slot])
+    if (move.rangeType === '法') return new Set([4 - actor.slot])
     return null  // null = all targets valid
   })()
 
@@ -168,7 +168,7 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
     const move = unit.moves[slot]
     if (!move) return
     applyPendingMove(unit)
-    if (move.scope === 'group' || !move.rangeType) {
+    if (move.scope === '群' || !move.rangeType) {
       triggerAnim(unit, slot)
       onExecuteMove(unit.id, slot, null)
       setSelectingTarget(null)
@@ -588,7 +588,7 @@ function MoveInfoBox({ move, slot }: { move: { name: string; description: string
         <b style={{ marginLeft: 5 }}>{move.name}</b>
         <span style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
           {move.rangeType && <span className="mib-tag">{RANGE_LABEL[move.rangeType] ?? move.rangeType}</span>}
-          {move.scope === 'group' && <span className="mib-tag">群體</span>}
+          {move.scope === '群' && <span className="mib-tag">群體</span>}
         </span>
       </div>
       {move.description && <div className="mib-desc">{move.description}</div>}

@@ -3,7 +3,7 @@ import type { Move } from '../types/move'
 import type { Element } from '../types/character'
 
 // 劍剋槍、槍剋法、法剋劍
-const BEATS: Record<Element, Element> = { sword: 'gun', gun: 'magic', magic: 'sword' }
+const BEATS: Record<Element, Element> = { '劍': '槍', '槍': '法', '法': '劍' }
 
 export function elementMult(moveEl: Element | null, targetEl: Element): number {
   if (!moveEl) return 1
