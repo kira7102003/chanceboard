@@ -494,7 +494,7 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
   const batMinusSt = u.statuses.find(st => st.key === 'batMinus')
   const batPlusSt  = u.statuses.find(st => st.key === 'batPlus')
   let effBat = bat
-  if (batMinusSt) effBat = Math.max(1, effBat - batMinusSt.value)
+  if (batMinusSt) effBat = Math.max(10, effBat - batMinusSt.value)
   if (batPlusSt)  effBat += batPlusSt.value
   const linked = u.statuses.some(st => st.key === 'linked')
   u.nextActionAt = s.clock + (linked ? Math.floor(effBat / 2) : effBat)
@@ -535,7 +535,7 @@ export function doPass(gs: GameState, unitId: string): GameState {
   const batMinusSt = u.statuses.find(st => st.key === 'batMinus')
   const batPlusSt  = u.statuses.find(st => st.key === 'batPlus')
   let effBat = bat
-  if (batMinusSt) effBat = Math.max(1, effBat - batMinusSt.value)
+  if (batMinusSt) effBat = Math.max(10, effBat - batMinusSt.value)
   if (batPlusSt)  effBat += batPlusSt.value
   u.nextActionAt = s.clock + effBat
 

@@ -45,7 +45,8 @@ export function effectiveSPD(u: Unit): number {
 
 export function calcBAT(u: Unit): number {
   const spd = effectiveSPD(u)
-  return Math.max(1, Math.floor(10 * (10 / spd)))
+  // Result is in ticks (100ms each). SPD=10 → 100 ticks = 10s = 1 round.
+  return Math.max(10, Math.floor(100 * (10 / spd)))
 }
 
 export interface HitResult {
