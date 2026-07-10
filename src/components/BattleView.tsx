@@ -5,7 +5,7 @@ import type { Card } from '../types/card'
 import type { MoveSlot } from '../types/move'
 import { getReadyUnits } from '../engine/atb'
 import ScorePanel from './ScorePanel'
-import { getCharImg, getMoveImg } from '../utils/charStore'
+import { getCharImg, getCharWideImg, getMoveImg } from '../utils/charStore'
 
 const DIST_COLOR: Record<string, string> = { '近': '#e85533', '中': '#ddaa22', '遠': '#33aacc' }
 
@@ -263,8 +263,11 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
                         selectable={isActive && !selectingTarget}
                         highlighted={previewUnitId === u.id && !isActive}
                         isPreview={!isActive}
-                        onClick={!isActive && u.alive && !isAIBattle
-                          ? () => setPreviewUnitId(prev => prev === u.id ? null : u.id)
+                        onClick={u.alive && !isAIBattle && (!isActive || previewUnitId !== null)
+                          ? () => {
+                              if (isActive) { setPreviewUnitId(null) }
+                              else { setPreviewUnitId(prev => prev === u.id ? null : u.id) }
+                            }
                           : undefined}
                       />
                     )
@@ -368,7 +371,8 @@ function UnitCard({ unit, clock, onClick, selectable, highlighted, isPreview }: 
   const ticks   = Math.max(0, unit.nextActionAt - clock)
   const ready   = ticks === 0 && unit.alive
   const hpColor = pct > 60 ? '#22cc66' : pct > 30 ? '#ccaa22' : '#cc3333'
-  const img     = getCharImg(unit.characterId)
+  const img     = getCharWideImg(unit.characterId) ?? getCharImg(unit.characterId)
+  const flip    = unit.side === 'B'
   const stateClass = selectable ? 'selectable' : (onClick && isPreview ? 'previewable' : (onClick ? 'targetable' : ''))
 
   return (
@@ -378,7 +382,9 @@ function UnitCard({ unit, clock, onClick, selectable, highlighted, isPreview }: 
     >
       {img
         ? (
-          <div className="uc-portrait" style={{ backgroundImage: `url(${img})` }}>
+          <div className="uc-portrait">
+            <img src={img} className="uc-portrait-img" alt=""
+              style={flip ? { transform: 'scaleX(-1)' } : undefined} />
             <span className="uc-portrait-name" style={{ color: EL_COLOR[unit.element] }}>{unit.name}</span>
             {!unit.alive && <div className="uc-dead-overlay">陣亡</div>}
           </div>

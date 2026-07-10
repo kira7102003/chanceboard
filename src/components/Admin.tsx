@@ -125,8 +125,13 @@ function BasicTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<C
   return (
     <div className="adm-basic">
       <div className="adm-section">
-        <div className="adm-section-label">角色圖片</div>
+        <div className="adm-section-label">角色圖片（頭像）</div>
         <ImageCrop storageKey={`cb_img_${char.id}`} previewSize={220} outSize={600} />
+      </div>
+
+      <div className="adm-section">
+        <div className="adm-section-label">戰場寬幅圖（遊戲內卡片用，建議橫式）</div>
+        <ImageCrop storageKey={`cb_wide_img_${char.id}`} previewSize={220} outSize={900} />
       </div>
 
       <div className="adm-section">

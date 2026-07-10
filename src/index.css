@@ -639,20 +639,17 @@ h2 {
   border-color: var(--red);
   background: linear-gradient(155deg, rgba(30,6,6,.9) 0%, rgba(20,4,4,.9) 100%);
   box-shadow: 0 0 22px rgba(238,50,60,.28), 0 0 6px rgba(238,50,60,.2) inset;
-  transform: scale(1.03);
 }
 .unit-card.selectable { cursor: pointer; }
 .unit-card.selectable:hover {
   border-color: rgba(200,161,90,.45);
   box-shadow: 0 0 16px rgba(200,161,90,.15), 0 0 4px rgba(200,161,90,.2) inset;
-  transform: scale(1.02);
 }
 .unit-card.dead { opacity: 0.55; filter: grayscale(1) brightness(0.5); pointer-events: none; }
 .unit-card.previewable { cursor: pointer; }
 .unit-card.previewable:hover {
   border-color: rgba(90,174,238,.35);
   box-shadow: 0 0 12px rgba(90,174,238,.1);
-  transform: scale(1.02);
 }
 .unit-card.uc-preview-active {
   border-color: rgba(90,174,238,.55) !important;
@@ -666,6 +663,11 @@ h2 {
   width: 100%; height: clamp(120px, 18vh, 240px);
   background-size: cover; background-position: center top;
   border-radius: 8px; margin-bottom: 5px; position: relative; overflow: hidden;
+}
+.uc-portrait-img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: center top;
+  display: block;
 }
 .uc-portrait-name {
   position: absolute; bottom: 0; left: 0; right: 0;

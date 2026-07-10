@@ -72,6 +72,16 @@ export function removeCharImg(id: string): void {
   removeByKey(`cb_img_${id}`)
 }
 
+export function getCharWideImg(id: string): string | null {
+  return getUrlByKey(`cb_wide_img_${id}`)
+}
+export async function saveCharWideImg(id: string, dataUrl: string): Promise<string> {
+  return uploadByKey(`cb_wide_img_${id}`, dataUrl)
+}
+export function removeCharWideImg(id: string): void {
+  removeByKey(`cb_wide_img_${id}`)
+}
+
 export function getMoveImg(id: string): string | null {
   return getUrlByKey(`cb_move_img_${id}`)
 }
