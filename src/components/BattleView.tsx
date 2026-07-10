@@ -49,8 +49,9 @@ interface MoveAnim {
 
 export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPass, onToggleAuto, onEnd, onSoloReplay }: Props) {
   const { game, mySide, isSolo, isAIBattle, soloScore } = useGameStore()
-  const logRef      = useRef<HTMLDivElement>(null)
-  const animTimer   = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const logRef         = useRef<HTMLDivElement>(null)
+  const animTimer      = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastAnimIdx    = useRef(-1)
   const [moveAnim,  setMoveAnim]  = useState<MoveAnim | null>(null)
   const [animKey,   setAnimKey]   = useState(0)
   // pending destination slot per unit (preview before confirming with a skill/pass)
@@ -63,23 +64,29 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
   }, [game?.log.length])
 
   // Watch log for moveAnim entries (triggers for ALL moves incl. AI)
+  // Scan all NEW entries (not just the last) because a single tick can push many log lines
   useEffect(() => {
     if (!game) return
-    const last = game.log[game.log.length - 1]
-    if (!last?.moveAnim) return
-    const { moveId, moveName, moveSlot, charName, charId, targetName, targetCharId } = last.moveAnim
-    const img = getMoveImg(moveId)
-    const charImg = charId ? (getCharWideImg(charId) ?? getCharImg(charId)) : null
-    const targetCharImg = targetCharId ? (getCharWideImg(targetCharId) ?? getCharImg(targetCharId)) : null
-    if (animTimer.current) clearTimeout(animTimer.current)
-    setMoveAnim({
-      img, name: moveName, charName, charImg,
-      targetName: targetName ?? null, targetCharImg,
-      isGroup: !targetName,
-      color: SLOT_COLOR[moveSlot as MoveSlot] ?? '#aaa',
-    })
-    setAnimKey(k => k + 1)
-    animTimer.current = setTimeout(() => setMoveAnim(null), 1900)
+    const start = lastAnimIdx.current + 1
+    for (let i = start; i < game.log.length; i++) {
+      const entry = game.log[i]
+      if (!entry.moveAnim) continue
+      lastAnimIdx.current = i
+      const { moveId, moveName, moveSlot, charName, charId, targetName, targetCharId } = entry.moveAnim
+      const img = getMoveImg(moveId)
+      const charImg = charId ? (getCharWideImg(charId) ?? getCharImg(charId)) : null
+      const targetCharImg = targetCharId ? (getCharWideImg(targetCharId) ?? getCharImg(targetCharId)) : null
+      if (animTimer.current) clearTimeout(animTimer.current)
+      setMoveAnim({
+        img, name: moveName, charName, charImg,
+        targetName: targetName ?? null, targetCharImg,
+        isGroup: !targetName,
+        color: SLOT_COLOR[moveSlot as MoveSlot] ?? '#aaa',
+      })
+      setAnimKey(k => k + 1)
+      animTimer.current = setTimeout(() => setMoveAnim(null), 1900)
+      break // show only the first new moveAnim per batch
+    }
   }, [game?.log.length])
 
   if (!game) return null
