@@ -203,7 +203,9 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
       {/* ── Header ── */}
       <div className="battle-header">
         <div className="bh-item">第 <b>{game.round}</b> 回合</div>
-        <div className="bh-item bh-sep">時鐘 <b>{game.clock}</b></div>
+        <div className="bh-item bh-sep bh-timer">
+          <span className="bh-timer-secs">{10 - Math.floor((game.clock % 100) / 10)}</span>s
+        </div>
         <div className="bh-item bh-sep">牌庫 <b>{game.drawPublic.length}</b> · 棄牌 <b>{game.discardPublic.length}</b></div>
         <div style={{ flex: 1 }} />
         {isAIBattle

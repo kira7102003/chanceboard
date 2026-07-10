@@ -489,6 +489,8 @@ h2 {
 }
 .bh-item b { color: var(--text2); }
 .bh-sep { border-left: 1px solid rgba(200,161,90,.08); }
+.bh-timer { font-size: 11px; color: #6066a0; min-width: 44px; text-align: center; }
+.bh-timer-secs { font-size: 16px; font-weight: 800; color: var(--gold); line-height: 1; }
 
 .auto-check {
   display: flex; align-items: center; gap: 5px; font-size: 11px;
