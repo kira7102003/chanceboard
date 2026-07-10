@@ -170,40 +170,41 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
       {/* ── Move animation overlay ── */}
       {moveAnim && (
         <div className="move-anim-overlay" key={animKey}>
-          {/* Row 1: attacker ── move name ── target */}
           <div className="ma-vs-row">
-            <div className="ma-combatant">
+            {/* Attacker */}
+            <div className="ma-col">
               {moveAnim.charImg
-                ? <img src={moveAnim.charImg} className="ma-char-img" alt="" />
-                : <div className="ma-char-placeholder">{moveAnim.charName[0]}</div>
+                ? <img src={moveAnim.charImg} className="ma-media" alt="" />
+                : <div className="ma-placeholder">{moveAnim.charName[0]}</div>
               }
-              <div className="ma-char-name">{moveAnim.charName}</div>
+              <div className="ma-label">{moveAnim.charName}</div>
             </div>
 
-            <div className="ma-vs-mid">
-              <div className="move-anim-name" style={{ color: moveAnim.color }}>{moveAnim.name}</div>
-              {moveAnim.isGroup && <div className="ma-group-label">⚔ 群體</div>}
+            {/* Move */}
+            <div className="ma-col ma-move-col">
+              {moveAnim.img
+                ? <img src={moveAnim.img} className="ma-media ma-media-contain" alt="" />
+                : <div className="ma-placeholder" style={{ color: moveAnim.color }}>⚡</div>
+              }
+              <div className="ma-label move-anim-name" style={{ color: moveAnim.color }}>
+                {moveAnim.name}{moveAnim.isGroup ? '　⚔群體' : ''}
+              </div>
             </div>
 
-            <div className={`ma-combatant${moveAnim.targetName ? ' ma-target' : ''}`}>
+            {/* Target */}
+            <div className={`ma-col${moveAnim.targetName ? ' ma-target' : ''}`}>
               {moveAnim.targetName
                 ? <>
                     {moveAnim.targetCharImg
-                      ? <img src={moveAnim.targetCharImg} className="ma-char-img ma-char-flip" alt="" />
-                      : <div className="ma-char-placeholder">{moveAnim.targetName[0]}</div>
+                      ? <img src={moveAnim.targetCharImg} className="ma-media ma-flip" alt="" />
+                      : <div className="ma-placeholder">{moveAnim.targetName[0]}</div>
                     }
-                    <div className="ma-char-name">{moveAnim.targetName}</div>
+                    <div className="ma-label">{moveAnim.targetName}</div>
                   </>
-                : <div className="ma-char-placeholder" style={{ opacity: .15 }}>⚔</div>
+                : <div className="ma-placeholder" style={{ opacity: .15 }}>⚔</div>
               }
             </div>
           </div>
-
-          {/* Row 2: move skill image */}
-          {moveAnim.img
-            ? <img src={moveAnim.img} className="move-anim-img" alt="" />
-            : <div className="move-anim-no-img" style={{ color: moveAnim.color }}>⚡</div>
-          }
         </div>
       )}
 
