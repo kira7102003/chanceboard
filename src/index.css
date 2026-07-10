@@ -415,8 +415,8 @@ h2 {
   background: rgba(238,120,60,.08);
   box-shadow: 0 0 14px rgba(238,120,60,.3), 0 0 3px rgba(238,120,60,.4) inset;
 }
-.atb-t { font-size: 9px; color: #1e2034; margin-left: 2px; }
-.atb-ready .atb-t { color: inherit; opacity: .8; }
+.atb-t { font-size: 10px; color: rgba(200,220,255,.45); margin-left: 3px; font-variant-numeric: tabular-nums; }
+.atb-ready .atb-t { color: inherit; opacity: .85; }
 
 /* ── Battle main — spotlight | 我方 | 敵方 ─────────────────── */
 .battle-main {
