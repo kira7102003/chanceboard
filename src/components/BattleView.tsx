@@ -45,6 +45,7 @@ interface MoveAnim {
   targetCharImg: string | null
   targetUnitId: string | null
   isGroup: boolean
+  groupTargets: Array<{ name: string; charImg: string | null }>
   color: string
 }
 
@@ -73,10 +74,14 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
       const entry = game.log[i]
       if (!entry.moveAnim) continue
       lastAnimIdx.current = i
-      const { moveId, moveName, moveSlot, charName, charId, targetName, targetCharId, targetUnitId } = entry.moveAnim
+      const { moveId, moveName, moveSlot, charName, charId, targetName, targetCharId, targetUnitId, groupTargets } = entry.moveAnim
       const img = getMoveImg(moveId)
       const charImg = charId ? (getCharWideImg(charId) ?? getCharImg(charId)) : null
       const targetCharImg = targetCharId ? (getCharWideImg(targetCharId) ?? getCharImg(targetCharId)) : null
+      const resolvedGroupTargets = groupTargets?.map(t => ({
+        name: t.name,
+        charImg: t.charId ? (getCharWideImg(t.charId) ?? getCharImg(t.charId)) : null,
+      })) ?? []
       if (animTimer.current) clearTimeout(animTimer.current)
       setMoveAnim({
         img,
@@ -84,6 +89,7 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
         targetName: targetName ?? null, targetCharImg,
         targetUnitId: targetUnitId ?? null,
         isGroup: !targetName,
+        groupTargets: resolvedGroupTargets,
         color: SLOT_COLOR[moveSlot as MoveSlot] ?? '#aaa',
       })
       setAnimKey(k => k + 1)
@@ -191,19 +197,36 @@ export default function BattleView({ onPlayCard, onMoveUnit, onExecuteMove, onPa
               </div>
             </div>
 
-            {/* Target */}
-            <div className={`ma-col${moveAnim.targetName ? ' ma-target' : ''}`}>
-              {moveAnim.targetName
-                ? <>
-                    {moveAnim.targetCharImg
-                      ? <img src={moveAnim.targetCharImg} className="ma-media ma-flip" alt="" />
-                      : <div className="ma-placeholder">{moveAnim.targetName[0]}</div>
-                    }
-                    <div className="ma-label">{moveAnim.targetName}</div>
-                  </>
-                : <div className="ma-placeholder" style={{ opacity: .15 }}>⚔</div>
-              }
-            </div>
+            {/* Target — group: all targets; single: one target */}
+            {moveAnim.isGroup && moveAnim.groupTargets.length > 0
+              ? (
+                <div className="ma-group-targets">
+                  {moveAnim.groupTargets.map((t, i) => (
+                    <div key={i} className="ma-col ma-target">
+                      {t.charImg
+                        ? <img src={t.charImg} className="ma-media ma-flip" alt="" />
+                        : <div className="ma-placeholder">{t.name[0]}</div>
+                      }
+                      <div className="ma-label">{t.name}</div>
+                    </div>
+                  ))}
+                </div>
+              )
+              : (
+                <div className={`ma-col${moveAnim.targetName ? ' ma-target' : ''}`}>
+                  {moveAnim.targetName
+                    ? <>
+                        {moveAnim.targetCharImg
+                          ? <img src={moveAnim.targetCharImg} className="ma-media ma-flip" alt="" />
+                          : <div className="ma-placeholder">{moveAnim.targetName[0]}</div>
+                        }
+                        <div className="ma-label">{moveAnim.targetName}</div>
+                      </>
+                    : <div className="ma-placeholder" style={{ opacity: .15 }}>⚔</div>
+                  }
+                </div>
+              )
+            }
           </div>
         </div>
       )}

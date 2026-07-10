@@ -1153,6 +1153,14 @@ h2 {
   100% { opacity: 0; }
 }
 
+/* group targets wrapper: same flex weight as a single target column */
+.ma-group-targets {
+  flex: 1; display: flex; gap: 6px; align-items: flex-end;
+}
+.ma-group-targets .ma-col { flex: 1; min-width: 0; }
+.ma-group-targets .ma-media,
+.ma-group-targets .ma-placeholder { height: clamp(80px, 16vh, 150px); }
+
 /* target col shakes 0.38s after appearing */
 .ma-target {
   animation: maCombatantFade 1.9s ease-in-out forwards, maTargetShake .52s .38s ease-in-out;

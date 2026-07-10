@@ -328,6 +328,16 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
     return gs
   }
 
+  // Resolve targets FIRST (before consuming cards) so we can bail if no valid targets
+  const log: LogLine[] = []
+  const targets = resolveTargetUnits(move, u, action.targetId, s)
+
+  // Guard: attack move with no valid targets → do NOT consume resources
+  if (targets.length === 0 && move.powerRatio != null) {
+    s.log.push({ html: `<b>${u.name}</b> 的 ${move.name} 無法命中（無目標）` })
+    return gs
+  }
+
   // Check condition: consume suit cards from hand
   const hand  = u.side === 'A' ? s.handA : s.handB
   const condN = move.condition ?? 1
@@ -351,16 +361,13 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
     }
   }
 
-  // Resolve targets first so the announcement can include who is being targeted
-  const log: LogLine[] = []
-  const targets = resolveTargetUnits(move, u, action.targetId, s)
-
   // Announce move: show attacker → target (or group label)
   const SLOT_COLOR: Record<string, string> = { sword:'#e87733', gun:'#22cc77', magic:'#9955ee', wish:'#ddaa22', passive:'#666' }
   const moveColor = SLOT_COLOR[action.moveSlot] ?? '#aaa'
   const moveLabel = `<span style="color:${moveColor}">【${move.name}】</span>`
   const firstTarget = move.scope === '群' ? undefined : targets[0]
-  const moveAnim  = { moveId: move.id, moveName: move.name, moveSlot: action.moveSlot, charName: u.name, charId: u.characterId, targetName: firstTarget?.name, targetCharId: firstTarget?.characterId, targetUnitId: firstTarget?.id }
+  const groupTargets = move.scope === '群' ? targets.map(t => ({ name: t.name, charId: t.characterId })) : undefined
+  const moveAnim  = { moveId: move.id, moveName: move.name, moveSlot: action.moveSlot, charName: u.name, charId: u.characterId, targetName: firstTarget?.name, targetCharId: firstTarget?.characterId, targetUnitId: firstTarget?.id, groupTargets }
   const targetDesc = move.scope === '群'
     ? '⚔ 群體'
     : targets.length > 0
