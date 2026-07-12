@@ -16,15 +16,18 @@ const SUIT_DOT:  Record<string, string>    = { red: '🔴', green: '🟢', blue:
 const SUIT_OF:   Record<string, string>    = { '劍': 'red', '槍': 'green', '法': 'blue', '願': 'yellow' }
 const RANGE_LBL: Record<string, string>    = { '劍': '近戰', '槍': '遠程', '法': '魔法' }
 
-const DISC = 360   // container px
-const CX   = DISC / 2
-const CY   = DISC / 2
-const PORT = 72    // portrait diameter
+const DISC   = 680
+const CX     = DISC / 2
+const CY     = DISC / 2
+const PORT_W = 86
+const PORT_H = 130
 
 function discR(n: number) {
-  if (n <= 5)  return 100
-  if (n <= 9)  return 128
-  return 148
+  if (n <= 4)  return 130
+  if (n <= 7)  return 170
+  if (n <= 10) return 210
+  if (n <= 13) return 248
+  return 272
 }
 
 interface Props {
@@ -79,30 +82,23 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
         <div className="cs-disc" style={{ width: DISC, height: DISC }}>
 
           {/* Decorative rings */}
-          <div className="cs-ring" style={{ width: R * 2 + PORT + 4, height: R * 2 + PORT + 4 }} />
-          <div className="cs-ring" style={{ width: R * 1.1,         height: R * 1.1, opacity: .35 }} />
-          <div className="cs-ring" style={{ width: 86,              height: 86,      opacity: .5 }} />
+          <div className="cs-ring" style={{ width: R * 2 + PORT_H + 4, height: R * 2 + PORT_H + 4 }} />
+          <div className="cs-ring" style={{ width: R * 1.1,            height: R * 1.1, opacity: .35 }} />
+          <div className="cs-ring" style={{ width: 100,                height: 100,     opacity: .5 }} />
 
           {/* Spoke lines to each character */}
           {filtered.map((_, i) => {
             const ang = (i / n) * 360 - 90
             return (
-              <div
-                key={i}
-                className="cs-spoke"
-                style={{
-                  width: R,
-                  left:  CX,
-                  top:   CY,
-                  transform: `rotate(${ang}deg)`,
-                  transformOrigin: '0 50%',
-                }}
+              <div key={i} className="cs-spoke"
+                style={{ width: R, left: CX, top: CY,
+                  transform: `rotate(${ang}deg)`, transformOrigin: '0 50%' }}
               />
             )
           })}
 
           {/* Center count */}
-          <div className="cs-disc-center">
+          <div className="cs-disc-center" style={{ width: 96, height: 96 }}>
             {selectedCharIds.length === 0
               ? <div className="cs-c-hint">選角</div>
               : <div className="cs-c-count">
@@ -126,10 +122,10 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
                 key={c.id}
                 className={`cs-char ${sel ? 'selected' : ''}`}
                 style={{
-                  left:  x - PORT / 2,
-                  top:   y - PORT / 2,
-                  width:  PORT,
-                  height: PORT,
+                  left:  x - PORT_W / 2,
+                  top:   y - PORT_H / 2,
+                  width:  PORT_W,
+                  height: PORT_H,
                   '--ecol': col,
                 } as React.CSSProperties}
                 onClick={e => { e.stopPropagation(); onToggle(c.id) }}
@@ -137,8 +133,8 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
                 title={`${c.name}（雙擊查看招式）`}
               >
                 <div className="cs-char-port">
-                  <CharPortrait id={c.id} size={PORT}
-                    style={{ width: '100%', height: '100%', borderRadius: '50%', display: 'block', flexShrink: 0 }}
+                  <CharPortrait id={c.id} size={PORT_W} height={PORT_H}
+                    style={{ width: '100%', height: '100%', borderRadius: 8, display: 'block', flexShrink: 0 }}
                   />
                 </div>
                 {pos && (

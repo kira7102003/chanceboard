@@ -333,8 +333,9 @@ body { margin: 0; }
 
 /* ── Disc wrapper ───────────────────────────────────────────── */
 .cs-disc-wrap {
-  display: flex; justify-content: center;
-  padding-bottom: 32px;   /* room for names below bottom portrait */
+  display: flex; justify-content: center; align-items: center;
+  flex: 1;
+  padding: 20px 0 64px;  /* room for names below taller portrait cards */
 }
 .cs-disc {
   position: relative;
@@ -364,54 +365,63 @@ body { margin: 0; }
 .cs-disc-center {
   position: absolute; top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  width: 76px; height: 76px; border-radius: 50%;
+  border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  background: radial-gradient(circle, rgba(200,161,90,.09) 0%, transparent 75%);
-  border: 1px solid rgba(200,161,90,.22);
+  background: radial-gradient(circle, rgba(200,161,90,.12) 0%, transparent 75%);
+  border: 1px solid rgba(200,161,90,.28);
   pointer-events: none;
 }
-.cs-c-hint  { font-size: 11px; color: var(--text); opacity: .5; text-align: center; line-height: 1.5; }
-.cs-c-count { font-size: 26px; font-weight: 900; color: var(--gold); line-height: 1; }
-.cs-c-max   { font-size: 11px; opacity: .55; }
+.cs-c-hint  { font-size: 12px; color: var(--text); opacity: .5; text-align: center; line-height: 1.5; }
+.cs-c-count { font-size: 30px; font-weight: 900; color: var(--gold); line-height: 1; }
+.cs-c-max   { font-size: 12px; opacity: .55; }
 
-/* Portrait node */
+/* Portrait node — tall card */
 .cs-char {
   position: absolute;
-  border-radius: 50%;
-  border: 2px solid rgba(200,161,90,.2);
+  border-radius: 10px;
+  border: 2px solid rgba(200,161,90,.22);
   overflow: visible;
   cursor: pointer;
   transition: transform .15s, box-shadow .15s, border-color .15s;
+  background: rgba(8,8,22,.55);
 }
 .cs-char-port {
   width: 100%; height: 100%;
-  border-radius: 50%; overflow: hidden;
+  border-radius: 8px; overflow: hidden;
 }
 .cs-char:hover {
-  transform: scale(1.16);
+  transform: scale(1.12) translateY(-4px);
   border-color: var(--ecol, var(--gold));
+  box-shadow: 0 8px 24px rgba(0,0,0,.6);
   z-index: 10;
 }
 .cs-char.selected {
   border-color: var(--ecol, var(--gold));
-  border-width: 3px;
-  box-shadow: 0 0 16px var(--ecol, var(--gold)), 0 0 4px rgba(255,255,255,.15);
+  border-width: 2px;
+  box-shadow: 0 0 20px var(--ecol, var(--gold)), 0 4px 16px rgba(0,0,0,.5);
   z-index: 5;
 }
+.cs-char.selected::after {
+  content: '';
+  position: absolute; inset: 0; border-radius: 8px;
+  background: linear-gradient(180deg, transparent 60%, var(--ecol, var(--gold)) 200%);
+  opacity: .18; pointer-events: none;
+}
 .cs-pos {
-  position: absolute; top: -7px; right: -3px;
+  position: absolute; top: -8px; right: -6px;
   font-size: 10px; font-weight: 800;
-  color: #fff; padding: 1px 5px;
+  color: #fff; padding: 2px 6px;
   border-radius: 8px; line-height: 1.5;
   z-index: 20; pointer-events: none;
+  box-shadow: 0 2px 6px rgba(0,0,0,.5);
 }
 .cs-name {
   position: absolute;
-  top: calc(100% + 5px); left: 50%;
+  top: calc(100% + 6px); left: 50%;
   transform: translateX(-50%);
-  font-size: 10px; white-space: nowrap;
-  color: var(--text); text-align: center;
-  pointer-events: none;
+  font-size: 11px; white-space: nowrap;
+  color: rgba(200,180,140,.8); text-align: center;
+  pointer-events: none; letter-spacing: .5px;
 }
 .cs-char:hover .cs-name, .cs-char.selected .cs-name { color: var(--text-h); }
 
