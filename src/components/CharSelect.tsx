@@ -16,24 +16,6 @@ const SUIT_DOT:  Record<string, string>    = { red: '🔴', green: '🟢', blue:
 const SUIT_OF:   Record<string, string>    = { '劍': 'red', '槍': 'green', '法': 'blue', '願': 'yellow' }
 const RANGE_LBL: Record<string, string>    = { '劍': '近戰', '槍': '遠程', '法': '魔法' }
 
-const BASE_DISC = 680
-const BASE_PORT_W = 86
-const BASE_PORT_H = 130
-
-function discR(n: number, scale: number) {
-  const r = n <= 4 ? 130 : n <= 7 ? 170 : n <= 10 ? 210 : n <= 13 ? 248 : 272
-  return Math.round(r * scale)
-}
-
-function getDiscSize() {
-  const vw = window.innerWidth
-  const vh = window.innerHeight
-  const isLandscape = vw > vh
-  const overhead = isLandscape ? 92 : 140
-  const mult     = isLandscape ? 0.86 : 1.05
-  return Math.floor(Math.min(BASE_DISC, vw * 0.96, (vh - overhead) * mult))
-}
-
 interface Props {
   onConfirm: (ids: string[]) => void
   onToggle:  (id: string) => void
@@ -43,40 +25,114 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
   const characters = getChars()
   const { selectedCharIds, mySide, playerCount } = useGameStore()
   const ready = selectedCharIds.length === 3
-  const [elFilter, setElFilter] = useState<ElFilter>('all')
-  const [infoId,   setInfoId]   = useState<string | null>(null)
-  const [disc, setDisc] = useState(getDiscSize)
+
+  const [elFilter,    setElFilter]    = useState<ElFilter>('all')
+  const [infoId,      setInfoId]      = useState<string | null>(null)
+  const [focusIdx,    setFocusIdx]    = useState(0)
+  const [dragStartX,  setDragStartX]  = useState<number | null>(null)
+  const [dragPixels,  setDragPixels]  = useState(0)
+  const [wasDragging, setWasDragging] = useState(false)
+  const [vw,          setVw]          = useState(window.innerWidth)
+  const [vh,          setVh]          = useState(window.innerHeight)
 
   useEffect(() => {
-    const onResize = () => setDisc(getDiscSize())
+    const onResize = () => { setVw(window.innerWidth); setVh(window.innerHeight) }
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
-  const scale  = disc / BASE_DISC
-  const DISC   = disc
-  const CX     = DISC / 2
-  const CY     = DISC / 2
-  const PORT_W = Math.round(BASE_PORT_W * scale)
-  const PORT_H = Math.round(BASE_PORT_H * scale)
-
   const filtered = characters.filter(c => elFilter === 'all' || c.element === elFilter)
   const n = filtered.length
-  const R = discR(n, scale)
 
-  const infoChar  = infoId ? characters.find(c => c.id === infoId)! : null
+  useEffect(() => { setFocusIdx(0) }, [elFilter])
+  useEffect(() => {
+    if (n > 0) setFocusIdx(p => (p >= n ? 0 : p))
+  }, [n])
+
+  // Sizing: mobile portrait, mobile landscape, desktop
+  const isLandscape = vh < 500
+  const isMobile = vw < 640
+  const STEP = isLandscape
+    ? Math.min(100, Math.round(vw * 0.14))
+    : isMobile
+      ? Math.min(130, Math.round(vw * 0.22))
+      : Math.min(170, Math.round(vw * 0.13))
+  const CW = isLandscape
+    ? Math.min(100, Math.round(vh * 0.55))
+    : isMobile
+      ? Math.min(160, Math.round(vw * 0.34))
+      : Math.min(190, Math.round(vw * 0.14))
+  const CH = Math.round(CW * 1.55)
+
+  // Current float focus (moves during drag)
+  const dragIdxOff  = dragStartX !== null ? -dragPixels / STEP : 0
+  const displayFocus = focusIdx + dragIdxOff
+  const isSnapping  = dragStartX === null
+
+  // Wrapped offset: shortest path around the ring
+  function getOff(i: number): number {
+    if (n === 0) return 0
+    let off = i - displayFocus
+    while (off >  n / 2) off -= n
+    while (off < -n / 2) off += n
+    return off
+  }
+
+  // ── Pointer drag ─────────────────────────────────────────────
+  function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    setDragStartX(e.clientX)
+    setDragPixels(0)
+    setWasDragging(false)
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }
+  function onPointerMove(e: React.PointerEvent) {
+    if (dragStartX === null) return
+    const d = e.clientX - dragStartX
+    setDragPixels(d)
+    if (Math.abs(d) > 7) setWasDragging(true)
+  }
+  function onPointerUp() {
+    if (dragStartX === null) return
+    const snapped = Math.round(focusIdx - dragPixels / STEP)
+    setFocusIdx(((snapped % n) + n) % n)
+    setDragStartX(null)
+    setDragPixels(0)
+  }
+
+  function handleCharClick(charId: string, off: number) {
+    if (wasDragging) return
+    if (Math.abs(off) < 0.5) {
+      onToggle(charId)
+    } else {
+      setFocusIdx(filtered.findIndex(c => c.id === charId))
+    }
+  }
+
+  const focusedInt   = n > 0 ? ((Math.round(displayFocus) % n) + n) % n : 0
+  const focusedChar  = filtered[focusedInt]
+
+  const infoChar  = infoId ? characters.find(c => c.id === infoId) ?? null : null
   const infoMoves = infoId ? allMoves.filter(m => m.ownerId === infoId) : []
+
+  // Sort for z-index: far chars rendered behind center
+  const charsWithOff = filtered.map((c, i) => ({ c, i, off: getOff(i) }))
+  const sorted = [...charsWithOff].sort((a, b) => Math.abs(b.off) - Math.abs(a.off))
+
+  const VISIBLE_CUTOFF = Math.min(7, n * 0.45)
 
   return (
     <div className="char-select" onClick={() => setInfoId(null)}>
-      {/* ── Header ─────────────────────────────── */}
+
+      {/* ── Header */}
       <div className="cs-header">
-        <h2 style={{ margin: 0 }}>選擇角色 — <span className={`side side-${mySide}`}>{mySide} 方</span></h2>
+        <h2 style={{ margin: 0 }}>
+          選擇角色 — <span className={`side side-${mySide}`}>{mySide} 方</span>
+        </h2>
         <span className="hint">選 3 位（{selectedCharIds.length}/3）</span>
         {playerCount < 2 && <span className="waiting">等待對手…</span>}
       </div>
 
-      {/* ── Element filter bar ──────────────────── */}
+      {/* ── Filter bar */}
       <div className="cs-filter-bar">
         {(['all', '劍', '槍', '法'] as ElFilter[]).map(el => (
           <button
@@ -95,77 +151,77 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
         ))}
       </div>
 
-      {/* ── Disc ────────────────────────────────── */}
-      <div className="cs-disc-wrap">
-        <div className="cs-disc" style={{ width: DISC, height: DISC }}>
+      {/* ── Carousel */}
+      <div
+        className="cs-carousel"
+        style={{ height: CH + 46 }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+      >
+        {sorted.map(({ c, off }) => {
+          const absOff = Math.abs(off)
+          if (absOff > VISIBLE_CUTOFF) return null
 
-          {/* Decorative rings */}
-          <div className="cs-ring" style={{ width: R * 2 + PORT_H + 4, height: R * 2 + PORT_H + 4 }} />
-          <div className="cs-ring" style={{ width: R * 1.1,            height: R * 1.1, opacity: .35 }} />
-          <div className="cs-ring" style={{ width: 100,                height: 100,     opacity: .5 }} />
+          const scale   = Math.max(0.28, 1 - absOff * 0.16)
+          const opacity = Math.max(0.04, 1 - absOff * 0.24)
+          const xOff    = Math.round(off * STEP)
+          const zIdx    = Math.round(100 - absOff * 12)
+          const isCenter = absOff < 0.5
+          const sel      = selectedCharIds.includes(c.id)
+          const selIdx   = selectedCharIds.indexOf(c.id)
+          const col      = EL_COLOR[c.element]
 
-          {/* Spoke lines to each character */}
-          {filtered.map((_, i) => {
-            const ang = (i / n) * 360 - 90
-            return (
-              <div key={i} className="cs-spoke"
-                style={{ width: R, left: CX, top: CY,
-                  transform: `rotate(${ang}deg)`, transformOrigin: '0 50%' }}
+          return (
+            <div
+              key={c.id}
+              className={`cs-car-char${sel ? ' selected' : ''}${isCenter ? ' center' : ''}`}
+              style={{
+                width:     CW,
+                height:    CH,
+                marginLeft: -CW / 2,
+                marginTop:  -CH / 2,
+                transform: `translateX(${xOff}px) scale(${scale})`,
+                opacity,
+                zIndex:    zIdx,
+                '--ecol': col,
+                transition: isSnapping
+                  ? 'transform .28s cubic-bezier(.25,.46,.45,.94), opacity .28s'
+                  : 'none',
+              } as React.CSSProperties}
+              onClick={e => { e.stopPropagation(); handleCharClick(c.id, off) }}
+              onDoubleClick={e => {
+                e.stopPropagation()
+                if (!wasDragging) setInfoId(p => p === c.id ? null : c.id)
+              }}
+            >
+              <CharPortrait
+                id={c.id} size={CW} height={CH}
+                style={{ width: '100%', height: '100%', borderRadius: 10, display: 'block', pointerEvents: 'none' }}
               />
-            )
-          })}
-
-          {/* Center count */}
-          <div className="cs-disc-center" style={{ width: 96, height: 96 }}>
-            {selectedCharIds.length === 0
-              ? <div className="cs-c-hint">選角</div>
-              : <div className="cs-c-count">
-                  {selectedCharIds.length}<span className="cs-c-max">/3</span>
-                </div>
-            }
-          </div>
-
-          {/* Character portraits */}
-          {filtered.map((c, i) => {
-            const ang   = (i / n) * Math.PI * 2 - Math.PI / 2
-            const x     = Math.cos(ang) * R + CX
-            const y     = Math.sin(ang) * R + CY
-            const sel   = selectedCharIds.includes(c.id)
-            const idx   = selectedCharIds.indexOf(c.id)
-            const pos   = idx >= 0 ? '前中後'[idx] : null
-            const col   = EL_COLOR[c.element]
-
-            return (
-              <div
-                key={c.id}
-                className={`cs-char ${sel ? 'selected' : ''}`}
-                style={{
-                  left:  x - PORT_W / 2,
-                  top:   y - PORT_H / 2,
-                  width:  PORT_W,
-                  height: PORT_H,
-                  '--ecol': col,
-                } as React.CSSProperties}
-                onClick={e => { e.stopPropagation(); onToggle(c.id) }}
-                onDoubleClick={e => { e.stopPropagation(); setInfoId(p => p === c.id ? null : c.id) }}
-                title={`${c.name}（雙擊查看招式）`}
-              >
-                <div className="cs-char-port">
-                  <CharPortrait id={c.id} size={PORT_W} height={PORT_H}
-                    style={{ width: '100%', height: '100%', borderRadius: 8, display: 'block', flexShrink: 0 }}
-                  />
-                </div>
-                {pos && (
-                  <span className="cs-pos" style={{ background: col }}>{pos}</span>
-                )}
-                <span className="cs-name">{c.name}</span>
-              </div>
-            )
-          })}
-        </div>
+              {sel && selIdx >= 0 && (
+                <span className="cs-pos" style={{ background: col }}>{'前中後'[selIdx]}</span>
+              )}
+              {isCenter && (
+                <div className="cs-car-name" style={{ color: col }}>{c.name}</div>
+              )}
+            </div>
+          )
+        })}
       </div>
 
-      {/* ── Selected strip ──────────────────────── */}
+      {/* ── Nav arrows + counter */}
+      <div className="cs-nav-hint">
+        <button className="cs-nav-btn" onClick={() => setFocusIdx(p => ((p - 1 + n) % n))}>‹</button>
+        <span className="cs-nav-label">
+          {focusedChar?.name ?? ''}
+          <span className="cs-nav-count">{focusedInt + 1} / {n}</span>
+        </span>
+        <button className="cs-nav-btn" onClick={() => setFocusIdx(p => (p + 1) % n)}>›</button>
+      </div>
+
+      {/* ── Selected strip */}
       {selectedCharIds.length > 0 && (
         <div className="cs-selected">
           {selectedCharIds.map((id, i) => {
@@ -181,7 +237,7 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
         </div>
       )}
 
-      {/* ── Move info popover (double-click) ─────── */}
+      {/* ── Move info popover (double-click) */}
       {infoChar && (
         <div className="char-info-overlay" onClick={() => setInfoId(null)}>
           <div className="char-info-panel" onClick={e => e.stopPropagation()}>
@@ -212,7 +268,7 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
         </div>
       )}
 
-      {/* ── Confirm ─────────────────────────────── */}
+      {/* ── Confirm */}
       <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
         <button className="btn primary" disabled={!ready} onClick={() => onConfirm(selectedCharIds)}>
           確認選角 →
