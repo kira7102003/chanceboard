@@ -45,27 +45,35 @@ function storagePath(storageKey: string): string {
 // ── Generic key-based API (used by ImageCrop) ─────────────────────────────────
 
 export function getUrlByKey(storageKey: string): string | null {
-  if (localStorage.getItem(FLAG(storageKey))) return storageUrl(storagePath(storageKey))
+  const flag = localStorage.getItem(FLAG(storageKey))
+  if (flag) {
+    // flag can be '1' (old) or a versioned URL with cache-buster
+    return flag.startsWith('http') ? flag : storageUrl(storagePath(storageKey))
+  }
   const local = localStorage.getItem(storageKey)
   if (local) return local
-  // Fallback: try Supabase directly (bucket is public; 404 just leaves img blank)
-  return storageUrl(storagePath(storageKey))
+  return null
 }
 
 export async function uploadByKey(storageKey: string, dataUrl: string): Promise<string> {
   const url = await uploadDataUrl(storagePath(storageKey), dataUrl)
-  localStorage.setItem(FLAG(storageKey), '1')
-  localStorage.removeItem(storageKey) // clean up old base64
+  const versioned = `${url}?t=${Date.now()}`
+  localStorage.setItem(FLAG(storageKey), versioned)
+  localStorage.removeItem(storageKey)
   _manifestKeys.add(storageKey)
   pushManifest()
-  return url
+  return versioned
 }
 
 export function removeByKey(storageKey: string): void {
   const hadFlag = !!localStorage.getItem(FLAG(storageKey))
   localStorage.removeItem(FLAG(storageKey))
   localStorage.removeItem(storageKey)
-  if (hadFlag) deleteStorageFile(storagePath(storageKey))
+  if (hadFlag) {
+    _manifestKeys.delete(storageKey)
+    pushManifest()
+    deleteStorageFile(storagePath(storageKey))
+  }
 }
 
 // ── Character data ────────────────────────────────────────────────────────────
@@ -110,7 +118,11 @@ export async function initFromCloud(): Promise<boolean> {
     if (mResp.ok) {
       const keys: string[] = await mResp.json()
       if (Array.isArray(keys)) {
-        keys.forEach(k => { _manifestKeys.add(k); localStorage.setItem(FLAG(k), '1') })
+        keys.forEach(k => {
+          _manifestKeys.add(k)
+          // don't overwrite a versioned URL already stored locally
+          if (!localStorage.getItem(FLAG(k))) localStorage.setItem(FLAG(k), '1')
+        })
       }
     }
   } catch {}
