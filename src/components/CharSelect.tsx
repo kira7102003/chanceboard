@@ -95,14 +95,17 @@ function CharGallery({ char, selectedIds, onToggle, onClose }: {
           {/* Story */}
           {char.story && <div className="cs-gallery-story">{char.story}</div>}
 
-          {/* Select / Deselect */}
-          <button
-            className={`btn ${isSel ? '' : 'primary'}`}
-            style={isSel ? { borderColor: col + '88', color: col } : undefined}
-            onClick={() => { onToggle(char.id); onClose() }}
-          >
-            {isSel ? `✕ 移除（${['前', '中', '後'][selIdx] ?? ''}）` : '✚ 選取此角色'}
-          </button>
+          {/* Bottom row: select + close */}
+          <div className="cs-gallery-bottom">
+            <button
+              className={`btn ${isSel ? '' : 'primary'}`}
+              style={isSel ? { borderColor: col + '88', color: col } : undefined}
+              onClick={() => { onToggle(char.id); onClose() }}
+            >
+              {isSel ? `✕ 移除（${['前', '中', '後'][selIdx] ?? ''}）` : '✚ 選取此角色'}
+            </button>
+            <button className="cs-gallery-back" onClick={onClose}>✕ 關閉</button>
+          </div>
         </div>
       </div>
     </div>

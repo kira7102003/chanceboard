@@ -602,6 +602,23 @@ body { margin: 0; }
   font-size: 11px; color: rgba(200,180,130,.45); line-height: 1.6; font-style: italic;
   border-top: 1px solid rgba(255,255,255,.05); padding-top: 8px;
 }
+.cs-gallery-bottom {
+  display: flex; gap: 8px; align-items: center;
+  justify-content: space-between;
+  margin-top: auto; padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,.06);
+  flex-shrink: 0;
+}
+.cs-gallery-back {
+  background: none;
+  border: 1px solid rgba(255,255,255,.15);
+  color: rgba(255,255,255,.5);
+  border-radius: 8px; padding: 6px 16px;
+  font-size: 13px; cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s, color .15s;
+}
+.cs-gallery-back:hover { background: rgba(255,255,255,.08); color: #fff; }
 
 /* Portrait on mobile: stack vertically */
 @media (max-width: 600px) {
