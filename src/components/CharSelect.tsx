@@ -141,19 +141,19 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
     if (n > 0) setFocusIdx(p => (p >= n ? 0 : p))
   }, [n])
 
-  // Sizing
+  // Sizing — center portrait larger
   const isLandscape = vh < 500
   const isMobile    = vw < 640
   const STEP = isLandscape
-    ? Math.min(100, Math.round(vw * 0.14))
+    ? Math.min(110, Math.round(vw * 0.16))
     : isMobile
-      ? Math.min(130, Math.round(vw * 0.22))
-      : Math.min(170, Math.round(vw * 0.13))
+      ? Math.min(150, Math.round(vw * 0.26))
+      : Math.min(200, Math.round(vw * 0.15))
   const CW = isLandscape
-    ? Math.min(100, Math.round(vh * 0.55))
+    ? Math.min(120, Math.round(vh * 0.65))
     : isMobile
-      ? Math.min(160, Math.round(vw * 0.34))
-      : Math.min(190, Math.round(vw * 0.14))
+      ? Math.min(210, Math.round(vw * 0.44))
+      : Math.min(260, Math.round(vw * 0.19))
   const CH = Math.round(CW * 1.55)
 
   const dragIdxOff   = dragStartX !== null ? -dragPixels / STEP : 0
@@ -285,14 +285,21 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
                 <span className="cs-pos" style={{ background: col }}>{'前中後'[selIdx]}</span>
               )}
               {isCenter && (
-                <>
-                  <div className="cs-car-badge">大典</div>
-                  <div className="cs-car-name" style={{ color: col }}>{c.name}</div>
-                </>
+                <div className="cs-car-name" style={{ color: col }}>{c.name}</div>
               )}
             </div>
           )
         })}
+
+        {/* Info button — bottom-right of carousel */}
+        {focusedChar && (
+          <button
+            className="cs-info-btn"
+            onClick={() => setGalleryChar(focusedChar)}
+          >
+            資訊
+          </button>
+        )}
       </div>
 
       {/* ── Nav arrows + counter */}
@@ -300,7 +307,7 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
         <button className="cs-nav-btn" onClick={() => setFocusIdx(p => ((p - 1 + n) % n))}>‹</button>
         <div className="cs-nav-label">
           <span>{focusedChar?.name ?? ''}</span>
-          <span className="cs-nav-count">{focusedInt + 1} / {n} · 點圖開大典</span>
+          <span className="cs-nav-count">{focusedInt + 1} / {n}</span>
         </div>
         <button className="cs-nav-btn" onClick={() => setFocusIdx(p => (p + 1) % n)}>›</button>
       </div>
