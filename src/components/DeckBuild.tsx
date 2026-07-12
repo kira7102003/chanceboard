@@ -15,15 +15,11 @@ const SUIT_COLOR: Record<string, string> = {
 const suitCards   = allCards.filter(c => c.isSuitCard)
 const flowerCards = allCards.filter(c => !c.isSuitCard)
 
-// ── Card row component (must be outside DeckBuild to keep hook state stable) ──
+// ── CardRow: stable top-level component so hooks don't reset ──────────────────
 interface CardRowProps {
-  card:     Card
-  cnt:      number
-  total:    number
-  onAdd:    () => void
-  onRemove: () => void
+  card: Card; cnt: number; total: number
+  onAdd: () => void; onRemove: () => void
 }
-
 function CardRow({ card, cnt, total, onAdd, onRemove }: CardRowProps) {
   const [showDesc, setShowDesc] = useState(false)
   const col    = SUIT_COLOR[card.color]
@@ -31,7 +27,7 @@ function CardRow({ card, cnt, total, onAdd, onRemove }: CardRowProps) {
 
   return (
     <div
-      className={`deck-card ${cnt > 0 ? 'in-deck' : ''}`}
+      className={`deck-card${cnt > 0 ? ' in-deck' : ''}`}
       style={{ borderTopColor: cnt > 0 ? col : undefined, borderTopWidth: cnt > 0 ? 2 : 1 }}
       onMouseEnter={() => setShowDesc(true)}
       onMouseLeave={() => setShowDesc(false)}
@@ -40,11 +36,8 @@ function CardRow({ card, cnt, total, onAdd, onRemove }: CardRowProps) {
       {showDesc && card.description && (
         <div className="deck-card-tooltip">{card.description}</div>
       )}
-
       <div className="deck-card-header">
-        {imgUrl && (
-          <img src={imgUrl} className="deck-card-img" alt="" draggable={false} />
-        )}
+        {imgUrl && <img src={imgUrl} className="deck-card-img" alt="" draggable={false} />}
         <div className="deck-card-main">
           <div className="deck-card-name" style={{ color: cnt > 0 ? col : undefined }}>
             <span className="deck-card-icon">{CARD_ICON[card.id]}</span>
@@ -52,10 +45,9 @@ function CardRow({ card, cnt, total, onAdd, onRemove }: CardRowProps) {
           </div>
           <div className="deck-card-controls" onClick={e => e.stopPropagation()}>
             <button className="btn sm" onClick={onRemove} disabled={cnt === 0}>－</button>
-            <span
-              className="deck-card-count"
-              style={{ color: cnt > 0 ? col : '#333355' }}
-            >{cnt > 0 ? cnt : '·'}</span>
+            <span className="deck-card-count" style={{ color: cnt > 0 ? col : '#333355' }}>
+              {cnt > 0 ? cnt : '·'}
+            </span>
             <button className="btn sm" onClick={onAdd} disabled={total >= DECK_SIZE}>＋</button>
           </div>
         </div>
@@ -64,16 +56,15 @@ function CardRow({ card, cnt, total, onAdd, onRemove }: CardRowProps) {
   )
 }
 
-// ── Main component ─────────────────────────────────────────────────────────────
-interface Props {
-  onConfirm: (deckIds: string[]) => void
-}
+// ── Main component ────────────────────────────────────────────────────────────
+interface Props { onConfirm: (deckIds: string[]) => void }
 
 export default function DeckBuild({ onConfirm }: Props) {
   const { mySide, isSolo } = useGameStore()
   const [selected, setSelected] = useState<string[]>([])
+  const [tab,      setTab]      = useState<'suit' | 'flower'>('suit')
 
-  const countOf = (id: string) => selected.filter(x => x === id).length
+  const countOf  = (id: string) => selected.filter(x => x === id).length
   const add      = (id: string) => { if (selected.length < DECK_SIZE) setSelected(s => [...s, id]) }
   const remove   = (id: string) => {
     const idx = selected.lastIndexOf(id)
@@ -83,14 +74,24 @@ export default function DeckBuild({ onConfirm }: Props) {
 
   return (
     <div className="deck-page">
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
-        <h2>自訂牌組 — <span className={`side side-${mySide}`}>{mySide} 方</span></h2>
-        <span className="hint">選 {DECK_SIZE} 張，每回合補 1 張（{selected.length}/{DECK_SIZE}）</span>
+
+      {/* ── Header ── */}
+      <div className="dk-header">
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, minWidth: 0 }}>
+          <h2 style={{ margin: 0, whiteSpace: 'nowrap', fontSize: 'clamp(14px,4vw,20px)' }}>
+            自訂牌組 — <span className={`side side-${mySide}`}>{mySide} 方</span>
+          </h2>
+          <span className="hint" style={{ whiteSpace: 'nowrap' }}>
+            {selected.length}/{DECK_SIZE}
+          </span>
+        </div>
+        <button className="btn dk-random-btn" onClick={randomize}>
+          🎲 {selected.length === 0 ? '隨機' : `補齊`}
+        </button>
       </div>
 
-      {/* Selected deck strip */}
-      <div>
-        <div className="deck-section-label">已選牌組</div>
+      {/* ── Selected strip ── */}
+      <div className="dk-strip">
         <div className="deck-selected-strip">
           {selected.length === 0 && <span className="deck-empty-hint">尚未選牌</span>}
           {(() => {
@@ -98,13 +99,10 @@ export default function DeckBuild({ onConfirm }: Props) {
             for (const id of selected) counts[id] = (counts[id] ?? 0) + 1
             return Object.entries(counts).map(([id, n]) => {
               const card = allCards.find(c => c.id === id)!
-              const col = SUIT_COLOR[card.color]
+              const col  = SUIT_COLOR[card.color]
               return (
-                <span
-                  key={id}
-                  className="deck-chip"
-                  style={{ borderColor: col, color: col, background: `${col}18` }}
-                >
+                <span key={id} className="deck-chip"
+                  style={{ borderColor: col, color: col, background: `${col}18` }}>
                   {card.name}{n > 1 ? ` ×${n}` : ''}
                 </span>
               )
@@ -113,45 +111,56 @@ export default function DeckBuild({ onConfirm }: Props) {
         </div>
       </div>
 
-      {/* Suit cards row */}
-      <div>
-        <div className="deck-section-label">花色牌（觸發招式條件）</div>
-        <div className="deck-suit-grid">
-          {suitCards.map(c => (
-            <CardRow
-              key={c.id} card={c}
-              cnt={countOf(c.id)} total={selected.length}
-              onAdd={() => add(c.id)} onRemove={() => remove(c.id)}
-            />
-          ))}
-        </div>
+      {/* ── Tab bar (mobile only) ── */}
+      <div className="dk-tabs">
+        <button className={`dk-tab${tab === 'suit' ? ' active' : ''}`} onClick={() => setTab('suit')}>
+          花色牌 <span className="dk-tab-count">4</span>
+        </button>
+        <button className={`dk-tab${tab === 'flower' ? ' active' : ''}`} onClick={() => setTab('flower')}>
+          花牌 <span className="dk-tab-count">{flowerCards.length}</span>
+        </button>
       </div>
 
-      {/* Flower cards grid */}
-      <div>
-        <div className="deck-section-label">花牌（特效）</div>
-        <div className="char-grid">
-          {flowerCards.map(c => (
-            <CardRow
-              key={c.id} card={c}
-              cnt={countOf(c.id)} total={selected.length}
-              onAdd={() => add(c.id)} onRemove={() => remove(c.id)}
-            />
-          ))}
+      {/* ── Card areas ── */}
+      <div className="dk-cards">
+
+        <div className={tab !== 'suit' ? 'dk-tab-hidden' : ''}>
+          <div className="deck-section-label">花色牌（觸發招式條件）</div>
+          <div className="deck-suit-grid">
+            {suitCards.map(c => (
+              <CardRow key={c.id} card={c}
+                cnt={countOf(c.id)} total={selected.length}
+                onAdd={() => add(c.id)} onRemove={() => remove(c.id)} />
+            ))}
+          </div>
         </div>
+
+        <div className={tab !== 'flower' ? 'dk-tab-hidden' : ''} style={{ marginTop: 16 }}>
+          <div className="deck-section-label">花牌（特效）</div>
+          <div className="char-grid">
+            {flowerCards.map(c => (
+              <CardRow key={c.id} card={c}
+                cnt={countOf(c.id)} total={selected.length}
+                onAdd={() => add(c.id)} onRemove={() => remove(c.id)} />
+            ))}
+          </div>
+        </div>
+
       </div>
 
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', paddingBottom: 8 }}>
+      {/* ── Footer ── */}
+      <div className="dk-footer">
         <button className="btn primary" disabled={selected.length === 0} onClick={() => onConfirm(selected)}>
           {isSolo ? '確認牌組 — 開始挑戰' : '確認牌組 — 等待對手'}
         </button>
-        <button className="btn" onClick={randomize}>
-          {selected.length === 0 ? '🎲 隨機配置' : `🎲 補齊（+${DECK_SIZE - selected.length}）`}
+        <button className="btn dk-random-mobile" onClick={randomize}>
+          🎲 {selected.length === 0 ? '隨機配置' : `補齊（+${DECK_SIZE - selected.length}）`}
         </button>
         {selected.length < DECK_SIZE && (
-          <span className="hint">建議選滿 {DECK_SIZE} 張（目前 {selected.length}）</span>
+          <span className="hint dk-hint">建議選滿 {DECK_SIZE} 張</span>
         )}
       </div>
+
     </div>
   )
 }

@@ -44,6 +44,7 @@ interface Store {
   setScore:    (r: ScoreResult | null) => void
 
   toggleCharSelect: (id: string) => void
+  loadTeam: (ids: string[]) => void
   confirmCharSelect: () => void
   setOpponentChars: (ids: string[]) => void
 
@@ -107,6 +108,7 @@ export const useGameStore = create<Store>((set, get) => ({
     if (cur.includes(id)) set({ selectedCharIds: cur.filter(x => x !== id) })
     else if (cur.length < 3) set({ selectedCharIds: [...cur, id] })
   },
+  loadTeam: (ids) => set({ selectedCharIds: ids.slice(0, 3) }),
   confirmCharSelect: () => {
     set({ appPhase: 'deckBuild' })
   },

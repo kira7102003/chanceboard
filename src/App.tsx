@@ -115,6 +115,15 @@ export default function App() {
     store.setAppPhase('charSelect')
   }
 
+  const handleStartWithTeam = (charIds: string[]) => {
+    const store = useGameStore.getState()
+    store.setSolo(true)
+    store.setRoom('SOLO', 'A', true)
+    store.setPlayerCount(2)
+    store.loadTeam(charIds)   // pre-fill selected chars
+    store.setAppPhase('deckBuild')  // skip charSelect
+  }
+
   // ── CharSelect handlers ───────────────────────────────────────────────────────
 
   const handleCharConfirm = (ids: string[]) => {
@@ -179,6 +188,7 @@ export default function App() {
           savedSession={saved}
           onRejoin={handleRejoin}
           onAdmin={() => setShowAdmin(true)}
+          onStartWithTeam={handleStartWithTeam}
         />
       )}
 
