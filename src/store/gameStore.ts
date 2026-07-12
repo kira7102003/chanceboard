@@ -67,6 +67,9 @@ interface Store {
   pass: (unitId: string) => void
   toggleAuto: (side: 'A' | 'B') => void
 
+  autoSpeed: 1 | 2 | 4
+  setAutoSpeed: (s: 1 | 2 | 4) => void
+
   _syncCb: ((json: string, phase: AppPhase) => void) | null
   _applyGame: (g: GameState) => void
 
@@ -95,6 +98,7 @@ export const useGameStore = create<Store>((set, get) => ({
   pendingUnitId: null,
   intervalId: null,
   _syncCb: null,
+  autoSpeed: 1,
 
   setRoom: (roomId, side, isHost) => set({ roomId, mySide: side, isHost }),
   setPlayerCount: n => set({ playerCount: n }),
@@ -186,6 +190,12 @@ export const useGameStore = create<Store>((set, get) => ({
     const { intervalId } = get()
     if (intervalId) clearInterval(intervalId)
     set({ intervalId: null })
+  },
+
+  setAutoSpeed: (speed) => {
+    const { _syncCb, startATBLoop } = get()
+    set({ autoSpeed: speed })
+    startATBLoop(_syncCb ?? (() => {}), Math.round(100 / speed))
   },
 
   playCard: (cardId, side?) => {

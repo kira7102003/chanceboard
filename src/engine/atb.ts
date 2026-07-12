@@ -367,7 +367,7 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
   const moveLabel = `<span style="color:${moveColor}">【${move.name}】</span>`
   const firstTarget = move.scope === '群' ? undefined : targets[0]
   const groupTargets = move.scope === '群' ? targets.map(t => ({ name: t.name, charId: t.characterId })) : undefined
-  const moveAnim  = { moveId: move.id, moveName: move.name, moveSlot: action.moveSlot, charName: u.name, charId: u.characterId, targetName: firstTarget?.name, targetCharId: firstTarget?.characterId, targetUnitId: firstTarget?.id, groupTargets }
+  const moveAnim  = { moveId: move.id, moveName: move.name, moveSlot: action.moveSlot, charName: u.name, charId: u.characterId, attackerSide: u.side as 'A' | 'B', targetName: firstTarget?.name, targetCharId: firstTarget?.characterId, targetUnitId: firstTarget?.id, groupTargets }
   const targetDesc = move.scope === '群'
     ? '⚔ 群體'
     : targets.length > 0

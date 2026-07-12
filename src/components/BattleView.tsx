@@ -43,6 +43,7 @@ interface MoveAnim {
   name: string
   charName: string
   charImg: string | null
+  attackerSide: 'A' | 'B'
   targetName: string | null
   targetCharImg: string | null
   targetUnitId: string | null
@@ -52,7 +53,7 @@ interface MoveAnim {
 }
 
 export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onExecuteMove, onPass, onToggleAuto, onEnd, onSoloReplay, bgUrl }: Props) {
-  const { game, mySide, isSolo, isAIBattle, soloScore } = useGameStore()
+  const { game, mySide, isSolo, isAIBattle, soloScore, autoSpeed, setAutoSpeed } = useGameStore()
   const logRef         = useRef<HTMLDivElement>(null)
   const animTimer      = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastAnimIdx    = useRef(-1)
@@ -76,7 +77,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
       const entry = game.log[i]
       if (!entry.moveAnim) continue
       lastAnimIdx.current = i
-      const { moveId, moveName, moveSlot, charName, charId, targetName, targetCharId, targetUnitId, groupTargets } = entry.moveAnim
+      const { moveId, moveName, moveSlot, charName, charId, attackerSide, targetName, targetCharId, targetUnitId, groupTargets } = entry.moveAnim
       const img = getMoveImg(moveId)
       const charImg = charId ? (getCharWideImg(charId) ?? getCharImg(charId)) : null
       const targetCharImg = targetCharId ? (getCharWideImg(targetCharId) ?? getCharImg(targetCharId)) : null
@@ -88,6 +89,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
       setMoveAnim({
         img,
         name: moveName, charName, charImg,
+        attackerSide: attackerSide ?? 'A',
         targetName: targetName ?? null, targetCharImg,
         targetUnitId: targetUnitId ?? null,
         isGroup: !targetName,
@@ -184,62 +186,65 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
         }} />
       )}
       {/* ── Move animation overlay ── */}
-      {moveAnim && (
-        <div className="move-anim-overlay" key={animKey}>
-          <div className="ma-vs-row">
-            {/* Attacker */}
-            <div className="ma-col">
-              {moveAnim.charImg
-                ? <img src={moveAnim.charImg} className="ma-media" alt="" />
-                : <div className="ma-placeholder">{moveAnim.charName[0]}</div>
-              }
-              <div className="ma-label">{moveAnim.charName}</div>
+      {moveAnim && (() => {
+        const defSide = moveAnim.attackerSide === 'A' ? 'B' : 'A'
+        const defFlip = defSide === 'A'   // A units face right; when defending show them facing attacker
+        return (
+          <div className="move-anim-overlay" key={animKey}>
+            {/* Direction bar */}
+            <div className="ma-direction">
+              <span className={`ma-dir-side ma-dir-${moveAnim.attackerSide}`}>{moveAnim.attackerSide}</span>
+              <span className="ma-dir-arrow">⚔</span>
+              <span className={`ma-dir-side ma-dir-${defSide}`}>{defSide}</span>
             </div>
 
-            {/* Move */}
-            <div className="ma-col ma-move-col">
-              {moveAnim.img
-                ? <img src={moveAnim.img} className="ma-media ma-media-contain" alt="" />
-                : <div className="ma-placeholder" style={{ color: moveAnim.color }}>⚡</div>
-              }
-              <div className="ma-label move-anim-name" style={{ color: moveAnim.color }}>
-                {moveAnim.name}{moveAnim.isGroup ? '　⚔群體' : ''}
+            {/* Main row: skill | → | target(s) */}
+            <div className="ma-main">
+              {/* Skill side */}
+              <div className="ma-skill-side">
+                {moveAnim.img
+                  ? <img src={moveAnim.img} className="ma-skill-img" alt=""
+                      style={{ filter: `drop-shadow(0 0 18px ${moveAnim.color}88)` }} />
+                  : <div className="ma-skill-placeholder" style={{ color: moveAnim.color }}>⚡</div>
+                }
+                <div className="ma-skill-name" style={{ color: moveAnim.color }}>{moveAnim.name}</div>
+                <div className="ma-attacker-name">{moveAnim.charName}</div>
+              </div>
+
+              <div className="ma-vs-arrow" style={{ color: moveAnim.color }}>→</div>
+
+              {/* Target side */}
+              <div className="ma-target-side">
+                {moveAnim.isGroup && moveAnim.groupTargets.length > 0 ? (
+                  <div className="ma-group-portraits">
+                    {moveAnim.groupTargets.map((t, i) => (
+                      <div key={i} className="ma-target-portrait-wrap ma-shake">
+                        {t.charImg
+                          ? <img src={t.charImg} className="ma-target-portrait" alt=""
+                              style={defFlip ? { transform: 'scaleX(-1)' } : undefined} />
+                          : <div className="ma-placeholder">{t.name[0]}</div>
+                        }
+                        <div className="ma-target-name">{t.name}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : moveAnim.targetName ? (
+                  <div className="ma-target-portrait-wrap ma-shake">
+                    {moveAnim.targetCharImg
+                      ? <img src={moveAnim.targetCharImg} className="ma-target-portrait" alt=""
+                          style={defFlip ? { transform: 'scaleX(-1)' } : undefined} />
+                      : <div className="ma-placeholder">{moveAnim.targetName[0]}</div>
+                    }
+                    <div className="ma-target-name">{moveAnim.targetName}</div>
+                  </div>
+                ) : (
+                  <div className="ma-placeholder" style={{ opacity: .15, fontSize: 40 }}>⚔</div>
+                )}
               </div>
             </div>
-
-            {/* Target — group: all targets; single: one target */}
-            {moveAnim.isGroup && moveAnim.groupTargets.length > 0
-              ? (
-                <div className="ma-group-targets">
-                  {moveAnim.groupTargets.map((t, i) => (
-                    <div key={i} className="ma-col ma-target">
-                      {t.charImg
-                        ? <img src={t.charImg} className="ma-media ma-flip" alt="" />
-                        : <div className="ma-placeholder">{t.name[0]}</div>
-                      }
-                      <div className="ma-label">{t.name}</div>
-                    </div>
-                  ))}
-                </div>
-              )
-              : (
-                <div className={`ma-col${moveAnim.targetName ? ' ma-target' : ''}`}>
-                  {moveAnim.targetName
-                    ? <>
-                        {moveAnim.targetCharImg
-                          ? <img src={moveAnim.targetCharImg} className="ma-media ma-flip" alt="" />
-                          : <div className="ma-placeholder">{moveAnim.targetName[0]}</div>
-                        }
-                        <div className="ma-label">{moveAnim.targetName}</div>
-                      </>
-                    : <div className="ma-placeholder" style={{ opacity: .15 }}>⚔</div>
-                  }
-                </div>
-              )
-            }
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* ── Header ── */}
       <div className="battle-header">
@@ -264,6 +269,15 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
               )}
             </>
         }
+        {(isAutoMe || isAIBattle) && (
+          <button className="auto-speed-btn" onClick={() => {
+            const speeds: (1|2|4)[] = [1, 2, 4]
+            const idx = speeds.indexOf(autoSpeed)
+            setAutoSpeed(speeds[(idx + 1) % 3])
+          }}>
+            ⚡ {autoSpeed}×
+          </button>
+        )}
       </div>
 
       {/* ── ATB Queue ── */}
