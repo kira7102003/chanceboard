@@ -1546,18 +1546,13 @@ h2 {
   box-shadow: 0 0 0 3px rgba(200,161,90,.07);
 }
 
-/* ── Mobile responsive ──────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE — portrait mobile (≤640px)
+══════════════════════════════════════════════════════════════ */
 @media (max-width: 640px) {
   /* global padding reduction */
   .char-select,
-  .deck-page    { padding: 16px 12px; }
-
-  /* char grid: 2 columns on phone */
-  .char-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-  .char-portrait-box { height: 120px; }
-  .char-card-info { padding: 7px 8px 10px; }
-  .char-name  { font-size: 11px; }
-  .char-title { font-size: 9px; }
+  .deck-page    { padding: 12px 10px; gap: 8px; }
 
   /* char info popover full-width on mobile */
   .char-info-panel { min-width: min(90vw, 340px); max-width: 94vw; padding: 14px 14px; }
@@ -1567,14 +1562,18 @@ h2 {
   .battle-sides { grid-template-columns: 1fr; }
   .battle-side  { padding: 8px 10px; }
   .slots-row    { gap: 4px; padding-top: 40px; }
-  .uc-portrait { height: clamp(90px, 13vh, 150px); }
-  .unit-card   { padding: 5px 6px; }
+  .uc-portrait  { height: clamp(90px, 13vh, 150px); }
+  .unit-card    { padding: 5px 6px; }
   .unit-card-name { font-size: 11px; }
-  .battle-header { padding: 6px 10px; gap: 6px; flex-wrap: wrap; }
+  .battle-header { padding: 4px 8px; gap: 4px; flex-wrap: wrap; }
+  .bh-item { padding: 2px 8px; font-size: 10px; }
 
   /* log panel smaller */
   .log-panel  { font-size: 10px; }
   .log-line   { padding: 2px 6px; }
+
+  /* action bar */
+  .action-bar { padding: 6px 8px; gap: 6px; }
 
   /* admin editor: stack sidebar + editor */
   .adm-body   { flex-direction: column; }
@@ -1587,4 +1586,61 @@ h2 {
 
   /* lobby / char select on phone */
   .lobby-actions { flex-direction: column; }
+
+  /* cs disc: let JS set size; just remove fixed padding */
+  .cs-disc-wrap { padding: 8px 0 40px; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE — landscape mobile (short screens ≤560px tall)
+══════════════════════════════════════════════════════════════ */
+@media (max-height: 560px) {
+  /* charselect: tighter */
+  .char-select  { padding: 6px 10px; gap: 4px; }
+  .cs-disc-wrap { padding: 4px 0 24px; }
+  .cs-filter-bar { gap: 4px; }
+  .cs-filter-btn { padding: 3px 10px; font-size: 11px; }
+
+  /* lobby v2 landscape: panel left-aligned, char smaller */
+  .lobby-v2  { display: flex; flex-direction: row; align-items: stretch; }
+  .lv2-char  { height: 100dvh; opacity: .18; }
+  .lv2-panel { position: static; transform: none; width: 320px;
+               margin: auto 24px auto auto; padding: 0; }
+  .lv2-resources { top: 8px; right: 8px; }
+  .lv2-btn-main { padding: 12px 16px; }
+  .lv2-btn-title { font-size: 15px; }
+  .lv2-grid { gap: 5px; }
+  .lv2-btn-grid { padding: 10px 4px; font-size: 10px; }
+  .lv2-btn-grid span:first-child { font-size: 16px; }
+
+  /* battle landscape: keep 2-col layout but shrink */
+  .battle-header { padding: 3px 8px; }
+  .atb-queue { padding: 3px 10px; min-height: 28px; }
+  .slots-row { padding-top: 28px; gap: 4px; }
+  .unit-card { padding: 4px 6px; }
+  .uc-portrait { height: clamp(70px, 12vh, 130px); }
+  .unit-card-name { font-size: 10px; margin-bottom: 2px; }
+  .bh-item { padding: 2px 6px; font-size: 10px; }
+  .bh-timer-secs { font-size: 13px; }
+
+  /* action-bar compact */
+  .action-bar { padding: 4px 8px; gap: 4px; }
+  .hand-card  { padding: 4px 6px; }
+
+  /* deck build compact */
+  .deck-page  { padding: 8px; gap: 8px; }
+
+  /* admin on landscape: keep row layout but shrink sidebar */
+  .adm-list { max-width: 120px; min-width: 100px; }
+  .adm-list-item { padding: 6px 8px; gap: 6px; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE — very small (≤400px)
+══════════════════════════════════════════════════════════════ */
+@media (max-width: 400px) {
+  .char-select, .deck-page { padding: 8px 6px; }
+  .lv2-panel { padding: 0 10px; }
+  .cs-filter-btn { padding: 3px 8px; font-size: 10px; }
+  .lobby-card { padding: 20px 18px; min-width: unset; width: calc(100% - 32px); }
 }

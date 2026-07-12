@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { getChars } from '../utils/charStore'
 import { CharPortrait } from './Admin'
@@ -16,18 +16,19 @@ const SUIT_DOT:  Record<string, string>    = { red: '🔴', green: '🟢', blue:
 const SUIT_OF:   Record<string, string>    = { '劍': 'red', '槍': 'green', '法': 'blue', '願': 'yellow' }
 const RANGE_LBL: Record<string, string>    = { '劍': '近戰', '槍': '遠程', '法': '魔法' }
 
-const DISC   = 680
-const CX     = DISC / 2
-const CY     = DISC / 2
-const PORT_W = 86
-const PORT_H = 130
+const BASE_DISC = 680
+const BASE_PORT_W = 86
+const BASE_PORT_H = 130
 
-function discR(n: number) {
-  if (n <= 4)  return 130
-  if (n <= 7)  return 170
-  if (n <= 10) return 210
-  if (n <= 13) return 248
-  return 272
+function discR(n: number, scale: number) {
+  const r = n <= 4 ? 130 : n <= 7 ? 170 : n <= 10 ? 210 : n <= 13 ? 248 : 272
+  return Math.round(r * scale)
+}
+
+function getDiscSize() {
+  const vw = window.innerWidth
+  const vh = window.innerHeight
+  return Math.floor(Math.min(BASE_DISC, vw * 0.96, (vh - 140) * 1.05))
 }
 
 interface Props {
@@ -41,10 +42,24 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
   const ready = selectedCharIds.length === 3
   const [elFilter, setElFilter] = useState<ElFilter>('all')
   const [infoId,   setInfoId]   = useState<string | null>(null)
+  const [disc, setDisc] = useState(getDiscSize)
+
+  useEffect(() => {
+    const onResize = () => setDisc(getDiscSize())
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  const scale  = disc / BASE_DISC
+  const DISC   = disc
+  const CX     = DISC / 2
+  const CY     = DISC / 2
+  const PORT_W = Math.round(BASE_PORT_W * scale)
+  const PORT_H = Math.round(BASE_PORT_H * scale)
 
   const filtered = characters.filter(c => elFilter === 'all' || c.element === elFilter)
   const n = filtered.length
-  const R = discR(n)
+  const R = discR(n, scale)
 
   const infoChar  = infoId ? characters.find(c => c.id === infoId)! : null
   const infoMoves = infoId ? allMoves.filter(m => m.ownerId === infoId) : []
