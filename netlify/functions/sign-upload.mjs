@@ -25,14 +25,15 @@ export const handler = async (event) => {
 
     // Use REST API directly to avoid WebSocket dependency
     const resp = await fetch(
-      `${SUPABASE_URL}/storage/v1/object/upload/sign/${BUCKET}/${path}?upsert=true`,
+      `${SUPABASE_URL}/storage/v1/object/upload/sign/${BUCKET}/${path}`,
       {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${SERVICE_KEY}`,
           'Content-Type': 'application/json',
+          'x-upsert': 'true',
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ upsert: true }),
       }
     )
 
