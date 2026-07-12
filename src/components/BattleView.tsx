@@ -118,7 +118,6 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
 
   const suitInHand: Record<string, number> = { red: 0, green: 0, blue: 0, yellow: 0 }
   for (const c of myHand) if (c.color in suitInHand) suitInHand[c.color]++
-  const flowerHand = myHand.filter(c => !c.isSuitCard)
 
   const atbQueue = [...game.teamA, ...game.teamB]
     .filter(u => u.alive)
@@ -185,62 +184,65 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
           opacity: 0.5,
         }} />
       )}
-      {/* ── Move animation overlay ── */}
+      {/* ── Move animation overlay — directional ── */}
       {moveAnim && (() => {
-        const defSide = moveAnim.attackerSide === 'A' ? 'B' : 'A'
-        const defFlip = defSide === 'A'   // A units face right; when defending show them facing attacker
+        const atkLeft   = moveAnim.attackerSide === 'A'   // A side is on the left
+        const atkFlip   = !atkLeft                         // B attacker faces left (flip)
+        const defFlip   = atkLeft                          // B defender faces left (flip)
+
+        const Portrait = ({ img, name, flip }: { img: string|null; name: string; flip: boolean }) => (
+          <>
+            {img
+              ? <img src={img} className="ma-portrait" alt=""
+                  style={flip ? { transform: 'scaleX(-1)' } : undefined} />
+              : <div className="ma-no-img">{name[0]}</div>
+            }
+            <div className="ma-char-name">{name}</div>
+          </>
+        )
+
+        const AttackerZone = (
+          <div className="ma-zone-attacker">
+            <Portrait img={moveAnim.charImg} name={moveAnim.charName} flip={atkFlip} />
+          </div>
+        )
+
+        const TargetZone = (
+          <div className="ma-zone-target">
+            {moveAnim.isGroup && moveAnim.groupTargets.length > 0
+              ? (
+                <div className="ma-group-row">
+                  {moveAnim.groupTargets.map((t, i) => (
+                    <div key={i}>
+                      <Portrait img={t.charImg} name={t.name} flip={defFlip} />
+                    </div>
+                  ))}
+                </div>
+              )
+              : moveAnim.targetName
+                ? <Portrait img={moveAnim.targetCharImg} name={moveAnim.targetName} flip={defFlip} />
+                : <div className="ma-no-img" style={{ opacity: .15 }}>⚔</div>
+            }
+          </div>
+        )
+
         return (
           <div className="move-anim-overlay" key={animKey}>
-            {/* Direction bar */}
-            <div className="ma-direction">
-              <span className={`ma-dir-side ma-dir-${moveAnim.attackerSide}`}>{moveAnim.attackerSide}</span>
-              <span className="ma-dir-arrow">⚔</span>
-              <span className={`ma-dir-side ma-dir-${defSide}`}>{defSide}</span>
-            </div>
+            <div className="ma-battle-row">
+              {atkLeft ? AttackerZone : TargetZone}
 
-            {/* Main row: skill | → | target(s) */}
-            <div className="ma-main">
-              {/* Skill side */}
-              <div className="ma-skill-side">
-                {moveAnim.img
-                  ? <img src={moveAnim.img} className="ma-skill-img" alt=""
-                      style={{ filter: `drop-shadow(0 0 18px ${moveAnim.color}88)` }} />
-                  : <div className="ma-skill-placeholder" style={{ color: moveAnim.color }}>⚡</div>
-                }
+              <div className="ma-zone-skill">
+                <div className={`ma-skill-wrap ${atkLeft ? 'ma-slide-ab' : 'ma-slide-ba'}`}>
+                  {moveAnim.img
+                    ? <img src={moveAnim.img} className="ma-skill-img" alt=""
+                        style={{ filter: `drop-shadow(0 0 18px ${moveAnim.color}cc)` }} />
+                    : <div className="ma-skill-empty" style={{ color: moveAnim.color }}>⚡</div>
+                  }
+                </div>
                 <div className="ma-skill-name" style={{ color: moveAnim.color }}>{moveAnim.name}</div>
-                <div className="ma-attacker-name">{moveAnim.charName}</div>
               </div>
 
-              <div className="ma-vs-arrow" style={{ color: moveAnim.color }}>→</div>
-
-              {/* Target side */}
-              <div className="ma-target-side">
-                {moveAnim.isGroup && moveAnim.groupTargets.length > 0 ? (
-                  <div className="ma-group-portraits">
-                    {moveAnim.groupTargets.map((t, i) => (
-                      <div key={i} className="ma-target-portrait-wrap ma-shake">
-                        {t.charImg
-                          ? <img src={t.charImg} className="ma-target-portrait" alt=""
-                              style={defFlip ? { transform: 'scaleX(-1)' } : undefined} />
-                          : <div className="ma-placeholder">{t.name[0]}</div>
-                        }
-                        <div className="ma-target-name">{t.name}</div>
-                      </div>
-                    ))}
-                  </div>
-                ) : moveAnim.targetName ? (
-                  <div className="ma-target-portrait-wrap ma-shake">
-                    {moveAnim.targetCharImg
-                      ? <img src={moveAnim.targetCharImg} className="ma-target-portrait" alt=""
-                          style={defFlip ? { transform: 'scaleX(-1)' } : undefined} />
-                      : <div className="ma-placeholder">{moveAnim.targetName[0]}</div>
-                    }
-                    <div className="ma-target-name">{moveAnim.targetName}</div>
-                  </div>
-                ) : (
-                  <div className="ma-placeholder" style={{ opacity: .15, fontSize: 40 }}>⚔</div>
-                )}
-              </div>
+              {atkLeft ? TargetZone : AttackerZone}
             </div>
           </div>
         )
@@ -390,14 +392,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                             unit={activeUnit}
                             clock={game.clock}
                             suitInHand={suitInHand}
-                            flowerHand={flowerHand}
-                            isOpen={true}
-                            pendingSlot={getPendingSlot(activeUnit)}
-                            onToggle={() => {}}
                             onMove={slot => handleMoveClick(activeUnit, slot)}
-                            onPendingMove={s => setPendingSlots(prev => ({ ...prev, [activeUnit.id]: s }))}
-                            onPass={() => { applyPendingMove(activeUnit); onPass(activeUnit.id) }}
-                            onPlayCard={onPlayCard}
                           />
                         </>
                       )
@@ -405,8 +400,20 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                   : <div className="action-idle">等待行動…</div>
               }
             </div>
-            {/* Hand panel */}
-            <HandPanel hand={myHand} onPlayCard={onPlayCard} onDiscardCard={onDiscardCard} />
+            {/* Hand panel + position buttons */}
+            <HandPanel
+              hand={myHand}
+              onPlayCard={onPlayCard}
+              onDiscardCard={onDiscardCard}
+              activeUnit={readyUnits.length > 0 ? readyUnits[0] : null}
+              pendingSlot={readyUnits.length > 0 ? getPendingSlot(readyUnits[0]) : undefined}
+              onPendingMove={s => {
+                if (readyUnits.length > 0) setPendingSlots(prev => ({ ...prev, [readyUnits[0].id]: s }))
+              }}
+              onPass={() => {
+                if (readyUnits.length > 0) { applyPendingMove(readyUnits[0]); onPass(readyUnits[0].id) }
+              }}
+            />
           </div>
         )}
       </div>
@@ -463,115 +470,65 @@ function UnitCard({ unit, clock, onClick, selectable, highlighted, isPreview }: 
 
 // ─── ReadyUnitPanel ──────────────────────────────────────────────────────────
 
-function ReadyUnitPanel({ unit, clock, suitInHand, flowerHand, isOpen,
-  pendingSlot, onToggle, onMove, onPendingMove, onPass, onPlayCard }: {
+function ReadyUnitPanel({ unit, clock, suitInHand, onMove }: {
   unit: Unit; clock: number
-  suitInHand: Record<string, number>; flowerHand: Card[]
-  isOpen: boolean
-  pendingSlot: 1|2|3
-  onToggle: () => void; onMove: (s: MoveSlot) => void
-  onPendingMove: (s: 1|2|3) => void; onPass: () => void
-  onPlayCard: (id: string) => void
+  suitInHand: Record<string, number>
+  onMove: (s: MoveSlot) => void
 }) {
   const [hoveredSlot, setHoveredSlot] = useState<MoveSlot | null>(null)
   const [popAnchor,  setPopAnchor]   = useState<DOMRect | null>(null)
   const hoveredMove = hoveredSlot ? unit.moves[hoveredSlot] : null
-  const pendingLabel = getSlotLabel(unit.side, pendingSlot)
-  const moved = pendingSlot !== unit.slot
+
   return (
     <div className="rup">
-      <div className="rup-hdr" onClick={onToggle}>
+      <div className="rup-hdr" style={{ cursor: 'default' }}>
         <b style={{ color: EL_COLOR[unit.element] }}>{unit.name}</b>
-        <span className="rup-pos">
-          {moved
-            ? <>{getSlotLabel(unit.side, unit.slot)} → <b style={{ color: DIST_COLOR[pendingLabel] }}>{pendingLabel}</b></>
-            : <>目前在 {getSlotLabel(unit.side, unit.slot)}</>
-          }
-        </span>
-        <span className="rup-chev">{isOpen ? '▲' : '▼'}</span>
+        <span className="rup-pos">目前在 {getSlotLabel(unit.side, unit.slot)}</span>
       </div>
+      <div className="rup-body">
+        <div className="rup-skills-grid">
+          {MOVE_SLOTS.map(slot => {
+            const move = unit.moves[slot]
+            if (!move) return null
+            const sKey   = SUIT_FOR[slot]
+            const have   = sKey ? (suitInHand[sKey] ?? 0) : 999
+            const lib    = unit.statuses.some(s => s.key === 'liberated')
+            const need   = lib ? 1 : (move.condition ?? 1)
+            const canUse = !sKey || have >= need
+            const onCD   = (unit.moveCooldownUntil[move.id] ?? 0) > clock
+            const ok     = canUse && !onCD
+            const skillImg = getMoveImg(move.id)
 
-      {isOpen && (
-        <div className="rup-body">
-          <div className="rup-cols">
-            {/* Left: position buttons + PASS */}
-            <div className="rup-left">
-              <div className="section-label" style={{ marginBottom: 4 }}>移動</div>
-              {([1,2,3] as (1|2|3)[]).map(s => {
-                const tooFar = Math.abs(s - unit.slot) > 1
-                const label = getSlotLabel(unit.side, s)
-                return (
-                  <button key={s}
-                    className={`btn sm ${pendingSlot === s ? 'primary' : ''}`}
-                    disabled={tooFar}
-                    onClick={() => !tooFar && onPendingMove(s)}>
-                    {label}
-                  </button>
-                )
-              })}
-              <button className="btn danger rup-pass" onClick={onPass}>PASS</button>
-            </div>
-
-            {/* Right: skill image cards + flower cards */}
-            <div className="rup-right">
-              <div className="rup-skills-grid">
-                {MOVE_SLOTS.map(slot => {
-                  const move = unit.moves[slot]
-                  if (!move) return null
-                  const sKey   = SUIT_FOR[slot]
-                  const have   = sKey ? (suitInHand[sKey] ?? 0) : 999
-                  const lib    = unit.statuses.some(s => s.key === 'liberated')
-                  const need   = lib ? 1 : (move.condition ?? 1)
-                  const canUse = !sKey || have >= need
-                  const onCD   = (unit.moveCooldownUntil[move.id] ?? 0) > clock
-                  const ok     = canUse && !onCD
-                  const skillImg = getMoveImg(move.id)
-
-                  return (
-                    <button
-                      key={slot}
-                      className={`btn skill-btn ${!ok ? 'skill-dim' : ''}`}
-                      style={{ borderColor: ok ? SLOT_COLOR[slot] : '#2a2a3e' }}
-                      onClick={() => ok && onMove(slot)}
-                      onMouseEnter={e => { setHoveredSlot(slot); setPopAnchor(e.currentTarget.getBoundingClientRect()) }}
-                      onMouseLeave={() => { setHoveredSlot(null); setPopAnchor(null) }}
-                    >
-                      {skillImg && (
-                        <div className="skill-img-wrap">
-                          <img src={skillImg} className="skill-img" alt="" />
-                          {onCD && <span className="skill-cd-overlay">CD</span>}
-                        </div>
-                      )}
-                      <div className="skill-top">
-                        <span style={{ color: ok ? SLOT_COLOR[slot] : '#444', fontWeight: 800 }}>
-                          {SLOT_LABEL[slot]}
-                        </span>
-                        {sKey && (
-                          <span className={canUse ? 'skill-ok' : 'skill-ng'}>{have}/{need}</span>
-                        )}
-                        {!skillImg && onCD && <span className="skill-cd">CD</span>}
-                      </div>
-                      <div className="skill-name">{move.name}</div>
-                    </button>
-                  )
-                })}
-              </div>
-
-              {/* Flower hand */}
-              {flowerHand.length > 0 && (
-                <div className="rup-flowers">
-                  <div className="section-label" style={{ marginBottom: 3 }}>花牌</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                    {flowerHand.map((c, i) => (
-                      <CardChip key={`${c.id}-${i}`} card={c} onClick={() => onPlayCard(c.id)} />
-                    ))}
+            return (
+              <button
+                key={slot}
+                className={`btn skill-btn ${!ok ? 'skill-dim' : ''}`}
+                style={{ borderColor: ok ? SLOT_COLOR[slot] : '#2a2a3e' }}
+                onClick={() => ok && onMove(slot)}
+                onMouseEnter={e => { setHoveredSlot(slot); setPopAnchor(e.currentTarget.getBoundingClientRect()) }}
+                onMouseLeave={() => { setHoveredSlot(null); setPopAnchor(null) }}
+              >
+                {skillImg && (
+                  <div className="skill-img-wrap">
+                    <img src={skillImg} className="skill-img" alt="" />
+                    {onCD && <span className="skill-cd-overlay">CD</span>}
                   </div>
+                )}
+                <div className="skill-top">
+                  <span style={{ color: ok ? SLOT_COLOR[slot] : '#444', fontWeight: 800 }}>
+                    {SLOT_LABEL[slot]}
+                  </span>
+                  {sKey && (
+                    <span className={canUse ? 'skill-ok' : 'skill-ng'}>{have}/{need}</span>
+                  )}
+                  {!skillImg && onCD && <span className="skill-cd">CD</span>}
                 </div>
-              )}
-            </div>
-          </div>
+                <div className="skill-name">{move.name}</div>
+              </button>
+            )
+          })}
         </div>
-      )}
+      </div>
       {hoveredMove && hoveredSlot && popAnchor && (
         <MoveInfoBox move={hoveredMove} slot={hoveredSlot} anchor={popAnchor} />
       )}
@@ -583,25 +540,49 @@ function ReadyUnitPanel({ unit, clock, suitInHand, flowerHand, isOpen,
 
 const HP_ICON: Record<string, string> = { red: '劍', green: '槍', blue: '法', yellow: '院' }
 
-function HandPanel({ hand, onPlayCard, onDiscardCard }: {
+function HandPanel({ hand, onPlayCard, onDiscardCard, activeUnit, pendingSlot, onPendingMove, onPass }: {
   hand: Card[]
   onPlayCard: (id: string) => void
   onDiscardCard: (id: string) => void
+  activeUnit?: Unit | null
+  pendingSlot?: 1|2|3
+  onPendingMove?: (s: 1|2|3) => void
+  onPass?: () => void
 }) {
   return (
     <div className="hand-panel">
-      <div className="hp-label">手牌 <span className="hp-hint">（× 棄牌，下回合補）</span></div>
-      <div className="hp-chips">
-        {hand.map((card, i) => (
-          <div key={`${card.id}-${i}`}
-               className={`hp-chip hp-${card.color === 'flower' ? 'flower' : card.color}`}>
-            {card.isSuitCard
-              ? <span className="hp-icon">{HP_ICON[card.color]}</span>
-              : <span className="hp-icon hp-flower-name" onClick={() => onPlayCard(card.id)}>花 {card.name}</span>
-            }
-            <button className="hp-discard" title="棄牌" onClick={() => onDiscardCard(card.id)}>×</button>
+      <div className="hp-label">手牌 <span className="hp-hint">（× 棄牌）</span></div>
+      <div className="hp-body">
+        <div className="hp-chips">
+          {hand.map((card, i) => (
+            <div key={`${card.id}-${i}`}
+                className={`hp-chip hp-${card.color === 'flower' ? 'flower' : card.color}`}>
+              {card.isSuitCard
+                ? <span className="hp-icon">{HP_ICON[card.color]}</span>
+                : <span className="hp-icon hp-flower-name" onClick={() => onPlayCard(card.id)}>花 {card.name}</span>
+              }
+              <button className="hp-discard" title="棄牌" onClick={() => onDiscardCard(card.id)}>×</button>
+            </div>
+          ))}
+        </div>
+
+        {activeUnit && (
+          <div className="hp-pos-col">
+            {([1,2,3] as const).map(s => {
+              const tooFar = Math.abs(s - activeUnit.slot) > 1
+              const label  = getSlotLabel(activeUnit.side, s)
+              return (
+                <button key={s}
+                  className={`btn sm ${pendingSlot === s ? 'primary' : ''}`}
+                  disabled={tooFar}
+                  onClick={() => !tooFar && onPendingMove?.(s)}>
+                  {label}
+                </button>
+              )
+            })}
+            <button className="btn danger hp-pos-pass" onClick={onPass}>PASS</button>
           </div>
-        ))}
+        )}
       </div>
     </div>
   )

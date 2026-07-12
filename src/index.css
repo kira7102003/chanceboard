@@ -1068,7 +1068,7 @@ h2 {
 }
 .uc-portrait-img {
   position: absolute; inset: 0; width: 100%; height: 100%;
-  object-fit: cover; object-position: center top;
+  object-fit: contain; object-position: center bottom;
   display: block;
 }
 .uc-portrait-name {
@@ -1318,9 +1318,9 @@ h2 {
 
 /* ── Hand panel ─────────────────────────────────────────────── */
 .hand-panel {
-  flex-shrink: 0; height: 108px;
+  flex-shrink: 0; height: 116px;
   display: flex; flex-direction: column; gap: 4px;
-  padding: 5px 10px; overflow: hidden;
+  padding: 5px 8px 5px 10px; overflow: hidden;
   background: linear-gradient(180deg, rgba(8,9,20,.98) 0%, rgba(4,5,13,.98) 100%);
   border-top: 1px solid rgba(200,161,90,.07);
 }
@@ -1328,10 +1328,24 @@ h2 {
   font-size: 7px; font-weight: 800; letter-spacing: 1.5px;
   color: rgba(200,161,90,.2); text-transform: uppercase; flex-shrink: 0;
 }
+.hp-body {
+  display: flex; gap: 8px; align-items: stretch; flex: 1; min-height: 0;
+}
 .hp-chips {
-  display: flex; flex-wrap: wrap; gap: 5px;
+  flex: 1; display: flex; flex-wrap: wrap; gap: 5px;
   align-content: flex-start; overflow-y: auto;
   scrollbar-width: thin; scrollbar-color: rgba(200,161,90,.1) transparent;
+}
+/* Position + PASS column on right */
+.hp-pos-col {
+  flex-shrink: 0; display: flex; flex-direction: column; gap: 3px; align-items: stretch;
+  padding-left: 8px; border-left: 1px solid rgba(200,161,90,.1); min-width: 42px;
+}
+.hp-pos-col .btn.sm {
+  padding: 2px 6px; font-size: 11px; font-weight: 800;
+}
+.hp-pos-pass {
+  margin-top: 3px; padding: 2px 5px; font-size: 10px;
 }
 .hp-chip {
   position: relative; width: 52px; height: 62px;
@@ -1506,113 +1520,116 @@ h2 {
   100%   { opacity: 0; }
 }
 
-/* ── Move animation overlay (redesigned) ────────────────────── */
+/* ── Move animation overlay — directional attack ──────────── */
 .move-anim-overlay {
   position: fixed; inset: 0; z-index: 9999; pointer-events: none;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 18px;
-  background: rgba(0,0,0,.82);
+  display: flex; align-items: flex-end; justify-content: center;
+  padding-bottom: 13vh;
+  background: rgba(0,0,0,0);
   animation: moveOverlayFade 1.9s ease-in-out forwards;
 }
 
-/* Direction bar: A ⚔ B */
-.ma-direction {
-  display: flex; align-items: center; gap: 14px;
-  font-size: 13px; font-weight: 900; letter-spacing: 3px;
-  animation: maFadeUp 1.9s ease-in-out forwards;
-}
-.ma-dir-side {
-  padding: 3px 16px; border-radius: 20px;
-  font-size: 14px; letter-spacing: 4px;
-}
-.ma-dir-A { color: #aadcff; background: rgba(90,174,238,.12); border: 1px solid rgba(90,174,238,.3); }
-.ma-dir-B { color: #ffbb88; background: rgba(238,120,60,.12); border: 1px solid rgba(238,120,60,.3); }
-.ma-dir-arrow { color: rgba(200,161,90,.5); font-size: 18px; }
-
-/* Main row */
-.ma-main {
+/* Three-zone horizontal row: left | skill | right */
+.ma-battle-row {
   display: flex; align-items: flex-end; justify-content: center;
-  gap: 24px; width: 100%; max-width: min(860px, 94vw); padding: 0 16px;
+  width: 100%; max-width: min(920px, 96vw); padding: 0 8px; gap: 0;
 }
 
-/* Left: skill image + name */
-.ma-skill-side {
-  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px;
-  animation: maFadeUp 1.9s ease-in-out forwards;
+/* Attacker zone — character fades in on their side */
+.ma-zone-attacker {
+  flex: 2; display: flex; flex-direction: column; align-items: center; gap: 7px;
+  animation: maCharIn 1.9s ease-in-out forwards;
 }
-.ma-skill-img {
-  width: 100%; max-width: 200px; height: clamp(120px, 24vh, 210px);
-  object-fit: contain; border-radius: 10px;
-  background: rgba(10,10,22,.5);
+
+/* Target zone — fades in, then shakes when skill arrives */
+.ma-zone-target {
+  flex: 2; display: flex; flex-direction: column; align-items: center; gap: 7px;
+  animation: maCharIn 1.9s ease-in-out forwards, maShake .52s .5s ease-in-out;
 }
-.ma-skill-placeholder {
-  width: 100%; max-width: 200px; height: clamp(120px, 24vh, 210px);
-  border-radius: 10px; background: rgba(30,30,50,.5);
+
+/* Group targets row inside target zone */
+.ma-group-row {
+  display: flex; gap: 5px; align-items: flex-end; justify-content: center; width: 100%;
+}
+.ma-group-row > div {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 7px;
+}
+
+/* Character portrait */
+.ma-portrait {
+  width: 100%; max-width: 180px; height: clamp(140px, 28vh, 260px);
+  object-fit: contain; object-position: center bottom;
+  border-radius: 8px; display: block;
+}
+.ma-no-img {
+  width: 100%; max-width: 180px; height: clamp(140px, 28vh, 260px);
+  border-radius: 8px; background: rgba(30,30,50,.5);
   display: flex; align-items: center; justify-content: center;
-  font-size: 4rem;
+  font-size: 2.4rem; color: rgba(200,200,240,.3);
+}
+.ma-char-name {
+  font-size: 11px; color: rgba(200,200,240,.6); letter-spacing: 1px; text-align: center;
+}
+
+/* Center skill zone — image slides toward target */
+.ma-zone-skill {
+  flex: 2.5; display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+.ma-skill-wrap {
+  width: 100%; display: flex; justify-content: center;
+}
+/* A attacks B → skill flies right */
+.ma-skill-wrap.ma-slide-ab {
+  animation: maSlideAB 1.7s cubic-bezier(.22,.6,.38,1) forwards;
+}
+/* B attacks A → skill flies left */
+.ma-skill-wrap.ma-slide-ba {
+  animation: maSlideBA 1.7s cubic-bezier(.22,.6,.38,1) forwards;
+}
+@keyframes maSlideAB {
+  0%   { opacity: 0; transform: translateX(-28vw) scale(.55) rotate(-8deg); }
+  16%  { opacity: 1; transform: translateX(-7vw)  scale(.95) rotate(-2deg); }
+  72%  { opacity: 1; transform: translateX(20vw)  scale(1.18) rotate(3deg); }
+  100% { opacity: 0; transform: translateX(32vw)  scale(.45) rotate(6deg); }
+}
+@keyframes maSlideBA {
+  0%   { opacity: 0; transform: translateX(28vw)  scale(.55) rotate(8deg); }
+  16%  { opacity: 1; transform: translateX(7vw)   scale(.95) rotate(2deg); }
+  72%  { opacity: 1; transform: translateX(-20vw) scale(1.18) rotate(-3deg); }
+  100% { opacity: 0; transform: translateX(-32vw) scale(.45) rotate(-6deg); }
+}
+
+.ma-skill-img {
+  max-width: 148px; width: 100%; height: clamp(100px, 20vh, 180px);
+  object-fit: contain; border-radius: 10px; background: rgba(10,10,22,.4);
+}
+.ma-skill-empty {
+  width: 120px; height: clamp(100px, 20vh, 180px);
+  border-radius: 10px; background: rgba(30,30,50,.4);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 3.2rem;
 }
 .ma-skill-name {
   font-family: 'Cinzel', 'Microsoft YaHei', serif;
-  font-size: clamp(.95rem, 2.2vw, 1.4rem); font-weight: 700; letter-spacing: 3px;
-  text-shadow: 0 0 40px currentColor, 0 0 14px currentColor, 0 2px 8px rgba(0,0,0,.95);
-  text-align: center;
-}
-.ma-attacker-name {
-  font-size: 11px; color: rgba(200,200,240,.55); letter-spacing: 1px;
+  font-size: clamp(.85rem, 2vw, 1.25rem); font-weight: 700; letter-spacing: 3px;
+  text-shadow: 0 0 40px currentColor, 0 0 12px currentColor, 0 2px 8px rgba(0,0,0,.95);
+  text-align: center; animation: maCharIn 1.9s forwards;
 }
 
-/* Center arrow */
-.ma-vs-arrow {
-  font-size: clamp(1.6rem, 4vw, 2.4rem); font-weight: 900;
-  text-shadow: 0 0 20px currentColor;
-  flex-shrink: 0; padding-bottom: 48px;
-  animation: maFadeUp 1.9s ease-in-out forwards;
-}
-
-/* Right: target portrait(s) */
-.ma-target-side {
-  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px;
-}
-.ma-group-portraits {
-  display: flex; gap: 8px; align-items: flex-end; justify-content: center; width: 100%;
-}
-.ma-target-portrait-wrap {
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
-  flex: 1; min-width: 0;
-}
-.ma-target-portrait {
-  width: 100%; max-width: 200px; height: clamp(130px, 26vh, 230px);
-  object-fit: cover; object-position: top center;
-  border-radius: 10px;
-  box-shadow: 0 0 28px rgba(0,0,0,.9), 0 0 10px rgba(238,80,80,.2);
-}
-.ma-target-name {
-  font-size: 12px; color: rgba(200,200,240,.7); letter-spacing: 1px; text-align: center;
-}
-.ma-placeholder {
-  width: 100%; max-width: 200px; height: clamp(130px, 26vh, 230px);
-  border-radius: 10px; background: rgba(30,30,50,.5);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 2.6rem; color: rgba(200,200,240,.28);
-}
-
-/* Shake: target portrait rocks on hit */
-.ma-shake {
-  animation: maFadeUp 1.9s ease-in-out forwards, maShake .55s .25s ease-in-out;
-}
-@keyframes maShake {
-  0%,100% { transform: translateX(0) rotate(0deg); }
-  15%  { transform: translateX(-11px) rotate(-3deg); }
-  32%  { transform: translateX(9px)  rotate(2deg); }
-  50%  { transform: translateX(-7px) rotate(-1.5deg); }
-  68%  { transform: translateX(5px)  rotate(1deg); }
-  85%  { transform: translateX(-2px); }
-}
-@keyframes maFadeUp {
-  0%   { opacity: 0; transform: translateY(10px) scale(.93); }
-  16%  { opacity: 1; transform: translateY(0) scale(1); }
+/* Shared keyframes */
+@keyframes maCharIn {
+  0%   { opacity: 0; transform: translateY(8px) scale(.92); }
+  14%  { opacity: 1; transform: translateY(0) scale(1); }
   78%  { opacity: 1; }
   100% { opacity: 0; }
+}
+@keyframes maShake {
+  0%,100% { transform: translateX(0) rotate(0); }
+  14%  { transform: translateX(-13px) rotate(-3.5deg); }
+  30%  { transform: translateX(10px)  rotate(2.5deg); }
+  50%  { transform: translateX(-7px)  rotate(-1.5deg); }
+  68%  { transform: translateX(5px)   rotate(1deg); }
+  85%  { transform: translateX(-2px); }
 }
 
 /* ══════════════════════════════════════════════════════════════
