@@ -74,9 +74,8 @@ export default function App() {
     }
   }, [appPhase])
 
-  const activeBgUrl = !showAdmin
-    ? (appPhase === 'battle' || appPhase === 'end' ? battleBgUrl : getBgUrl('main'))
-    : null
+  const activeBgUrl = !showAdmin && appPhase !== 'battle' && appPhase !== 'end'
+    ? getBgUrl('main') : null
 
   // ── Controllers ──────────────────────────────────────────────────────────────
 
@@ -212,6 +211,7 @@ export default function App() {
           onToggleAuto={localToggleAuto}
           onEnd={handleEnd}
           onSoloReplay={isAIBattle ? handleAIReplay : handleSoloReplay}
+          bgUrl={battleBgUrl}
         />
       )}
 

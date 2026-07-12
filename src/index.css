@@ -598,7 +598,7 @@ h2 {
 ══════════════════════════════════════════════════════════════ */
 .battle {
   flex: 1; display: flex; flex-direction: column; height: 100dvh; overflow: hidden;
-  background: var(--bg);
+  background: var(--bg); position: relative;
 }
 
 /* ── Header ─────────────────────────────────────────────────── */

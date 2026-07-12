@@ -35,6 +35,7 @@ interface Props {
   onToggleAuto:  () => void
   onEnd:         () => void
   onSoloReplay?: () => void
+  bgUrl?:        string | null
 }
 
 interface MoveAnim {
@@ -50,7 +51,7 @@ interface MoveAnim {
   color: string
 }
 
-export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onExecuteMove, onPass, onToggleAuto, onEnd, onSoloReplay }: Props) {
+export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onExecuteMove, onPass, onToggleAuto, onEnd, onSoloReplay, bgUrl }: Props) {
   const { game, mySide, isSolo, isAIBattle, soloScore } = useGameStore()
   const logRef         = useRef<HTMLDivElement>(null)
   const animTimer      = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -174,6 +175,14 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
 
   return (
     <div className="battle">
+      {bgUrl && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none',
+          backgroundImage: `url(${bgUrl})`,
+          backgroundSize: 'cover', backgroundPosition: 'center',
+          opacity: 0.5,
+        }} />
+      )}
       {/* ── Move animation overlay ── */}
       {moveAnim && (
         <div className="move-anim-overlay" key={animKey}>
