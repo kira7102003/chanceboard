@@ -3,8 +3,8 @@ import { supabase } from '../utils/supabase'
 
 export default function Login() {
   const [mode,    setMode]    = useState<'login' | 'register'>('login')
-  const [email,   setEmail]   = useState('')
-  const [pass,    setPass]    = useState('')
+  const [email,   setEmail]   = useState('danny7102003@gmail.com')
+  const [pass,    setPass]    = useState('123456789')
   const [msg,     setMsg]     = useState('')
   const [isErr,   setIsErr]   = useState(false)
   const [loading, setLoading] = useState(false)
