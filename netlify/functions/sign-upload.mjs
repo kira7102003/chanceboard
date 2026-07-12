@@ -32,6 +32,7 @@ export const handler = async (event) => {
           'Authorization': `Bearer ${SERVICE_KEY}`,
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({}),
       }
     )
 
