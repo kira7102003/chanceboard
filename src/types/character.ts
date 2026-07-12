@@ -17,4 +17,5 @@ export interface Character {
   moveNameWish: string
   passiveName: string
   story?: string
+  enabled?: boolean   // undefined / true = shown in CharSelect; false = hidden
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { getChars, getUrlByKey } from '../utils/charStore'
 import { CharPortrait } from './Admin'
@@ -114,7 +114,8 @@ function CharGallery({ char, selectedIds, onToggle, onClose }: {
 
 // ── Main component ─────────────────────────────────────────────
 export default function CharSelect({ onConfirm, onToggle }: Props) {
-  const characters = getChars()
+  const allChars   = getChars()
+  const characters = allChars.filter(c => c.enabled !== false)
   const { selectedCharIds, mySide, playerCount } = useGameStore()
   const ready = selectedCharIds.length === 3
 
@@ -125,12 +126,23 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
   const [dragPixels,   setDragPixels]   = useState(0)
   const [wasDragging,  setWasDragging]  = useState(false)
   const [vw,           setVw]           = useState(window.innerWidth)
-  const [vh,           setVh]           = useState(window.innerHeight)
+  const [carouselH,    setCarouselH]    = useState(0)
+  const carouselRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const onResize = () => { setVw(window.innerWidth); setVh(window.innerHeight) }
+    const onResize = () => setVw(window.innerWidth)
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  useEffect(() => {
+    const el = carouselRef.current; if (!el) return
+    const obs = new ResizeObserver(entries => {
+      const h = entries[0]?.contentRect.height ?? 0
+      if (h > 0) setCarouselH(h)
+    })
+    obs.observe(el)
+    return () => obs.disconnect()
   }, [])
 
   const filtered = characters.filter(c => elFilter === 'all' || c.element === elFilter)
@@ -141,13 +153,12 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
     if (n > 0) setFocusIdx(p => (p >= n ? 0 : p))
   }, [n])
 
-  // Sizing — fill available height
-  const isLandscape = vh < 500
+  // Sizing — use measured carousel height to avoid overflow
   const isMobile    = vw < 640
-  // Overhead = everything except the carousel (header, filter, nav, selected, confirm, padding)
-  const overhead = isLandscape ? 80 : isMobile ? 148 : 130
-  const availH   = Math.max(220, vh - overhead)
-  // Portrait fills available height; width capped so it doesn't overflow screen
+  const isLandscape = window.innerHeight < 500
+  // availH = measured carousel height (from ResizeObserver), fallback if not yet measured
+  const availH = carouselH > 50 ? carouselH : Math.max(180, window.innerHeight - (isMobile ? 180 : 210))
+  // Portrait width capped so it doesn't overflow screen width
   const CW = Math.min(
     Math.round(availH / 1.55),
     Math.round(vw * (isLandscape ? 0.45 : isMobile ? 0.80 : 0.78))
@@ -248,6 +259,7 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
 
       {/* ── Carousel */}
       <div
+        ref={carouselRef}
         className="cs-carousel"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -347,7 +359,8 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
         {!ready && selectedCharIds.length === 0 && <span className="hint">還需 3 位</span>}
         {selectedCharIds.map((id, i) => {
           const col  = ['#e85533', '#ddaa22', '#33aacc'][i]
-          const char = characters.find(c => c.id === id)!
+          const char = allChars.find(c => c.id === id)
+          if (!char) return null
           return (
             <span key={id} className="cs-chip" style={{ borderColor: `${col}66` }}
               onClick={() => onToggle(id)}>

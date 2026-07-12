@@ -130,8 +130,10 @@ export default function Admin({ onBack }: Props) {
             </div>
           </div>
           <div style={{ height: 1, background: 'rgba(200,161,90,.12)', margin: '2px 0' }} />
-          {chars.map((c, i) => (            <div key={c.id}
+          {chars.map((c, i) => (
+            <div key={c.id}
               className={`adm-list-item ${c.id === selId ? 'active' : ''}`}
+              style={{ opacity: c.enabled === false ? 0.45 : 1 }}
               onClick={() => { setSelId(c.id); setTab('basic') }}
             >
               <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -141,6 +143,13 @@ export default function Admin({ onBack }: Props) {
                   background: 'rgba(0,0,0,.65)', color: '#aaa',
                   fontSize: 9, lineHeight: 1, padding: '1px 3px', borderRadius: 3,
                 }}>{i + 1}</span>
+                {c.enabled === false && (
+                  <span style={{
+                    position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', background: 'rgba(0,0,0,.5)',
+                    fontSize: 10, color: '#888', borderRadius: 6,
+                  }}>停用</span>
+                )}
               </div>
               <div className="adm-list-text">
                 <div className="adm-list-name" style={{ color: EL_COLOR[c.element] }}>{c.name}</div>
@@ -261,6 +270,19 @@ function BasicTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<C
                   <option value="male">男</option>
                   <option value="female">女</option>
                 </select>
+              </label>
+              <label className="adm-field" style={{ gridColumn: '1 / -1' }}>
+                <span>選角顯示</span>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                  <input type="checkbox"
+                    checked={char.enabled !== false}
+                    onChange={e => onUpdate({ enabled: e.target.checked ? undefined : false })}
+                    style={{ width: 16, height: 16, cursor: 'pointer' }}
+                  />
+                  <span style={{ color: char.enabled === false ? '#666' : '#c8a15a', fontSize: 13 }}>
+                    {char.enabled === false ? '停用（不顯示在選角畫面）' : '啟用中（顯示在選角畫面）'}
+                  </span>
+                </label>
               </label>
             </div>
           </div>
@@ -636,10 +658,10 @@ function ImageCrop({ storageKey, cropW = PORTRAIT_W, cropH = PORTRAIT_H, onSave 
     }
     const d = { w: Math.round(rw), h: Math.round(rh), imgX: Math.round(imgX), imgY: Math.round(imgY) }
     setDisp(d); dispRef.current = d
-    // initialise portrait crop box: try 70% of stage height, clamp to 90% of width
-    let bh_init = Math.round(rh * 0.7)
-    let bw_init = Math.round(bh_init * CROP_RATIO)
-    if (bw_init > rw * 0.9) { bw_init = Math.round(rw * 0.9); bh_init = Math.round(bw_init / CROP_RATIO) }
+    // default to maximum: fill as much of the rendered image as possible
+    let bw_init = rw
+    let bh_init = Math.round(bw_init / CROP_RATIO)
+    if (bh_init > rh) { bh_init = rh; bw_init = Math.round(bh_init * CROP_RATIO) }
     const nb = { x: Math.round((rw - bw_init) / 2), y: Math.round((rh - bh_init) / 2), w: bw_init }
     setBox(nb); boxRef.current = nb
   }, [])
