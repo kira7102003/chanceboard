@@ -177,7 +177,7 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
     if (dragStartX === null) return
     const d = e.clientX - dragStartX
     setDragPixels(d)
-    if (Math.abs(d) > 7) setWasDragging(true)
+    if (Math.abs(d) > 14) setWasDragging(true)
   }
   function onPointerUp() {
     if (dragStartX === null) return
@@ -190,9 +190,8 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
   function handleCharClick(charId: string, off: number) {
     if (wasDragging) return
     if (Math.abs(off) < 0.5) {
-      // Center char: open 大典 gallery (select/deselect from inside)
-      const cdata = characters.find(c => c.id === charId)
-      if (cdata) setGalleryChar(cdata)
+      // Center char: directly toggle selection
+      onToggle(charId)
     } else {
       setFocusIdx(filtered.findIndex(c => c.id === charId))
     }
@@ -309,7 +308,8 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
         {focusedChar && (
           <button
             className="cs-info-btn"
-            onClick={() => setGalleryChar(focusedChar)}
+            onPointerDown={e => e.stopPropagation()}
+            onClick={e => { e.stopPropagation(); setGalleryChar(focusedChar) }}
           >
             資訊
           </button>
