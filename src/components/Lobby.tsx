@@ -1,17 +1,23 @@
 import { useState } from 'react'
 import type { SavedSession } from '../hooks/useRoom'
+import { getChars, getUrlByKey } from '../utils/charStore'
 
 interface Props {
-  onJoin:     (roomId: string) => void
-  onSolo:     () => void
-  onAIBattle: () => void
+  onJoin:       (roomId: string) => void
+  onSolo:       () => void
+  onAIBattle:   () => void
   savedSession: SavedSession | null
-  onRejoin:   () => void
-  onAdmin:    () => void
+  onRejoin:     () => void
+  onAdmin:      () => void
 }
 
 export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejoin, onAdmin }: Props) {
-  const [input, setInput] = useState('')
+  const [input,      setInput]      = useState('')
+  const [showOnline, setShowOnline] = useState(false)
+  const [imgFailed,  setImgFailed]  = useState(false)
+
+  const firstChar  = getChars()[0]
+  const charImgUrl = firstChar ? getUrlByKey(`cb_img_${firstChar.id}`) : null
 
   const create = () => {
     const id = Math.random().toString(36).slice(2, 8).toUpperCase()
@@ -23,58 +29,86 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
     if (id.length >= 4) onJoin(id)
   }
 
-  return (
-    <div className="lobby">
-      <div style={{ textAlign: 'center' }}>
-        <h1 className="title">奇蹟之盤 <span>Chanceboard</span></h1>
-        <p style={{ color: '#444466', fontSize: 12, marginTop: 6, letterSpacing: 1 }}>
-          TWO-PLAYER TACTICAL CARD BATTLE
-        </p>
-      </div>
+  const GRID_BTNS = [
+    { icon: '✨', label: '召喚',     action: undefined as (() => void) | undefined },
+    { icon: '📚', label: '收藏',     action: undefined },
+    { icon: '🛒', label: '商店',     action: undefined },
+    { icon: '🤝', label: '雙人對戰', action: () => setShowOnline(v => !v) },
+    { icon: '🛡', label: '隊伍',     action: undefined },
+    { icon: '📖', label: '遊戲規則', action: undefined },
+  ]
 
-      {savedSession && (
-        <div className="lobby-card" style={{ borderColor: '#443388', minWidth: 280 }}>
-          <p style={{ textAlign: 'center', color: '#666688', fontSize: 11,
-                      letterSpacing: 1, textTransform: 'uppercase' }}>上次的對局</p>
-          <div style={{ textAlign: 'center', fontSize: '2rem', fontWeight: 800,
-                        letterSpacing: '6px', color: '#d8d8f4', margin: '4px 0' }}>
-            {savedSession.roomId}
-          </div>
-          <p style={{ textAlign: 'center', fontSize: 11, color: '#444466' }}>
-            <span className={`side side-${savedSession.side}`}>{savedSession.side} 方</span>
-          </p>
-          <button className="btn primary" onClick={onRejoin}>繼續上局</button>
+  return (
+    <div className="lobby-v2">
+
+      {/* ── Character portrait ──────────────────────────────── */}
+      {charImgUrl && !imgFailed && (
+        <div className="lv2-char">
+          <img src={charImgUrl} alt="" className="lv2-char-img"
+            onError={() => setImgFailed(true)} />
         </div>
       )}
 
-      <div className="lobby-card">
-        <button className="btn solo-btn"  onClick={onSolo}>⚔ 單人遊玩</button>
-        <button className="btn ai-btn"   onClick={onAIBattle}>🤖 AI 對戰觀戰</button>
-        <div className="divider">— 或 —</div>
-        <button className="btn primary" onClick={create}>建立多人房間</button>
-        <div className="join-row">
-          <input
-            className="input"
-            placeholder="輸入代碼"
-            value={input}
-            onChange={e => setInput(e.target.value.toUpperCase())}
-            onKeyDown={e => e.key === 'Enter' && join()}
-            maxLength={8}
-          />
-          <button className="btn" onClick={join}>加入</button>
-        </div>
-        <p style={{ fontSize: 11, color: '#333350', textAlign: 'center' }}>
-          建立房間後把代碼傳給對手，雙方加入即可開始
-        </p>
+      {/* ── Resources (top-right) ───────────────────────────── */}
+      <div className="lv2-resources">
+        <span className="lv2-res">🪙 <b>1320</b></span>
+        <span className="lv2-res">💎 <b>395</b></span>
       </div>
 
-      <button
-        className="btn"
-        style={{ fontSize: 11, color: '#333355', border: '1px solid #222338', background: 'transparent' }}
-        onClick={onAdmin}
-      >
-        ⚙ 資料編輯器
-      </button>
+      {/* ── Menu panel (right) ──────────────────────────────── */}
+      <div className="lv2-panel">
+
+        {/* Primary button */}
+        <button className="lv2-btn-main" onClick={onSolo}>
+          <span className="lv2-btn-icon">⚔</span>
+          <div>
+            <div className="lv2-btn-title">單人對戰</div>
+            <div className="lv2-btn-sub">挑一支隊伍，跟電腦對戰</div>
+          </div>
+        </button>
+
+        {/* 2×3 grid */}
+        <div className="lv2-grid">
+          {GRID_BTNS.map(({ icon, label, action }) => (
+            <button key={label}
+              className={`lv2-btn-grid${action ? '' : ' disabled'}`}
+              onClick={action}
+            >
+              <span>{icon}</span>
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Online submenu */}
+        {showOnline && (
+          <div className="lv2-online">
+            <button className="lv2-btn-sm" onClick={create}>建立多人房間</button>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input className="input" style={{ flex: 1, fontSize: 12 }}
+                placeholder="輸入房間代碼"
+                value={input}
+                onChange={e => setInput(e.target.value.toUpperCase())}
+                onKeyDown={e => e.key === 'Enter' && join()}
+                maxLength={8}
+              />
+              <button className="lv2-btn-sm" style={{ width: 'auto', whiteSpace: 'nowrap' }} onClick={join}>加入</button>
+            </div>
+            <button className="lv2-btn-sm" onClick={onAIBattle}>🤖 AI 對戰觀戰</button>
+            {savedSession && (
+              <button className="lv2-btn-sm" style={{ color: '#9988ee' }} onClick={onRejoin}>
+                繼續上局（{savedSession.roomId}）
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Settings */}
+        <button className="lv2-btn-settings" onClick={onAdmin}>
+          <span>⚙</span><span>設定</span>
+        </button>
+
+      </div>
     </div>
   )
 }
