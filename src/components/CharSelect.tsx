@@ -28,7 +28,10 @@ function discR(n: number, scale: number) {
 function getDiscSize() {
   const vw = window.innerWidth
   const vh = window.innerHeight
-  return Math.floor(Math.min(BASE_DISC, vw * 0.96, (vh - 140) * 1.05))
+  const isLandscape = vw > vh
+  const overhead = isLandscape ? 92 : 140
+  const mult     = isLandscape ? 0.86 : 1.05
+  return Math.floor(Math.min(BASE_DISC, vw * 0.96, (vh - overhead) * mult))
 }
 
 interface Props {
@@ -67,7 +70,7 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
   return (
     <div className="char-select" onClick={() => setInfoId(null)}>
       {/* ── Header ─────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 14 }}>
+      <div className="cs-header">
         <h2 style={{ margin: 0 }}>選擇角色 — <span className={`side side-${mySide}`}>{mySide} 方</span></h2>
         <span className="hint">選 3 位（{selectedCharIds.length}/3）</span>
         {playerCount < 2 && <span className="waiting">等待對手…</span>}
