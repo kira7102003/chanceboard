@@ -206,70 +206,79 @@ export function CharPortrait({ id, size = 48, height: ht, style: sx }: {
 function BasicTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<Character>) => void }) {
   return (
     <div className="adm-basic">
-      <div className="adm-section">
-        <div className="adm-section-label">角色圖片（頭像）</div>
-        <ImageCrop storageKey={`cb_img_${char.id}`} />
-      </div>
+      <div className="adm-basic-cols">
 
-      <div className="adm-section">
-        <div className="adm-section-label">戰場寬幅圖（遊戲內卡片用，建議橫式）</div>
-        <ImageCrop storageKey={`cb_wide_img_${char.id}`} />
-      </div>
-
-      <div className="adm-section">
-        <div className="adm-section-label">基本資料</div>
-        <div className="adm-field-grid">
-          <Field label="名稱"  value={char.name}   onChange={v => onUpdate({ name: v })} />
-          <Field label="稱號"  value={char.title}  onChange={v => onUpdate({ title: v })} />
-          <label className="adm-field">
-            <span>元素</span>
-            <select className="adm-select" value={char.element}
-              onChange={e => onUpdate({ element: e.target.value as Character['element'] })}>
-              <option value="劍">⚔ 劍</option>
-              <option value="槍">🔫 槍</option>
-              <option value="法">✦ 法</option>
-            </select>
-          </label>
-          <label className="adm-field">
-            <span>性別</span>
-            <select className="adm-select" value={char.gender}
-              onChange={e => onUpdate({ gender: e.target.value as Character['gender'] })}>
-              <option value="male">男</option>
-              <option value="female">女</option>
-            </select>
-          </label>
+        {/* ── Left: images ── */}
+        <div className="adm-basic-imgs">
+          <div className="adm-section">
+            <div className="adm-section-label">頭像</div>
+            <ImageCrop storageKey={`cb_img_${char.id}`} />
+          </div>
+          <div className="adm-section">
+            <div className="adm-section-label">戰場寬幅圖</div>
+            <ImageCrop storageKey={`cb_wide_img_${char.id}`} />
+          </div>
         </div>
-      </div>
 
-      <div className="adm-section">
-        <div className="adm-section-label">數值</div>
-        <div className="adm-stats">
-          {(['hp','atk','def','spd'] as const).map(stat => (
-            <div key={stat} className="adm-stat-row">
-              <span className="adm-stat-label">{stat.toUpperCase()}</span>
-              <input type="range" min={1} max={20} className="adm-slider"
-                value={char[stat]}
-                onChange={e => onUpdate({ [stat]: +e.target.value } as Partial<Character>)} />
-              <input type="number" min={1} max={20} className="adm-stat-num"
-                value={char[stat]}
-                onChange={e => onUpdate({ [stat]: Math.min(20, Math.max(1, +e.target.value)) } as Partial<Character>)} />
+        {/* ── Right: data ── */}
+        <div className="adm-basic-data">
+          <div className="adm-section">
+            <div className="adm-section-label">基本資料</div>
+            <div className="adm-field-grid">
+              <Field label="名稱"  value={char.name}   onChange={v => onUpdate({ name: v })} />
+              <Field label="稱號"  value={char.title}  onChange={v => onUpdate({ title: v })} />
+              <label className="adm-field">
+                <span>元素</span>
+                <select className="adm-select" value={char.element}
+                  onChange={e => onUpdate({ element: e.target.value as Character['element'] })}>
+                  <option value="劍">⚔ 劍</option>
+                  <option value="槍">🔫 槍</option>
+                  <option value="法">✦ 法</option>
+                </select>
+              </label>
+              <label className="adm-field">
+                <span>性別</span>
+                <select className="adm-select" value={char.gender}
+                  onChange={e => onUpdate({ gender: e.target.value as Character['gender'] })}>
+                  <option value="male">男</option>
+                  <option value="female">女</option>
+                </select>
+              </label>
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      <div className="adm-section">
-        <div className="adm-section-label">招式名稱</div>
-        <div className="adm-field-grid">
-          {([
-            ['moveNameSword', '⚔ 劍槽'], ['moveNameGun', '🔫 槍槽'],
-            ['moveNameMagic', '✦ 法槽'], ['moveNameWish', '🌠 願槽'],
-            ['passiveName',   '💠 被動'],
-          ] as const).map(([key, label]) => (
-            <Field key={key} label={label} value={(char as any)[key] ?? ''}
-              onChange={v => onUpdate({ [key]: v } as Partial<Character>)} />
-          ))}
+          <div className="adm-section">
+            <div className="adm-section-label">數值</div>
+            <div className="adm-stats">
+              {(['hp','atk','def','spd'] as const).map(stat => (
+                <div key={stat} className="adm-stat-row">
+                  <span className="adm-stat-label">{stat.toUpperCase()}</span>
+                  <input type="range" min={1} max={20} className="adm-slider"
+                    value={char[stat]}
+                    onChange={e => onUpdate({ [stat]: +e.target.value } as Partial<Character>)} />
+                  <input type="number" min={1} max={20} className="adm-stat-num"
+                    value={char[stat]}
+                    onChange={e => onUpdate({ [stat]: Math.min(20, Math.max(1, +e.target.value)) } as Partial<Character>)} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="adm-section">
+            <div className="adm-section-label">招式名稱</div>
+            <div className="adm-field-grid">
+              {([
+                ['moveNameSword', '⚔ 劍槽'], ['moveNameGun', '🔫 槍槽'],
+                ['moveNameMagic', '✦ 法槽'], ['moveNameWish', '🌠 願槽'],
+                ['passiveName',   '💠 被動'],
+              ] as const).map(([key, label]) => (
+                <Field key={key} label={label} value={(char as any)[key] ?? ''}
+                  onChange={v => onUpdate({ [key]: v } as Partial<Character>)} />
+              ))}
+            </div>
+          </div>
         </div>
+
       </div>
     </div>
   )

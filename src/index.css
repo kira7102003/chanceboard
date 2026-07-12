@@ -1401,8 +1401,11 @@ h2 {
 }
 
 /* Basic tab */
-.adm-basic   { display: flex; flex-direction: column; gap: 20px; }
-.adm-section { display: flex; flex-direction: column; gap: 9px; }
+.adm-basic      { display: flex; flex-direction: column; }
+.adm-basic-cols { display: grid; grid-template-columns: 240px 1fr; gap: 20px; align-items: start; }
+.adm-basic-imgs { display: flex; flex-direction: column; gap: 14px; }
+.adm-basic-data { display: flex; flex-direction: column; gap: 14px; }
+.adm-section    { display: flex; flex-direction: column; gap: 9px; }
 .adm-section-label {
   font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
   text-transform: uppercase; color: rgba(200,161,90,.55);
