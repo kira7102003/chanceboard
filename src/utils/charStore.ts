@@ -2,8 +2,25 @@ import { characters as defaultChars } from '../data/db'
 import type { Character } from '../types/character'
 import { uploadDataUrl, uploadBlob, deleteStorageFile, storageUrl } from './supabase'
 
-const LS_CHARS    = 'cb_chars'
-const CHARS_PATH  = 'chars.json'
+const LS_CHARS      = 'cb_chars'
+const CHARS_PATH    = 'chars.json'
+const MANIFEST_PATH = 'image-manifest.json'
+
+// In-memory set of keys known to exist on Supabase
+const _manifestKeys = new Set<string>()
+
+// Listeners that fire when initFromCloud() completes
+type SyncListener = () => void
+const _syncListeners: SyncListener[] = []
+export function onCloudSynced(fn: SyncListener): () => void {
+  _syncListeners.push(fn)
+  return () => { const i = _syncListeners.indexOf(fn); if (i !== -1) _syncListeners.splice(i, 1) }
+}
+
+function pushManifest(): void {
+  const blob = new Blob([JSON.stringify([..._manifestKeys])], { type: 'application/json' })
+  uploadBlob(MANIFEST_PATH, blob).catch(() => {})
+}
 
 let _syncTimer: ReturnType<typeof setTimeout> | null = null
 function debouncedCloudSync(chars: Character[]): void {
@@ -39,6 +56,8 @@ export async function uploadByKey(storageKey: string, dataUrl: string): Promise<
   const url = await uploadDataUrl(storagePath(storageKey), dataUrl)
   localStorage.setItem(FLAG(storageKey), '1')
   localStorage.removeItem(storageKey) // clean up old base64
+  _manifestKeys.add(storageKey)
+  pushManifest()
   return url
 }
 
@@ -85,6 +104,17 @@ export async function initFromCloud(): Promise<boolean> {
     }
   } catch {}
 
+  // Read image manifest → set _sb flags for all known-uploaded keys
+  try {
+    const mResp = await fetch(storageUrl(MANIFEST_PATH), { cache: 'no-cache' })
+    if (mResp.ok) {
+      const keys: string[] = await mResp.json()
+      if (Array.isArray(keys)) {
+        keys.forEach(k => { _manifestKeys.add(k); localStorage.setItem(FLAG(k), '1') })
+      }
+    }
+  } catch {}
+
   // HEAD-check background images so getBgUrl works cross-browser
   for (const type of ['main', 'battle'] as const) {
     const key = `cb_bg_${type}`
@@ -96,6 +126,7 @@ export async function initFromCloud(): Promise<boolean> {
     }
   }
 
+  _syncListeners.forEach(fn => fn())
   return gotChars
 }
 

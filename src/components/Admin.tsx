@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { moves as defaultMoves } from '../data/db'
-import { getChars, saveChars, resetChars, getCharImg, getUrlByKey, uploadByKey, removeByKey } from '../utils/charStore'
+import { getChars, saveChars, resetChars, getCharImg, getUrlByKey, uploadByKey, removeByKey, onCloudSynced } from '../utils/charStore'
 import type { Character } from '../types/character'
 import type { Move } from '../types/move'
 
@@ -128,12 +128,29 @@ export default function Admin({ onBack }: Props) {
 export function CharPortrait({ id, size = 48, height: ht, style: sx }: {
   id: string; size?: number; height?: number; style?: React.CSSProperties
 }) {
-  const [src, setSrc] = useState(() => getCharImg(id) ?? `/chars/${id}.webp`)
-  useEffect(() => { setSrc(getCharImg(id) ?? `/chars/${id}.webp`) }, [id])
+  const w = size, h = ht ?? size
+  const [src,    setSrc]    = useState(() => getCharImg(id))
+  const [failed, setFailed] = useState(false)
+
+  useEffect(() => {
+    const off = onCloudSynced(() => { setSrc(getCharImg(id)); setFailed(false) })
+    return off
+  }, [id])
+  useEffect(() => { setSrc(getCharImg(id)); setFailed(false) }, [id])
+
+  if (!src || failed) {
+    return (
+      <div style={{
+        width: w, height: h, borderRadius: 6, background: '#0e1028', flexShrink: 0,
+        border: '1px dashed #1e2050', display: 'flex', alignItems: 'center',
+        justifyContent: 'center', fontSize: Math.max(14, h * .28), color: '#2a2a60', ...sx,
+      }}>👤</div>
+    )
+  }
   return (
-    <img src={src} width={size} height={ht ?? size} alt=""
+    <img src={src} width={w} height={h} alt=""
       style={{ borderRadius: 6, objectFit: 'cover', background: '#111122', flexShrink: 0, ...sx }}
-      onError={() => setSrc('data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==')}
+      onError={() => setFailed(true)}
     />
   )
 }

@@ -206,6 +206,42 @@ body { margin: 0; }
 }
 
 /* ══════════════════════════════════════════════════════════════
+   LOGIN
+══════════════════════════════════════════════════════════════ */
+.login-wrap {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 0%,   rgba(200,161,90,.08) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 60% at 15% 90%,  rgba(80,60,200,.08) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 50% at 85% 70%,  rgba(200,80,60,.06) 0%, transparent 50%),
+    var(--bg);
+  padding: 24px;
+}
+.login-card {
+  background: linear-gradient(160deg, rgba(12,15,34,.97) 0%, rgba(8,10,24,.97) 100%);
+  border: 1px solid rgba(200,161,90,.2);
+  border-radius: 18px; padding: 36px 40px;
+  display: flex; flex-direction: column; gap: 12px;
+  width: 100%; max-width: 400px;
+  box-shadow:
+    0 24px 80px rgba(0,0,0,.8),
+    0 0 0 1px rgba(255,255,255,.03) inset,
+    0 1px 0   rgba(200,161,90,.18) inset;
+}
+.login-tabs {
+  display: flex; border-radius: 10px; overflow: hidden;
+  border: 1px solid rgba(200,161,90,.15); margin-bottom: 4px;
+}
+.login-tab {
+  flex: 1; padding: 9px; font-size: 13px; font-weight: 700; cursor: pointer;
+  background: transparent; border: none; color: #44445a;
+  transition: background .15s, color .15s;
+}
+.login-tab.active { background: rgba(200,161,90,.12); color: var(--gold2); }
+.login-tab:hover:not(.active) { color: var(--text-h); }
+.login-msg { font-size: 12px; padding: 8px 12px; border-radius: 6px; background: rgba(0,0,0,.3); }
+
+/* ══════════════════════════════════════════════════════════════
    BUTTONS
 ══════════════════════════════════════════════════════════════ */
 .btn {

@@ -4,11 +4,14 @@ import CharSelect  from './components/CharSelect'
 import DeckBuild   from './components/DeckBuild'
 import BattleView  from './components/BattleView'
 import Admin       from './components/Admin'
+import Login       from './components/Login'
 import { useGameStore }           from './store/gameStore'
 import { useRoom, loadSession, clearSession } from './hooks/useRoom'
 import { initFromCloud, getBgUrl } from './utils/charStore'
 import { useSolo }                from './hooks/useSolo'
 import { useAIBattle }           from './hooks/useAIBattle'
+import { supabase }               from './utils/supabase'
+import type { User }              from '@supabase/supabase-js'
 
 // ── Waiting room (online only) ────────────────────────────────────────────────
 
@@ -43,6 +46,19 @@ export default function App() {
   const [onlineRoomId, setOnlineRoomId] = useState('')
   const [showAdmin,    setShowAdmin]    = useState(false)
   const [, setCloudSynced] = useState(false)
+  const [user,      setUser]      = useState<User | null>(null)
+  const [authReady, setAuthReady] = useState(false)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setUser(data.session?.user ?? null)
+      setAuthReady(true)
+    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_ev, session) => {
+      setUser(session?.user ?? null)
+    })
+    return () => subscription.unsubscribe()
+  }, [])
 
   useEffect(() => {
     initFromCloud().finally(() => setCloudSynced(true))
@@ -128,6 +144,14 @@ export default function App() {
   }
 
   // ── Render ────────────────────────────────────────────────────────────────────
+
+  if (!authReady) return (
+    <div className="app" style={{ alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ color: '#44445a', fontSize: 13, letterSpacing: 2 }}>載入中…</div>
+    </div>
+  )
+
+  if (!user) return <Login />
 
   return (
     <div className="app" style={activeBgUrl ? {

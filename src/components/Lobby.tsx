@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { SavedSession } from '../hooks/useRoom'
 import { getChars, getUrlByKey } from '../utils/charStore'
+import { supabase } from '../utils/supabase'
 
 interface Props {
   onJoin:       (roomId: string) => void
@@ -103,10 +104,16 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
           </div>
         )}
 
-        {/* Settings */}
-        <button className="lv2-btn-settings" onClick={onAdmin}>
-          <span>⚙</span><span>設定</span>
-        </button>
+        {/* Bottom row: Settings + Logout */}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="lv2-btn-settings" style={{ flex: 1 }} onClick={onAdmin}>
+            <span>⚙</span><span>設定</span>
+          </button>
+          <button className="lv2-btn-settings" style={{ flex: 'none', gap: 6 }}
+            onClick={() => supabase.auth.signOut()}>
+            <span>🚪</span><span>登出</span>
+          </button>
+        </div>
 
       </div>
     </div>
