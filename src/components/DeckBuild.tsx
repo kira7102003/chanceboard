@@ -3,6 +3,8 @@ import { useGameStore } from '../store/gameStore'
 import { cards as allCards } from '../data/db'
 import { fillDeck } from '../engine/randomDeck'
 import { CARD_ICON } from '../data/cardIcons'
+import { getCardImg } from '../utils/charStore'
+import type { Card } from '../types/card'
 
 const DECK_SIZE = 10
 
@@ -13,6 +15,56 @@ const SUIT_COLOR: Record<string, string> = {
 const suitCards   = allCards.filter(c => c.isSuitCard)
 const flowerCards = allCards.filter(c => !c.isSuitCard)
 
+// ── Card row component (must be outside DeckBuild to keep hook state stable) ──
+interface CardRowProps {
+  card:     Card
+  cnt:      number
+  total:    number
+  onAdd:    () => void
+  onRemove: () => void
+}
+
+function CardRow({ card, cnt, total, onAdd, onRemove }: CardRowProps) {
+  const [showDesc, setShowDesc] = useState(false)
+  const col    = SUIT_COLOR[card.color]
+  const imgUrl = getCardImg(card.id)
+
+  return (
+    <div
+      className={`deck-card ${cnt > 0 ? 'in-deck' : ''}`}
+      style={{ borderTopColor: cnt > 0 ? col : undefined, borderTopWidth: cnt > 0 ? 2 : 1 }}
+      onMouseEnter={() => setShowDesc(true)}
+      onMouseLeave={() => setShowDesc(false)}
+      onClick={() => setShowDesc(v => !v)}
+    >
+      {showDesc && card.description && (
+        <div className="deck-card-tooltip">{card.description}</div>
+      )}
+
+      <div className="deck-card-header">
+        {imgUrl && (
+          <img src={imgUrl} className="deck-card-img" alt="" draggable={false} />
+        )}
+        <div className="deck-card-main">
+          <div className="deck-card-name" style={{ color: cnt > 0 ? col : undefined }}>
+            <span className="deck-card-icon">{CARD_ICON[card.id]}</span>
+            {card.name}
+          </div>
+          <div className="deck-card-controls" onClick={e => e.stopPropagation()}>
+            <button className="btn sm" onClick={onRemove} disabled={cnt === 0}>－</button>
+            <span
+              className="deck-card-count"
+              style={{ color: cnt > 0 ? col : '#333355' }}
+            >{cnt > 0 ? cnt : '·'}</span>
+            <button className="btn sm" onClick={onAdd} disabled={total >= DECK_SIZE}>＋</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Main component ─────────────────────────────────────────────────────────────
 interface Props {
   onConfirm: (deckIds: string[]) => void
 }
@@ -22,37 +74,12 @@ export default function DeckBuild({ onConfirm }: Props) {
   const [selected, setSelected] = useState<string[]>([])
 
   const countOf = (id: string) => selected.filter(x => x === id).length
-  const add    = (id: string) => { if (selected.length < DECK_SIZE) setSelected(s => [...s, id]) }
-  const remove = (id: string) => {
+  const add      = (id: string) => { if (selected.length < DECK_SIZE) setSelected(s => [...s, id]) }
+  const remove   = (id: string) => {
     const idx = selected.lastIndexOf(id)
     if (idx !== -1) setSelected(s => { const a = [...s]; a.splice(idx, 1); return a })
   }
   const randomize = () => setSelected(s => fillDeck(s))
-
-  const CardRow = ({ card }: { card: typeof allCards[number] }) => {
-    const cnt = countOf(card.id)
-    const col = SUIT_COLOR[card.color]
-    return (
-      <div
-        className={`deck-card ${cnt > 0 ? 'in-deck' : ''}`}
-        style={{ borderTopColor: cnt > 0 ? col : undefined, borderTopWidth: cnt > 0 ? 2 : 1 }}
-      >
-        <div className="deck-card-name" style={{ color: cnt > 0 ? col : undefined }}>
-          <span className="deck-card-icon">{CARD_ICON[card.id]}</span>
-          {card.name}
-        </div>
-        <div className="deck-card-desc">{card.description}</div>
-        <div className="deck-card-controls">
-          <button className="btn sm" onClick={() => remove(card.id)} disabled={cnt === 0}>－</button>
-          <span
-            className="deck-card-count"
-            style={{ color: cnt > 0 ? col : '#333355' }}
-          >{cnt > 0 ? cnt : '·'}</span>
-          <button className="btn sm" onClick={() => add(card.id)} disabled={selected.length >= DECK_SIZE}>＋</button>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="deck-page">
@@ -90,7 +117,13 @@ export default function DeckBuild({ onConfirm }: Props) {
       <div>
         <div className="deck-section-label">花色牌（觸發招式條件）</div>
         <div className="deck-suit-grid">
-          {suitCards.map(c => <CardRow key={c.id} card={c} />)}
+          {suitCards.map(c => (
+            <CardRow
+              key={c.id} card={c}
+              cnt={countOf(c.id)} total={selected.length}
+              onAdd={() => add(c.id)} onRemove={() => remove(c.id)}
+            />
+          ))}
         </div>
       </div>
 
@@ -98,7 +131,13 @@ export default function DeckBuild({ onConfirm }: Props) {
       <div>
         <div className="deck-section-label">花牌（特效）</div>
         <div className="char-grid">
-          {flowerCards.map(c => <CardRow key={c.id} card={c} />)}
+          {flowerCards.map(c => (
+            <CardRow
+              key={c.id} card={c}
+              cnt={countOf(c.id)} total={selected.length}
+              onAdd={() => add(c.id)} onRemove={() => remove(c.id)}
+            />
+          ))}
         </div>
       </div>
 

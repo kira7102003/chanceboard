@@ -119,15 +119,20 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
   const { selectedCharIds, mySide, playerCount } = useGameStore()
   const ready = selectedCharIds.length === 3
 
-  const [elFilter,     setElFilter]     = useState<ElFilter>('all')
-  const [galleryChar,  setGalleryChar]  = useState<Character | null>(null)
-  const [focusIdx,     setFocusIdx]     = useState(0)
-  const [dragStartX,   setDragStartX]   = useState<number | null>(null)
-  const [dragPixels,   setDragPixels]   = useState(0)
-  const [wasDragging,  setWasDragging]  = useState(false)
-  const [vw,           setVw]           = useState(window.innerWidth)
-  const [carouselH,    setCarouselH]    = useState(0)
-  const carouselRef = useRef<HTMLDivElement>(null)
+  const [elFilter,    setElFilter]    = useState<ElFilter>('all')
+  const [galleryChar, setGalleryChar] = useState<Character | null>(null)
+  const [focusIdx,    setFocusIdx]    = useState(0)
+  const [dragStartX,  setDragStartX]  = useState<number | null>(null)
+  const [dragPixels,  setDragPixels]  = useState(0)
+  const [vw,          setVw]          = useState(window.innerWidth)
+  const [carouselH,   setCarouselH]   = useState(0)
+  const carouselRef    = useRef<HTMLDivElement>(null)
+  // Refs for event handlers — avoid stale-closure and pointer-capture issues
+  const wasDraggingRef  = useRef(false)
+  const dragStartXRef   = useRef<number | null>(null)
+  const dragPixelsRef   = useRef(0)
+  const downCharIdRef   = useRef<string | null>(null)
+  const downCharOffRef  = useRef(0)
 
   useEffect(() => {
     const onResize = () => setVw(window.innerWidth)
@@ -179,33 +184,57 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
   }
 
   function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    dragStartXRef.current  = e.clientX
+    dragPixelsRef.current  = 0
+    wasDraggingRef.current = false
     setDragStartX(e.clientX)
     setDragPixels(0)
-    setWasDragging(false)
     e.currentTarget.setPointerCapture(e.pointerId)
-  }
-  function onPointerMove(e: React.PointerEvent) {
-    if (dragStartX === null) return
-    const d = e.clientX - dragStartX
-    setDragPixels(d)
-    if (Math.abs(d) > 14) setWasDragging(true)
-  }
-  function onPointerUp() {
-    if (dragStartX === null) return
-    const snapped = Math.round(focusIdx - dragPixels / STEP)
-    setFocusIdx(((snapped % n) + n) % n)
-    setDragStartX(null)
-    setDragPixels(0)
+
+    // Determine which char was tapped from current layout
+    const rect  = e.currentTarget.getBoundingClientRect()
+    const clickX = e.clientX - (rect.left + rect.width / 2)
+    let bestId = '', bestOff = 0, bestDist = Infinity
+    for (const { c, off } of charsWithOff) {
+      const d = Math.abs(off * STEP - clickX)
+      if (d < bestDist) { bestId = c.id; bestOff = off; bestDist = d }
+    }
+    downCharIdRef.current  = bestDist < CW ? bestId : null
+    downCharOffRef.current = bestOff
   }
 
-  function handleCharClick(charId: string, off: number) {
-    if (wasDragging) return
-    if (Math.abs(off) < 0.5) {
-      // Center char: directly toggle selection
-      onToggle(charId)
+  function onPointerMove(e: React.PointerEvent) {
+    if (dragStartXRef.current === null) return
+    const d = e.clientX - dragStartXRef.current
+    setDragPixels(d)
+    dragPixelsRef.current = d
+    if (Math.abs(d) > 14) wasDraggingRef.current = true
+  }
+
+  function onPointerUp() {
+    if (dragStartXRef.current === null) return
+
+    if (!wasDraggingRef.current) {
+      // Tap: toggle selection (center) or navigate to char
+      const charId = downCharIdRef.current
+      if (charId) {
+        if (Math.abs(downCharOffRef.current) < 0.5) {
+          onToggle(charId)
+        } else {
+          const idx = filtered.findIndex(c => c.id === charId)
+          if (idx >= 0) setFocusIdx(idx)
+        }
+      }
     } else {
-      setFocusIdx(filtered.findIndex(c => c.id === charId))
+      // Drag end: snap to nearest char
+      const snapped = Math.round(focusIdx - dragPixelsRef.current / STEP)
+      setFocusIdx(((snapped % n) + n) % n)
     }
+
+    dragStartXRef.current = null
+    setDragStartX(null)
+    setDragPixels(0)
+    dragPixelsRef.current = 0
   }
 
   const focusedInt  = n > 0 ? ((Math.round(displayFocus) % n) + n) % n : 0
@@ -223,7 +252,7 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
   }
 
   const charsWithOff = filtered.map((c, i) => ({ c, i, off: getOff(i) }))
-  const sorted = [...charsWithOff].sort((a, b) => Math.abs(b.off) - Math.abs(a.off))
+  const sorted       = [...charsWithOff].sort((a, b) => Math.abs(b.off) - Math.abs(a.off))
   const VISIBLE_CUTOFF = Math.min(7, n * 0.45)
 
   return (
@@ -295,7 +324,6 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
                   ? 'transform .28s cubic-bezier(.25,.46,.45,.94), opacity .28s'
                   : 'none',
               } as React.CSSProperties}
-              onClick={e => { e.stopPropagation(); handleCharClick(c.id, off) }}
             >
               <CharPortrait
                 id={c.id} size={CW} height={CH}
