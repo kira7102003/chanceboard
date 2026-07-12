@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { moves as defaultMoves } from '../data/db'
+import { moves as defaultMoves, cards as allCards } from '../data/db'
 import { getChars, saveChars, resetChars, getCharImg, getUrlByKey, uploadByKey, removeByKey, onCloudSynced, onCloudSave, getMoveOverrides, saveMoveOverride, resetMoveOverride } from '../utils/charStore'
+import { CARD_ICON } from '../data/cardIcons'
 import type { Character } from '../types/character'
 import type { Move, RangeType, Scope } from '../types/move'
 
 const EL_COLOR: Record<string, string>   = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee' }
 const SLOT_COLOR: Record<string, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee', '願': '#ddaa22', '被': '#666688' }
 const SLOT_LABEL: Record<string, string> = { '劍': '⚔ 劍槽', '槍': '🔫 槍槽', '法': '✦ 法槽', '願': '🌠 願槽', '被': '💠 被動' }
+const CARD_COLOR: Record<string, string> = { red: '#ee4444', green: '#22cc77', blue: '#5566ee', yellow: '#ddaa22', flower: '#bb55ee' }
 
 interface Props { onBack: () => void }
 
@@ -113,6 +115,20 @@ export default function Admin({ onBack }: Props) {
               <div className="adm-list-sub">大廳 · 戰鬥</div>
             </div>
           </div>
+          {/* Card images entry */}
+          <div
+            className={`adm-list-item ${selId === '__cards__' ? 'active' : ''}`}
+            onClick={() => { setSelId('__cards__'); setTab('basic') }}
+          >
+            <div style={{
+              width: 38, height: 68, borderRadius: 6, background: '#111122', flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
+            }}>🎴</div>
+            <div className="adm-list-text">
+              <div className="adm-list-name" style={{ color: '#c8a15a' }}>牌組圖片</div>
+              <div className="adm-list-sub">26 張卡牌</div>
+            </div>
+          </div>
           <div style={{ height: 1, background: 'rgba(200,161,90,.12)', margin: '2px 0' }} />
           {chars.map((c, i) => (            <div key={c.id}
               className={`adm-list-item ${c.id === selId ? 'active' : ''}`}
@@ -146,6 +162,8 @@ export default function Admin({ onBack }: Props) {
         <div className="adm-editor">
           {selId === '__bg__' ? (
             <BgSettings />
+          ) : selId === '__cards__' ? (
+            <div className="adm-panel"><CardImgSettings /></div>
           ) : char ? (
             <>
               <div className="adm-tabs">
@@ -758,9 +776,8 @@ function ImageCrop({ storageKey, cropW = PORTRAIT_W, cropH = PORTRAIT_H, onSave 
   const { w: dispW, imgX, imgY } = disp
   const absX = imgX + x, absY = imgY + y
 
-  const isLandscape = cropW > cropH
   const previewH = 70
-  const previewW = isLandscape ? Math.round(previewH * cropW / cropH) : Math.round(previewH * PORTRAIT_W / PORTRAIT_H)
+  const previewW = Math.round(previewH * cropW / cropH)
 
   return (
     <div className="img-crop">
@@ -847,5 +864,42 @@ function Pill({ label, val }: { label: string; val: string }) {
       <span className="adm-pill-label">{label}</span>
       <b>{val}</b>
     </span>
+  )
+}
+
+// ─── CardImgSettings ──────────────────────────────────────────────────────────
+
+const CARD_SUIT = allCards.filter(c => c.isSuitCard)
+const CARD_FLOWER = allCards.filter(c => !c.isSuitCard)
+
+function CardImgSettings() {
+  return (
+    <div className="adm-card-settings">
+      <div className="adm-section">
+        <div className="adm-section-label">花色牌（4 張）</div>
+        <div className="adm-card-grid">
+          {CARD_SUIT.map(c => <CardImgItem key={c.id} card={c} />)}
+        </div>
+      </div>
+      <div className="adm-section" style={{ marginTop: 20 }}>
+        <div className="adm-section-label">花牌（22 張）</div>
+        <div className="adm-card-grid">
+          {CARD_FLOWER.map(c => <CardImgItem key={c.id} card={c} />)}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function CardImgItem({ card }: { card: typeof allCards[number] }) {
+  const col = CARD_COLOR[card.color]
+  return (
+    <div className="adm-card-item" style={{ borderColor: col + '55' }}>
+      <div className="adm-card-item-hdr">
+        <span className="adm-card-item-icon" style={{ color: col }}>{CARD_ICON[card.id]}</span>
+        <span className="adm-card-item-name" style={{ color: col }}>{card.name}</span>
+      </div>
+      <ImageCrop storageKey={`cb_card_img_${card.id}`} cropW={420} cropH={560} />
+    </div>
   )
 }

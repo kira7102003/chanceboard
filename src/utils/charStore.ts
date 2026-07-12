@@ -54,6 +54,7 @@ function storagePath(storageKey: string): string {
   if (storageKey.startsWith('cb_move_img_'))  return `moves/${storageKey}.webp`
   if (storageKey.startsWith('cb_story_img_')) return `story/${storageKey}.webp`
   if (storageKey.startsWith('cb_bg_'))        return `backgrounds/${storageKey}.webp`
+  if (storageKey.startsWith('cb_card_img_')) return `cards/${storageKey}.webp`
   return `chars/${storageKey}.webp`
 }
 
@@ -264,4 +265,14 @@ export async function saveStoryImg(id: string, dataUrl: string): Promise<string>
 }
 export function removeStoryImg(id: string): void {
   removeByKey(`cb_story_img_${id}`)
+}
+
+export function getCardImg(id: string): string | null {
+  return getUrlByKey(`cb_card_img_${id}`)
+}
+export async function saveCardImg(id: string, dataUrl: string): Promise<string> {
+  return uploadByKey(`cb_card_img_${id}`, dataUrl)
+}
+export function removeCardImg(id: string): void {
+  removeByKey(`cb_card_img_${id}`)
 }

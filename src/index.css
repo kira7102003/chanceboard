@@ -1560,6 +1560,19 @@ h2 {
   box-shadow: 0 0 0 3px rgba(200,161,90,.07);
 }
 
+/* Card image settings */
+.adm-card-settings { display: flex; flex-direction: column; }
+.adm-card-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px;
+}
+.adm-card-item {
+  background: rgba(0,0,0,.3); border: 1px solid; border-radius: 9px;
+  padding: 10px 12px; display: flex; flex-direction: column; gap: 8px;
+}
+.adm-card-item-hdr { display: flex; align-items: center; gap: 7px; }
+.adm-card-item-icon { width: 20px; height: 20px; flex-shrink: 0; }
+.adm-card-item-name { font-size: 13px; font-weight: 700; }
+
 /* ══════════════════════════════════════════════════════════════
    RESPONSIVE — portrait mobile (≤640px)
 ══════════════════════════════════════════════════════════════ */
