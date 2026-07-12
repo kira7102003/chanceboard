@@ -1338,9 +1338,17 @@ h2 {
   pointer-events: none;
 }
 .adm-bar-title {
-  font-weight: 700; color: var(--gold2); font-size: 13px; flex: 1;
+  font-weight: 700; color: var(--gold2); font-size: 14px; flex: 1;
   letter-spacing: 1px; text-shadow: 0 0 20px rgba(200,161,90,.3);
 }
+.adm-save-status {
+  font-size: 12px; font-weight: 600; letter-spacing: .3px;
+  transition: opacity .3s; white-space: nowrap;
+}
+.adm-save-status[data-status='idle']   { opacity: 0; color: #44cc88; }
+.adm-save-status[data-status='saving'] { opacity: 1; color: var(--gold2); }
+.adm-save-status[data-status='saved']  { opacity: 1; color: #44cc88; }
+.adm-save-status[data-status='error']  { opacity: 1; color: #ee4444; }
 .adm-bar-actions { display: flex; gap: 6px; }
 
 /* Body */
@@ -1366,17 +1374,17 @@ h2 {
   background: rgba(200,161,90,.07);
   border-left-color: var(--gold);
 }
-.adm-list-name { font-size: 12px; font-weight: 700; color: var(--text-h); }
-.adm-list-sub  { font-size: 9px; color: #333350; }
+.adm-list-name { font-size: 13px; font-weight: 700; color: var(--text-h); }
+.adm-list-sub  { font-size: 11px; color: #555575; }
 
 /* Editor area */
-.adm-editor { display: flex; flex-direction: column; overflow: hidden; }
+.adm-editor { display: flex; flex-direction: column; overflow: hidden; min-height: 0; height: 100%; }
 .adm-tabs {
   display: flex; border-bottom: 1px solid rgba(200,161,90,.1);
   background: rgba(8,9,20,.98); flex-shrink: 0;
 }
 .adm-tab {
-  padding: 9px 20px; font-size: 12px; font-weight: 600; color: #32324e;
+  padding: 10px 22px; font-size: 13px; font-weight: 600; color: #44445e;
   background: none; border: none; cursor: pointer;
   border-bottom: 2px solid transparent; margin-bottom: -1px;
   transition: color .12s, border-color .12s; letter-spacing: .3px;
@@ -1393,18 +1401,18 @@ h2 {
 .adm-basic   { display: flex; flex-direction: column; gap: 20px; }
 .adm-section { display: flex; flex-direction: column; gap: 9px; }
 .adm-section-label {
-  font-size: 8px; font-weight: 800; letter-spacing: 2px;
-  text-transform: uppercase; color: rgba(200,161,90,.3);
-  padding-bottom: 5px; border-bottom: 1px solid rgba(200,161,90,.1);
+  font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; color: rgba(200,161,90,.55);
+  padding-bottom: 6px; border-bottom: 1px solid rgba(200,161,90,.12);
 }
 
 /* Field grid */
 .adm-field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
-.adm-field { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: #3a3a5e; }
+.adm-field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #6868a0; }
 .adm-input, .adm-select {
   background: rgba(0,0,0,.4); border: 1px solid var(--border2);
-  color: var(--text-h); padding: 6px 9px; border-radius: 7px;
-  font-size: 12px; transition: border-color .12s, box-shadow .12s;
+  color: var(--text-h); padding: 7px 10px; border-radius: 7px;
+  font-size: 13px; transition: border-color .12s, box-shadow .12s;
 }
 .adm-input:focus, .adm-select:focus {
   outline: none; border-color: rgba(200,161,90,.5);
@@ -1414,7 +1422,7 @@ h2 {
 /* Stats */
 .adm-stats    { display: flex; flex-direction: column; gap: 7px; }
 .adm-stat-row { display: flex; align-items: center; gap: 9px; }
-.adm-stat-label { font-size: 9px; font-weight: 800; color: rgba(200,161,90,.35); width: 32px; letter-spacing: .5px; }
+.adm-stat-label { font-size: 11px; font-weight: 800; color: rgba(200,161,90,.55); width: 36px; letter-spacing: .5px; }
 .adm-slider { flex: 1; accent-color: var(--gold); cursor: pointer; }
 .adm-stat-num {
   width: 44px; text-align: center; background: rgba(0,0,0,.4);
@@ -1505,14 +1513,14 @@ h2 {
 .adm-move-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .adm-move-hdr { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .adm-move-hdr b { color: var(--text-h); font-size: 15px; }
-.adm-move-cost { font-size: 12px; }
+.adm-move-cost { font-size: 13px; }
 .adm-cost-badge { font-weight: 700; letter-spacing: .3px; }
-.adm-move-desc { font-size: 11px; color: var(--text2); line-height: 1.6; }
+.adm-move-desc { font-size: 12px; color: var(--text2); line-height: 1.65; }
 .adm-move-stats { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 2px; }
 .adm-pill {
   display: flex; align-items: center; gap: 4px;
   background: rgba(0,0,0,.3); border: 1px solid var(--border);
-  border-radius: 5px; padding: 2px 8px; font-size: 10px;
+  border-radius: 5px; padding: 3px 9px; font-size: 11px;
 }
 .adm-pill-label { color: var(--text); }
 .adm-pill b { color: var(--text-h); }

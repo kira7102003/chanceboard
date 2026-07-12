@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { moves as defaultMoves } from '../data/db'
-import { getChars, saveChars, resetChars, getCharImg, getUrlByKey, uploadByKey, removeByKey, onCloudSynced, getMoveOverrides, saveMoveOverride, resetMoveOverride } from '../utils/charStore'
+import { getChars, saveChars, resetChars, getCharImg, getUrlByKey, uploadByKey, removeByKey, onCloudSynced, onCloudSave, getMoveOverrides, saveMoveOverride, resetMoveOverride } from '../utils/charStore'
 import type { Character } from '../types/character'
 import type { Move, RangeType, Scope } from '../types/move'
 
@@ -11,10 +11,22 @@ const SLOT_LABEL: Record<string, string> = { '劍': '⚔ 劍槽', '槍': '🔫 �
 interface Props { onBack: () => void }
 
 export default function Admin({ onBack }: Props) {
-  const [chars,  setChars]  = useState<Character[]>(() => getChars())
-  const [selId,  setSelId]  = useState(chars[0]?.id ?? '')
-  const [tab,    setTab]    = useState<'basic' | 'moves' | 'story'>('basic')
+  const [chars,      setChars]      = useState<Character[]>(() => getChars())
+  const [selId,      setSelId]      = useState(chars[0]?.id ?? '')
+  const [tab,        setTab]        = useState<'basic' | 'moves' | 'story'>('basic')
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const saveStatusTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const importRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    return onCloudSave(s => {
+      setSaveStatus(s)
+      if (saveStatusTimer.current) clearTimeout(saveStatusTimer.current)
+      if (s === 'saved' || s === 'error') {
+        saveStatusTimer.current = setTimeout(() => setSaveStatus('idle'), 2500)
+      }
+    })
+  }, [])
 
   const char  = chars.find(c => c.id === selId)
   const moves = defaultMoves.filter(m => m.ownerId === selId)
@@ -68,6 +80,11 @@ export default function Admin({ onBack }: Props) {
       {/* ── top bar ── */}
       <div className="adm-bar">
         <span className="adm-bar-title">奇蹟之盤 — 資料編輯器</span>
+        <span className="adm-save-status" data-status={saveStatus}>
+          {saveStatus === 'saving' && '↑ 同步中...'}
+          {saveStatus === 'saved'  && '✓ 已儲存至雲端'}
+          {saveStatus === 'error'  && '✗ 同步失敗'}
+        </span>
         <div className="adm-bar-actions">
           <button className="btn sm" onClick={handleExport}>↓ 匯出 JSON</button>
           <label className="btn sm" style={{ cursor: 'pointer' }}>

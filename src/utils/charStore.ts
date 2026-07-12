@@ -22,13 +22,28 @@ function pushManifest(): void {
   uploadBlob(MANIFEST_PATH, blob).catch(() => {})
 }
 
+type SaveStatus = 'saving' | 'saved' | 'error'
+type SaveListener = (s: SaveStatus) => void
+const _saveListeners: SaveListener[] = []
+export function onCloudSave(fn: SaveListener): () => void {
+  _saveListeners.push(fn)
+  return () => { const i = _saveListeners.indexOf(fn); if (i !== -1) _saveListeners.splice(i, 1) }
+}
+
 let _syncTimer: ReturnType<typeof setTimeout> | null = null
 function debouncedCloudSync(chars: Character[]): void {
   if (_syncTimer) clearTimeout(_syncTimer)
-  _syncTimer = setTimeout(() => {
-    const blob = new Blob([JSON.stringify(chars)], { type: 'application/json' })
-    uploadBlob(CHARS_PATH, blob).catch(err => console.warn('[charStore] cloud sync failed:', err))
-  }, 2000)
+  _saveListeners.forEach(fn => fn('saving'))
+  _syncTimer = setTimeout(async () => {
+    try {
+      const blob = new Blob([JSON.stringify(chars)], { type: 'application/json' })
+      await uploadBlob(CHARS_PATH, blob)
+      _saveListeners.forEach(fn => fn('saved'))
+    } catch (err) {
+      console.warn('[charStore] cloud sync failed:', err)
+      _saveListeners.forEach(fn => fn('error'))
+    }
+  }, 1500)
 }
 
 // Flag: tiny marker stored in localStorage that says "this image is on Supabase"
