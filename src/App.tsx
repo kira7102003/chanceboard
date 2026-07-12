@@ -7,7 +7,7 @@ import Admin       from './components/Admin'
 import Login       from './components/Login'
 import { useGameStore }           from './store/gameStore'
 import { useRoom, loadSession, clearSession } from './hooks/useRoom'
-import { initFromCloud, getBgUrl } from './utils/charStore'
+import { initFromCloud, getBgUrl, getAvailableBattleBgUrls } from './utils/charStore'
 import { useSolo }                from './hooks/useSolo'
 import { useAIBattle }           from './hooks/useAIBattle'
 import { supabase }               from './utils/supabase'
@@ -66,8 +66,16 @@ export default function App() {
 
   const { appPhase, mySide, isSolo, isAIBattle } = useGameStore()
 
+  const [battleBgUrl, setBattleBgUrl] = useState<string | null>(null)
+  useEffect(() => {
+    if (appPhase === 'battle') {
+      const urls = getAvailableBattleBgUrls()
+      if (urls.length) setBattleBgUrl(urls[Math.floor(Math.random() * urls.length)])
+    }
+  }, [appPhase])
+
   const activeBgUrl = !showAdmin
-    ? getBgUrl(appPhase === 'battle' || appPhase === 'end' ? 'battle' : 'main')
+    ? (appPhase === 'battle' || appPhase === 'end' ? battleBgUrl : getBgUrl('main'))
     : null
 
   // ── Controllers ──────────────────────────────────────────────────────────────

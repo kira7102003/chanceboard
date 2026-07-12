@@ -366,11 +366,20 @@ function BgSettings() {
     <div className="adm-basic" style={{ overflowY: 'auto' }}>
       <div className="adm-section">
         <div className="adm-section-label">大廳背景（大廳 / 選角 / 組牌畫面）</div>
-        <ImageCrop storageKey="cb_bg_main" />
+        <ImageCrop storageKey="cb_bg_main" cropW={1376} cropH={768} />
       </div>
-      <div className="adm-section">
-        <div className="adm-section-label">戰鬥背景（對戰 / 結算畫面）</div>
-        <ImageCrop storageKey="cb_bg_battle" />
+      <div className="adm-section" style={{ borderTop: '1px solid #1a1f3e', paddingTop: 16 }}>
+        <div className="adm-section-label" style={{ marginBottom: 12 }}>
+          戰鬥背景（共 6 張，對戰開始時隨機切換）
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          {Array.from({ length: 6 }, (_, i) => (
+            <div key={i}>
+              <div style={{ fontSize: 11, color: '#555570', marginBottom: 6 }}>戰鬥背景 {i + 1}</div>
+              <ImageCrop storageKey={`cb_bg_battle_${i + 1}`} cropW={1376} cropH={768} />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )
@@ -378,12 +387,13 @@ function BgSettings() {
 
 // ─── ImageCrop — visual crop-box UI ──────────────────────────────────────────
 
-const CROP_W = 768
-const CROP_H = 1376
-const CROP_RATIO = CROP_W / CROP_H   // ≈ 0.5581
+const PORTRAIT_W = 768
+const PORTRAIT_H = 1376
 
 interface CropProps {
   storageKey: string
+  cropW?: number
+  cropH?: number
   previewSize?: number   // unused
   onSave?: () => void
 }
@@ -396,7 +406,8 @@ type CropDragState =
 
 // disp: rendered image bounds within fixed-height stage (coords relative to stage origin)
 // box:  crop box position/size relative to rendered image (NOT stage)
-function ImageCrop({ storageKey, onSave }: CropProps) {
+function ImageCrop({ storageKey, cropW = PORTRAIT_W, cropH = PORTRAIT_H, onSave }: CropProps) {
+  const CROP_RATIO = cropW / cropH
   const [imgSrc,      setImgSrc]      = useState<string | null>(null)
   const [saved,       setSaved]       = useState<string | null>(() => getUrlByKey(storageKey))
   const [uploading,   setUploading]   = useState(false)
@@ -545,7 +556,7 @@ function ImageCrop({ storageKey, onSave }: CropProps) {
     const b = boxRef.current
     const sx = img.naturalWidth / d.w, sy = img.naturalHeight / d.h
     const bh = b.w / CROP_RATIO
-    const cv = document.createElement('canvas'); cv.width = CROP_W; cv.height = CROP_H
+    const cv = document.createElement('canvas'); cv.width = cropW; cv.height = cropH
     const ctx = cv.getContext('2d')!
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'
     ctx.drawImage(img, b.x * sx, b.y * sy, b.w * sx, bh * sy, 0, 0, CROP_W, CROP_H)

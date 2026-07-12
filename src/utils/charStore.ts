@@ -116,24 +116,36 @@ export async function initFromCloud(): Promise<boolean> {
   } catch {}
 
   // HEAD-check background images so getBgUrl works cross-browser
-  for (const type of ['main', 'battle'] as const) {
-    const key = `cb_bg_${type}`
+  const bgKeysToCheck = [
+    'cb_bg_main',
+    ...Array.from({ length: 6 }, (_, i) => `cb_bg_battle_${i + 1}`),
+  ]
+  await Promise.all(bgKeysToCheck.map(async key => {
     if (!localStorage.getItem(FLAG(key))) {
       try {
         const r = await fetch(storageUrl(storagePath(key)), { method: 'HEAD', cache: 'no-cache' })
         if (r.ok) localStorage.setItem(FLAG(key), '1')
       } catch {}
     }
-  }
+  }))
 
   _syncListeners.forEach(fn => fn())
   return gotChars
 }
 
-export function getBgUrl(type: 'main' | 'battle'): string | null {
+export function getBgUrl(type: 'main'): string | null {
   const key = `cb_bg_${type}`
   if (!localStorage.getItem(FLAG(key))) return null
   return storageUrl(storagePath(key))
+}
+
+export function getAvailableBattleBgUrls(): string[] {
+  const urls: string[] = []
+  for (let i = 1; i <= 6; i++) {
+    const key = `cb_bg_battle_${i}`
+    if (localStorage.getItem(FLAG(key))) urls.push(storageUrl(storagePath(key)))
+  }
+  return urls
 }
 
 // ── Typed image helpers (convenience wrappers) ────────────────────────────────
