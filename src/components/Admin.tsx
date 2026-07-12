@@ -559,7 +559,7 @@ function ImageCrop({ storageKey, cropW = PORTRAIT_W, cropH = PORTRAIT_H, onSave 
     const cv = document.createElement('canvas'); cv.width = cropW; cv.height = cropH
     const ctx = cv.getContext('2d')!
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'
-    ctx.drawImage(img, b.x * sx, b.y * sy, b.w * sx, bh * sy, 0, 0, CROP_W, CROP_H)
+    ctx.drawImage(img, b.x * sx, b.y * sy, b.w * sx, bh * sy, 0, 0, cropW, cropH)
     const dataUrl = cv.toDataURL('image/webp', 0.95)
     setUploading(true)
     try {
