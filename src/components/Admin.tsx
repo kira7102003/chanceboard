@@ -82,12 +82,19 @@ export default function Admin({ onBack }: Props) {
             </div>
           </div>
           <div style={{ height: 1, background: 'rgba(200,161,90,.12)', margin: '2px 0' }} />
-          {chars.map(c => (
+          {chars.map((c, i) => (
             <div key={c.id}
               className={`adm-list-item ${c.id === selId ? 'active' : ''}`}
               onClick={() => { setSelId(c.id); setTab('basic') }}
             >
-              <CharPortrait id={c.id} size={38} height={68} />
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                <CharPortrait id={c.id} size={38} height={68} />
+                <span style={{
+                  position: 'absolute', top: 2, left: 2,
+                  background: 'rgba(0,0,0,.65)', color: '#aaa',
+                  fontSize: 9, lineHeight: 1, padding: '1px 3px', borderRadius: 3,
+                }}>{i + 1}</span>
+              </div>
               <div className="adm-list-text">
                 <div className="adm-list-name" style={{ color: EL_COLOR[c.element] }}>{c.name}</div>
                 <div className="adm-list-sub">{c.title}</div>
