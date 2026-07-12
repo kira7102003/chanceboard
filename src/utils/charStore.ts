@@ -200,7 +200,11 @@ export function getAvailableBattleBgUrls(): string[] {
   const urls: string[] = []
   for (let i = 1; i <= 6; i++) {
     const key = `cb_bg_battle_${i}`
-    if (localStorage.getItem(FLAG(key))) urls.push(storageUrl(storagePath(key)))
+    const flag = localStorage.getItem(FLAG(key))
+    if (flag) {
+      const url = flag.startsWith('http') ? flag : storageUrl(storagePath(key))
+      urls.push(url)
+    }
   }
   return urls
 }
