@@ -1405,7 +1405,7 @@ h2 {
 
 /* Basic tab */
 .adm-basic      { display: flex; flex-direction: column; }
-.adm-basic-cols { display: grid; grid-template-columns: 240px 1fr; gap: 20px; align-items: start; }
+.adm-basic-cols { display: grid; grid-template-columns: max-content 1fr; gap: 20px; align-items: start; }
 .adm-basic-imgs { display: flex; flex-direction: column; gap: 14px; }
 .adm-basic-data { display: flex; flex-direction: column; gap: 14px; }
 .adm-section    { display: flex; flex-direction: column; gap: 9px; }
