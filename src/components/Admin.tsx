@@ -16,7 +16,7 @@ export default function Admin({ onBack }: Props) {
   const [tab,    setTab]    = useState<'basic' | 'moves' | 'story'>('basic')
   const importRef = useRef<HTMLInputElement>(null)
 
-  const char  = chars.find(c => c.id === selId)!
+  const char  = chars.find(c => c.id === selId)
   const moves = defaultMoves.filter(m => m.ownerId === selId)
 
   const update = useCallback((patch: Partial<Character>) => {
@@ -48,8 +48,6 @@ export default function Admin({ onBack }: Props) {
     resetChars(); setChars(getChars())
   }
 
-  if (!char) return null
-
   return (
     <div className="adm">
       {/* ── top bar ── */}
@@ -69,6 +67,21 @@ export default function Admin({ onBack }: Props) {
       <div className="adm-body">
         {/* ── character list ── */}
         <div className="adm-list">
+          {/* Background settings entry */}
+          <div
+            className={`adm-list-item ${selId === '__bg__' ? 'active' : ''}`}
+            onClick={() => { setSelId('__bg__'); setTab('basic') }}
+          >
+            <div style={{
+              width: 38, height: 68, borderRadius: 6, background: '#111122', flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
+            }}>🖼</div>
+            <div className="adm-list-text">
+              <div className="adm-list-name" style={{ color: '#c8a15a' }}>背景設定</div>
+              <div className="adm-list-sub">大廳 · 戰鬥</div>
+            </div>
+          </div>
+          <div style={{ height: 1, background: 'rgba(200,161,90,.12)', margin: '2px 0' }} />
           {chars.map(c => (
             <div key={c.id}
               className={`adm-list-item ${c.id === selId ? 'active' : ''}`}
@@ -85,19 +98,25 @@ export default function Admin({ onBack }: Props) {
 
         {/* ── editor ── */}
         <div className="adm-editor">
-          <div className="adm-tabs">
-            {(['basic', 'moves', 'story'] as const).map(t => (
-              <button key={t} className={`adm-tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>
-                {{ basic: '基本資料', moves: '招式圖片', story: '故事 & 插圖' }[t]}
-              </button>
-            ))}
-          </div>
+          {selId === '__bg__' ? (
+            <BgSettings />
+          ) : char ? (
+            <>
+              <div className="adm-tabs">
+                {(['basic', 'moves', 'story'] as const).map(t => (
+                  <button key={t} className={`adm-tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>
+                    {{ basic: '基本資料', moves: '招式圖片', story: '故事 & 插圖' }[t]}
+                  </button>
+                ))}
+              </div>
 
-          <div className="adm-panel">
-            {tab === 'basic' && <BasicTab char={char} onUpdate={update} />}
-            {tab === 'moves' && <MovesTab moves={moves} />}
-            {tab === 'story' && <StoryTab char={char} onUpdate={update} />}
-          </div>
+              <div className="adm-panel">
+                {tab === 'basic' && <BasicTab char={char} onUpdate={update} />}
+                {tab === 'moves' && <MovesTab moves={moves} />}
+                {tab === 'story' && <StoryTab char={char} onUpdate={update} />}
+              </div>
+            </>
+          ) : null}
         </div>
       </div>
     </div>
@@ -318,6 +337,23 @@ function StoryTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<C
           onChange={e => onUpdate({ story: e.target.value })}
           rows={14}
         />
+      </div>
+    </div>
+  )
+}
+
+// ─── BgSettings ──────────────────────────────────────────────────────────────
+
+function BgSettings() {
+  return (
+    <div className="adm-basic" style={{ overflowY: 'auto' }}>
+      <div className="adm-section">
+        <div className="adm-section-label">大廳背景（大廳 / 選角 / 組牌畫面）</div>
+        <ImageCrop storageKey="cb_bg_main" />
+      </div>
+      <div className="adm-section">
+        <div className="adm-section-label">戰鬥背景（對戰 / 結算畫面）</div>
+        <ImageCrop storageKey="cb_bg_battle" />
       </div>
     </div>
   )

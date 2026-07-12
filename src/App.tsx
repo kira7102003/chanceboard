@@ -6,7 +6,7 @@ import BattleView  from './components/BattleView'
 import Admin       from './components/Admin'
 import { useGameStore }           from './store/gameStore'
 import { useRoom, loadSession, clearSession } from './hooks/useRoom'
-import { initFromCloud } from './utils/charStore'
+import { initFromCloud, getBgUrl } from './utils/charStore'
 import { useSolo }                from './hooks/useSolo'
 import { useAIBattle }           from './hooks/useAIBattle'
 
@@ -49,6 +49,10 @@ export default function App() {
   }, [])
 
   const { appPhase, mySide, isSolo, isAIBattle } = useGameStore()
+
+  const activeBgUrl = !showAdmin
+    ? getBgUrl(appPhase === 'battle' || appPhase === 'end' ? 'battle' : 'main')
+    : null
 
   // ── Controllers ──────────────────────────────────────────────────────────────
 
@@ -126,7 +130,12 @@ export default function App() {
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="app">
+    <div className="app" style={activeBgUrl ? {
+      backgroundImage: `url(${activeBgUrl})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+    } : undefined}>
       {/* 資料編輯器 */}
       {showAdmin && <Admin onBack={() => setShowAdmin(false)} />}
 
