@@ -587,11 +587,15 @@ function ImageCrop({ storageKey, cropW = PORTRAIT_W, cropH = PORTRAIT_H, onSave 
   const { w: dispW, imgX, imgY } = disp
   const absX = imgX + x, absY = imgY + y
 
+  const isLandscape = cropW > cropH
+  const previewH = 70
+  const previewW = isLandscape ? Math.round(previewH * cropW / cropH) : Math.round(previewH * PORTRAIT_W / PORTRAIT_H)
+
   return (
     <div className="img-crop">
       {!imgSrc && (
         <div className="img-crop-saved">
-          <div className="img-crop-preview-box">
+          <div className="img-crop-preview-box" style={{ width: previewW, height: previewH }}>
             {saved && !savedFailed
               ? <img src={saved} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt=""
                   onError={() => setSavedFailed(true)} />

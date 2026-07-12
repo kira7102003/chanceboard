@@ -12,13 +12,27 @@ interface Props {
   onAdmin:      () => void
 }
 
+const LOBBY_CHAR_KEY = 'cb_lobby_char'
+
 export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejoin, onAdmin }: Props) {
   const [input,      setInput]      = useState('')
   const [showOnline, setShowOnline] = useState(false)
   const [imgFailed,  setImgFailed]  = useState(false)
 
-  const firstChar  = getChars()[0]
-  const charImgUrl = firstChar ? getUrlByKey(`cb_img_${firstChar.id}`) : null
+  const chars = getChars()
+  const savedId = localStorage.getItem(LOBBY_CHAR_KEY)
+  const initIdx = Math.max(0, chars.findIndex(c => c.id === savedId))
+  const [charIdx, setCharIdx] = useState(initIdx)
+
+  const activeChar = chars[charIdx]
+  const charImgUrl = activeChar ? getUrlByKey(`cb_img_${activeChar.id}`) : null
+
+  const cycleChar = () => {
+    const next = (charIdx + 1) % chars.length
+    setCharIdx(next)
+    setImgFailed(false)
+    localStorage.setItem(LOBBY_CHAR_KEY, chars[next].id)
+  }
 
   const create = () => {
     const id = Math.random().toString(36).slice(2, 8).toUpperCase()
@@ -44,7 +58,7 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
 
       {/* ── Character portrait ──────────────────────────────── */}
       {charImgUrl && !imgFailed && (
-        <div className="lv2-char">
+        <div className="lv2-char" onClick={cycleChar} style={{ cursor: 'pointer' }} title="點擊切換角色">
           <img src={charImgUrl} alt="" className="lv2-char-img"
             onError={() => setImgFailed(true)} />
         </div>
