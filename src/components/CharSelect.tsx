@@ -145,7 +145,7 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
   const isLandscape = vh < 500
   const isMobile    = vw < 640
   // Overhead = everything except the carousel (header, filter, nav, selected, confirm, padding)
-  const overhead = isLandscape ? 95 : isMobile ? 175 : 160
+  const overhead = isLandscape ? 80 : isMobile ? 148 : 130
   const availH   = Math.max(220, vh - overhead)
   // Portrait fills available height; width capped so it doesn't overflow screen
   const CW = Math.min(
@@ -316,7 +316,7 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
         )}
       </div>
 
-      {/* ── Nav arrows + counter */}
+      {/* ── Nav arrows + current name */}
       <div className="cs-nav-hint">
         <button className="cs-nav-btn prev" onClick={() => setFocusIdx(prevIdx)}>
           <span className="cs-nav-arrow">‹</span>
@@ -327,7 +327,7 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
           )}
         </button>
         <div className="cs-nav-label">
-          <span className="cs-nav-count">{focusedInt + 1} / {n}</span>
+          <span className="cs-nav-cur-name">{focusedChar?.name ?? ''}</span>
         </div>
         <button className="cs-nav-btn next" onClick={() => setFocusIdx(nextIdx)}>
           <span className="cs-nav-arrow">›</span>
@@ -339,28 +339,23 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
         </button>
       </div>
 
-      {/* ── Selected strip */}
-      {selectedCharIds.length > 0 && (
-        <div className="cs-selected">
-          {selectedCharIds.map((id, i) => {
-            const col  = ['#e85533', '#ddaa22', '#33aacc'][i]
-            const char = characters.find(c => c.id === id)!
-            return (
-              <span key={id} className="cs-chip" style={{ borderColor: `${col}66` }}>
-                <b style={{ color: col }}>{'前中後'[i]}</b>
-                {char.name}
-              </span>
-            )
-          })}
-        </div>
-      )}
-
-      {/* ── Confirm */}
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+      {/* ── Confirm + Selected in one row */}
+      <div className="cs-confirm-row">
         <button className="btn primary" disabled={!ready} onClick={() => onConfirm(selectedCharIds)}>
           確認選角 →
         </button>
-        {!ready && <span className="hint">還需 {3 - selectedCharIds.length} 位</span>}
+        {!ready && selectedCharIds.length === 0 && <span className="hint">還需 3 位</span>}
+        {selectedCharIds.map((id, i) => {
+          const col  = ['#e85533', '#ddaa22', '#33aacc'][i]
+          const char = characters.find(c => c.id === id)!
+          return (
+            <span key={id} className="cs-chip" style={{ borderColor: `${col}66` }}
+              onClick={() => onToggle(id)}>
+              <b style={{ color: col }}>{'前中後'[i]}</b>
+              {char.name}
+            </span>
+          )
+        })}
       </div>
 
       {/* ── 大典 Gallery modal */}
