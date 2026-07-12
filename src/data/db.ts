@@ -7,9 +7,10 @@ import type { DeckWeight } from '../types/piece'
 // ─── Characters ──────────────────────────────────────────────────────────────
 
 export const characters: Character[] = [
-  { id: '001', name: '詹姆士．弗烈', title: '貴公子',   gender: 'male',   element: '槍',   hp:  8, atk:  9, def:  8, spd: 12, moveNameSword: '鑽石刀',           moveNameGun: '天女散花',     moveNameMagic: '黃金城',     moveNameWish: '遊戲人間',     passiveName: '賺錢本能' },
-  { id: '002', name: '羅迪',         title: '瘋子',     gender: 'male',   element: '劍', hp:  9, atk: 11, def:  8, spd:  8, moveNameSword: '影子踐踏',         moveNameGun: '影子射擊',     moveNameMagic: '影子分離',   moveNameWish: '癲導視解',     passiveName: '縫合' },
-  { id: '004', name: '緋村一郎',     title: '浪人',     gender: 'male',   element: '劍', hp:  9, atk: 10, def:  7, spd: 10, moveNameSword: '月絕',             moveNameGun: '瞬光',         moveNameMagic: '斷魂',       moveNameWish: '魅影',         passiveName: '冥想' },
+  { id: '001', name: '詹姆士．弗烈德', title: '貴公子',   gender: 'male',   element: '槍',   hp:  8, atk:  9, def:  8, spd: 12, moveNameSword: '鑽石刀',           moveNameGun: '天女散花',     moveNameMagic: '黃金城',     moveNameWish: '遊戲人間',     passiveName: '賺錢本能' },
+  { id: '002', name: '羅迪',           title: '瘋子',     gender: 'male',   element: '劍', hp:  9, atk: 11, def:  8, spd:  8, moveNameSword: '影子踐踏',         moveNameGun: '影子射擊',     moveNameMagic: '影子分離',   moveNameWish: '癲導視解',     passiveName: '縫合' },
+  { id: '003', name: '法斯特．伊艾克斯．卡薩巴', title: '?', gender: 'male', element: '法', hp:  8, atk:  8, def:  8, spd:  8, moveNameSword: '?',               moveNameGun: '?',            moveNameMagic: '?',          moveNameWish: '?',            passiveName: '?' },
+  { id: '004', name: '緋村一郎',       title: '浪人',     gender: 'male',   element: '劍', hp:  9, atk: 10, def:  7, spd: 10, moveNameSword: '月絕',             moveNameGun: '瞬光',         moveNameMagic: '斷魂',       moveNameWish: '魅影',         passiveName: '冥想' },
   { id: '005', name: '圖卡勒絲',     title: '機器人',   gender: 'male',   element: '槍',   hp:  8, atk: 10, def: 10, spd:  7, moveNameSword: '疼痛針',           moveNameGun: '親愛熊',       moveNameMagic: '彩虹緞帶',   moveNameWish: '血腥機關',     passiveName: '機器人三定律' },
   { id: '006', name: '莉莎',         title: '人偶',     gender: 'female', element: '法', hp: 14, atk:  6, def:  9, spd: 10, moveNameSword: '命運',             moveNameGun: '四季',         moveNameMagic: '魔笛',       moveNameWish: '夜鶯',         passiveName: '八音盒' },
   { id: '007', name: '大牧',         title: '文豪',     gender: 'male',   element: '法', hp:  8, atk: 10, def: 12, spd:  7, moveNameSword: '妙筆生花',         moveNameGun: '流水無情',     moveNameMagic: '天崩地裂',   moveNameWish: '無思不在',     passiveName: '存在' },
@@ -24,6 +25,9 @@ export const characters: Character[] = [
   { id: '016', name: '傑．阿爾薩斯', title: '南瓜王子', gender: 'male',   element: '劍', hp: 10, atk: 10, def: 10, spd:  9, moveNameSword: '月光花',           moveNameGun: '希望種子',     moveNameMagic: '世界樹',     moveNameWish: '大地恩惠',     passiveName: '扎根' },
   { id: '017', name: '武愛',         title: '化龍者',   gender: 'female', element: '法', hp:  7, atk: 13, def: 10, spd:  7, moveNameSword: '雷龍怒爪',         moveNameGun: '風龍吐喜',     moveNameMagic: '水龍哀尾',   moveNameWish: '天龍樂舞',     passiveName: '龍襲' },
   { id: '018', name: '海瑟',         title: '搖滾歌者', gender: 'male',   element: '法', hp:  6, atk:  8, def:  8, spd: 11, moveNameSword: '藍色絨面鞋',       moveNameGun: '敲響天堂之門', moveNameMagic: '生死通緝',   moveNameWish: '我們將喚醒你', passiveName: '搖滾魂' },
+  { id: '019', name: 'R',            title: '?',        gender: 'male',   element: '劍', hp:  8, atk:  8, def:  8, spd:  8, moveNameSword: '?',               moveNameGun: '?',            moveNameMagic: '?',          moveNameWish: '?',            passiveName: '?' },
+  { id: '020', name: '尼多',         title: '?',        gender: 'male',   element: '槍',   hp:  8, atk:  8, def:  8, spd:  8, moveNameSword: '?',               moveNameGun: '?',            moveNameMagic: '?',          moveNameWish: '?',            passiveName: '?' },
+  { id: '021', name: '絲妲兒',       title: '?',        gender: 'female', element: '法', hp:  8, atk:  8, def:  8, spd:  8, moveNameSword: '?',               moveNameGun: '?',            moveNameMagic: '?',          moveNameWish: '?',            passiveName: '?' },
 ]
 
 // ─── Statuses ─────────────────────────────────────────────────────────────────
@@ -133,6 +137,13 @@ export const moves: Move[] = [
   { id: '009', ownerId: '002', slot: '願',    name: '癲導視解',       condition: 1, rangeType: '槍',   scope: '單', powerRatio: 4.00, hitRate: 1.00, critRate: null, cooldown: null, description: '攻擊後丟棄全部的手牌',                                     effectTrigger: 'postAction', effectOps: [{ op: 'discard', target: 'self', count: 'all' }],                                                                                                effectChance: 1 },
   { id: '010', ownerId: '002', slot: '被', name: '縫合',           condition: null, rangeType: null, scope: null,    powerRatio: null, hitRate: null, critRate: null, cooldown: null, description: '回合開始時10%得到自己上回合隨機丟棄的牌',                   effectTrigger: 'roundStart', effectOps: [{ op: 'recoverDiscard', target: 'self' }],                                                                                                        effectChance: 0.10 },
 
+  // ── 003 法斯特．伊艾克斯．卡薩巴 ────────────────────────────────────────
+  { id: '011', ownerId: '003', slot: '劍',   name: '?', condition: 1, rangeType: '劍', scope: '單', powerRatio: 2.00, hitRate: 1.00, critRate: 0.10, cooldown: null, description: '待定', effectTrigger: null, effectOps: [], effectChance: 1 },
+  { id: '012', ownerId: '003', slot: '槍',   name: '?', condition: 1, rangeType: '槍', scope: '單', powerRatio: 1.00, hitRate: 0.95, critRate: null, cooldown: null, description: '待定', effectTrigger: null, effectOps: [], effectChance: 1 },
+  { id: '013', ownerId: '003', slot: '法',   name: '?', condition: 1, rangeType: '法', scope: '單', powerRatio: 1.50, hitRate: 0.80, critRate: null, cooldown: 3,    description: '待定', effectTrigger: null, effectOps: [], effectChance: 1 },
+  { id: '014', ownerId: '003', slot: '願',   name: '?', condition: 2, rangeType: null, scope: null,  powerRatio: null, hitRate: null, critRate: null, cooldown: null, description: '待定', effectTrigger: null, effectOps: [], effectChance: 1 },
+  { id: '015', ownerId: '003', slot: '被', name: '?', condition: null, rangeType: null, scope: null, powerRatio: null, hitRate: null, critRate: null, cooldown: null, description: '待定', effectTrigger: null, effectOps: [], effectChance: 1 },
+
   // ── 004 緋村一郎 ─────────────────────────────────────────────────────────
   { id: '016', ownerId: '004', slot: '劍',   name: '月絕',           condition: 1, rangeType: '劍', scope: '單', powerRatio: 4.50, hitRate: 0.80, critRate: 0.25, cooldown: null, description: '爆擊時威力*1.5',                                           effectTrigger: 'onCrit',     effectOps: [{ op: 'powerMult', mult: 1.5 }],                                                                                                                        effectChance: 1 },
   { id: '017', ownerId: '004', slot: '槍',     name: '瞬光',           condition: 1, rangeType: '槍',   scope: '單', powerRatio: 0.65, hitRate: 0.75, critRate: null, cooldown: null, description: '攻擊後自己進入SPD+25%狀態(2回合)，速度提升25%',              effectTrigger: 'postAction', effectOps: [{ op: 'status', target: 'self', key: 'spdPlus', value: 25, mode: 'pct', duration: 20 }],                                                             effectChance: 1 },
@@ -237,4 +248,25 @@ export const moves: Move[] = [
   { id: '088', ownerId: '018', slot: '法',   name: '生死通緝',       condition: 2, rangeType: '法', scope: '單', powerRatio: 2.00, hitRate: 0.75, critRate: null, cooldown: 5,    description: '攻擊後自己格內所有角色進入覺醒狀態(1回合)，優先攻擊HP最低角色', effectTrigger: 'postAction', effectOps: [{ op: 'status', target: 'sameCell', key: 'awakened', value: 0, duration: 10 }],                                                                   effectChance: 1 },
   { id: '089', ownerId: '018', slot: '願',    name: '我們將喚醒你',   condition: 3, rangeType: null,   scope: null,     powerRatio: null, hitRate: null, critRate: null, cooldown: null, description: '出招後解除我方所有角色全部狀態，並且回復解除狀態數量的HP', effectTrigger: 'postAction', effectOps: [{ op: 'clearStatuses', target: 'allyAll', healPerStatus: true }],                                                                                effectChance: 1 },
   { id: '090', ownerId: '018', slot: '被', name: '搖滾魂',         condition: null, rangeType: null, scope: null,    powerRatio: null, hitRate: null, critRate: null, cooldown: null, description: '狀態數延長1回合',                                          effectTrigger: 'postAction', effectOps: [{ op: 'staticFlag', flag: 'statusDurationExtend', value: 10 }],                                                                                effectChance: 1 },
+
+  // ── 019 R ────────────────────────────────────────────────────────────────
+  { id: '091', ownerId: '019', slot: '劍',   name: '?', condition: 1, rangeType: '劍', scope: '單', powerRatio: 2.00, hitRate: 1.00, critRate: 0.10, cooldown: null, description: '待定', effectTrigger: null, effectOps: [], effectChance: 1 },
+  { id: '092', ownerId: '019', slot: '槍',   name: '?', condition: 1, rangeType: '槍', scope: '單', powerRatio: 1.00, hitRate: 0.95, critRate: null, cooldown: null, description: '待定', effectTrigger: null, effectOps: [], effectChance: 1 },
+  { id: '093', ownerId: '019', slot: '法',   name: '?', condition: 1, rangeType: '法', scope: '單', powerRatio: 1.50, hitRate: 0.80, critRate: null, cooldown: 3,    description: '待定', effectTrigger: null, effectOps: [], effectChance: 1 },
+  { id: '094', ownerId: '019', slot: '願',   name: '?', condition: 2, rangeType: null, scope: null,  powerRatio: null, hitRate: null, critRate: null, cooldown: null, description: '待定', effectTrigger: null, effectOps: [], effectChance: 1 },
+  { id: '095', ownerId: '019', slot: '被', name: '?', condition: null, rangeType: null, scope: null, powerRatio: null, hitRate: null, critRate: null, cooldown: null, description: '待定', effectTrigger: null, effectOps: [], effectChance: 1 },
+
+  // ── 020 尼多 ─────────────────────────────────────────────────────────────
+  { id: '096', ownerId: '020', slot: '劍',   name: '?', condition: 1, rangeType: '劍', scope: '單', powerRatio: 2.00, hitRate: 1.00, critRate: 0.10, cooldown: null, description: '待定', effectTrigger: null, effectOps: [], effectChance: 1 },
+  { id: '097', ownerId: '020', slot: '槍',   name: '?', condition: 1, rangeType: '槍', scope: '單', powerRatio: 1.00, hitRate: 0.95, critRate: null, cooldown: null, description: '待定', effectTrigger: null, effectOps: [], effectChance: 1 },
+  { id: '098', ownerId: '020', slot: '法',   name: '?', condition: 1, rangeType: '法', scope: '單', powerRatio: 1.50, hitRate: 0.80, critRate: null, cooldown: 3,    description: '待定', effectTrigger: null, effectOps: [], effectChance: 1 },
+  { id: '099', ownerId: '020', slot: '願',   name: '?', condition: 2, rangeType: null, scope: null,  powerRatio: null, hitRate: null, critRate: null, cooldown: null, description: '待定', effectTrigger: null, effectOps: [], effectChance: 1 },
+  { id: '100', ownerId: '020', slot: '被', name: '?', condition: null, rangeType: null, scope: null, powerRatio: null, hitRate: null, critRate: null, cooldown: null, description: '待定', effectTrigger: null, effectOps: [], effectChance: 1 },
+
+  // ── 021 絲妲兒 ───────────────────────────────────────────────────────────
+  { id: '101', ownerId: '021', slot: '劍',   name: '?', condition: 1, rangeType: '劍', scope: '單', powerRatio: 2.00, hitRate: 1.00, critRate: 0.10, cooldown: null, description: '待定', effectTrigger: null, effectOps: [], effectChance: 1 },
+  { id: '102', ownerId: '021', slot: '槍',   name: '?', condition: 1, rangeType: '槍', scope: '單', powerRatio: 1.00, hitRate: 0.95, critRate: null, cooldown: null, description: '待定', effectTrigger: null, effectOps: [], effectChance: 1 },
+  { id: '103', ownerId: '021', slot: '法',   name: '?', condition: 1, rangeType: '法', scope: '單', powerRatio: 1.50, hitRate: 0.80, critRate: null, cooldown: 3,    description: '待定', effectTrigger: null, effectOps: [], effectChance: 1 },
+  { id: '104', ownerId: '021', slot: '願',   name: '?', condition: 2, rangeType: null, scope: null,  powerRatio: null, hitRate: null, critRate: null, cooldown: null, description: '待定', effectTrigger: null, effectOps: [], effectChance: 1 },
+  { id: '105', ownerId: '021', slot: '被', name: '?', condition: null, rangeType: null, scope: null, powerRatio: null, hitRate: null, critRate: null, cooldown: null, description: '待定', effectTrigger: null, effectOps: [], effectChance: 1 },
 ]

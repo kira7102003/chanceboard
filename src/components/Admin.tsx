@@ -48,6 +48,21 @@ export default function Admin({ onBack }: Props) {
     resetChars(); setChars(getChars())
   }
 
+  const handleAddChar = () => {
+    const maxNum = chars.reduce((m, c) => {
+      const n = parseInt(c.id, 10); return isNaN(n) ? m : Math.max(m, n)
+    }, 0)
+    const newId = String(maxNum + 1).padStart(3, '0')
+    const newChar: Character = {
+      id: newId, name: `新角色 ${newId}`, title: '?',
+      gender: 'male', element: '劍',
+      hp: 8, atk: 8, def: 8, spd: 8,
+      moveNameSword: '?', moveNameGun: '?', moveNameMagic: '?', moveNameWish: '?', passiveName: '?',
+    }
+    const next = [...chars, newChar]
+    saveChars(next); setChars(next); setSelId(newId); setTab('basic')
+  }
+
   return (
     <div className="adm">
       {/* ── top bar ── */}
@@ -82,8 +97,7 @@ export default function Admin({ onBack }: Props) {
             </div>
           </div>
           <div style={{ height: 1, background: 'rgba(200,161,90,.12)', margin: '2px 0' }} />
-          {chars.map((c, i) => (
-            <div key={c.id}
+          {chars.map((c, i) => (            <div key={c.id}
               className={`adm-list-item ${c.id === selId ? 'active' : ''}`}
               onClick={() => { setSelId(c.id); setTab('basic') }}
             >
@@ -101,6 +115,14 @@ export default function Admin({ onBack }: Props) {
               </div>
             </div>
           ))}
+          <button
+            onClick={handleAddChar}
+            style={{
+              margin: '6px 8px', padding: '7px 0', borderRadius: 6,
+              background: 'rgba(200,161,90,.08)', border: '1px dashed rgba(200,161,90,.3)',
+              color: '#c8a15a', fontSize: 11, cursor: 'pointer', width: 'calc(100% - 16px)',
+            }}
+          >＋ 新增角色</button>
         </div>
 
         {/* ── editor ── */}
