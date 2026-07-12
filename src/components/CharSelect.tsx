@@ -188,16 +188,12 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
   function handleCharClick(charId: string, off: number) {
     if (wasDragging) return
     if (Math.abs(off) < 0.5) {
-      onToggle(charId)
+      // Center char: open 大典 gallery (select/deselect from inside)
+      const cdata = characters.find(c => c.id === charId)
+      if (cdata) setGalleryChar(cdata)
     } else {
       setFocusIdx(filtered.findIndex(c => c.id === charId))
     }
-  }
-
-  function handleCharDblClick(charId: string) {
-    if (wasDragging) return
-    const cdata = characters.find(c => c.id === charId)
-    if (cdata) setGalleryChar(cdata)
   }
 
   const focusedInt  = n > 0 ? ((Math.round(displayFocus) % n) + n) % n : 0
@@ -277,7 +273,6 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
                   : 'none',
               } as React.CSSProperties}
               onClick={e => { e.stopPropagation(); handleCharClick(c.id, off) }}
-              onDoubleClick={e => { e.stopPropagation(); handleCharDblClick(c.id) }}
             >
               <CharPortrait
                 id={c.id} size={CW} height={CH}
@@ -287,24 +282,23 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
                 <span className="cs-pos" style={{ background: col }}>{'前中後'[selIdx]}</span>
               )}
               {isCenter && (
-                <div className="cs-car-name" style={{ color: col }}>{c.name}</div>
+                <>
+                  <div className="cs-car-badge">大典</div>
+                  <div className="cs-car-name" style={{ color: col }}>{c.name}</div>
+                </>
               )}
             </div>
           )
         })}
       </div>
 
-      {/* ── Nav arrows + counter + 大典 button */}
+      {/* ── Nav arrows + counter */}
       <div className="cs-nav-hint">
         <button className="cs-nav-btn" onClick={() => setFocusIdx(p => ((p - 1 + n) % n))}>‹</button>
-        <button
-          className="cs-nav-label cs-nav-gallery-btn"
-          onClick={() => focusedChar && setGalleryChar(focusedChar)}
-          title="查看角色大圖"
-        >
+        <div className="cs-nav-label">
           <span>{focusedChar?.name ?? ''}</span>
-          <span className="cs-nav-count">{focusedInt + 1} / {n} · 雙擊大典</span>
-        </button>
+          <span className="cs-nav-count">{focusedInt + 1} / {n} · 點圖開大典</span>
+        </div>
         <button className="cs-nav-btn" onClick={() => setFocusIdx(p => (p + 1) % n)}>›</button>
       </div>
 
