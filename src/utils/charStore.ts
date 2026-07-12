@@ -99,6 +99,40 @@ export function resetChars(): void {
   localStorage.removeItem(LS_CHARS)
 }
 
+// ── Move overrides ────────────────────────────────────────────────────────────
+
+const LS_MOVES   = 'cb_moves'
+const MOVES_PATH = 'moves.json'
+
+export function getMoveOverrides(): Record<string, Record<string, unknown>> {
+  try {
+    const raw = localStorage.getItem(LS_MOVES)
+    return raw ? JSON.parse(raw) : {}
+  } catch { return {} }
+}
+
+let _mvSyncTimer: ReturnType<typeof setTimeout> | null = null
+export function saveMoveOverride(id: string, patch: Record<string, unknown>): void {
+  const overrides = getMoveOverrides()
+  overrides[id] = { ...(overrides[id] ?? {}), ...patch }
+  localStorage.setItem(LS_MOVES, JSON.stringify(overrides))
+  if (_mvSyncTimer) clearTimeout(_mvSyncTimer)
+  _mvSyncTimer = setTimeout(() => {
+    const blob = new Blob([JSON.stringify(overrides)], { type: 'application/json' })
+    uploadBlob(MOVES_PATH, blob).catch(err => console.warn('[charStore] moves sync failed:', err))
+  }, 2000)
+}
+
+export function resetMoveOverride(id: string): void {
+  const overrides = getMoveOverrides()
+  delete overrides[id]
+  localStorage.setItem(LS_MOVES, JSON.stringify(overrides))
+  const blob = new Blob([JSON.stringify(overrides)], { type: 'application/json' })
+  uploadBlob(MOVES_PATH, blob).catch(() => {})
+}
+
+// ── Cloud init ────────────────────────────────────────────────────────────────
+
 export async function initFromCloud(): Promise<boolean> {
   let gotChars = false
   try {
@@ -108,6 +142,17 @@ export async function initFromCloud(): Promise<boolean> {
       if (Array.isArray(data) && data.length) {
         localStorage.setItem(LS_CHARS, JSON.stringify(data))
         gotChars = true
+      }
+    }
+  } catch {}
+
+  // Fetch move overrides from cloud
+  try {
+    const mvResp = await fetch(storageUrl(MOVES_PATH), { cache: 'no-cache' })
+    if (mvResp.ok) {
+      const overrides = await mvResp.json()
+      if (overrides && typeof overrides === 'object' && !Array.isArray(overrides)) {
+        localStorage.setItem(LS_MOVES, JSON.stringify(overrides))
       }
     }
   } catch {}

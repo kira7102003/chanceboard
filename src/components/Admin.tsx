@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { moves as defaultMoves } from '../data/db'
-import { getChars, saveChars, resetChars, getCharImg, getUrlByKey, uploadByKey, removeByKey, onCloudSynced } from '../utils/charStore'
+import { getChars, saveChars, resetChars, getCharImg, getUrlByKey, uploadByKey, removeByKey, onCloudSynced, getMoveOverrides, saveMoveOverride, resetMoveOverride } from '../utils/charStore'
 import type { Character } from '../types/character'
-import type { Move } from '../types/move'
+import type { Move, RangeType, Scope } from '../types/move'
 
 const EL_COLOR: Record<string, string>   = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee' }
 const SLOT_COLOR: Record<string, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee', '願': '#ddaa22', '被': '#666688' }
@@ -179,9 +179,9 @@ function BasicTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<C
             <span>元素</span>
             <select className="adm-select" value={char.element}
               onChange={e => onUpdate({ element: e.target.value as Character['element'] })}>
-              <option value="sword">⚔ 劍</option>
-              <option value="gun">🔫 槍</option>
-              <option value="magic">✦ 法</option>
+              <option value="劍">⚔ 劍</option>
+              <option value="槍">🔫 槍</option>
+              <option value="法">✦ 法</option>
             </select>
           </label>
           <label className="adm-field">
@@ -231,16 +231,21 @@ function BasicTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<C
 
 // suit dot + colour per slot
 const SUIT_DOT:  Record<string, string> = { red: '🔴', green: '🟢', blue: '🔵', yellow: '🟡' }
-const SUIT_OF:   Record<string, string> = { sword: 'red', gun: 'green', magic: 'blue', wish: 'yellow' }
+const SUIT_OF:   Record<string, string> = { '劍': 'red', '槍': 'green', '法': 'blue', '願': 'yellow' }
 const SUIT_NAME: Record<string, string> = { red: '紅牌', green: '綠牌', blue: '藍牌', yellow: '黃牌' }
-const RANGE_LBL: Record<string, string> = { sword: '近戰', gun: '遠程', magic: '魔法' }
+const RANGE_LBL: Record<string, string> = { '劍': '近戰', '槍': '遠程', '法': '魔法' }
 
 // ─── MovesTab ─────────────────────────────────────────────────────────────────
 
-function MovesTab({ moves }: { moves: Move[] }) {
+function MovesTab({ moves: baseMoves }: { moves: Move[] }) {
   const [openId, setOpenId] = useState<string | null>(null)
+  const [editId, setEditId] = useState<string | null>(null)
   const [rev,    setRev]    = useState<Record<string, number>>({})
+  const [, forceRender] = useState(0)
   const markSaved = (id: string) => setRev(r => ({ ...r, [id]: (r[id] ?? 0) + 1 }))
+
+  const overrides = getMoveOverrides()
+  const moves = baseMoves.map(m => overrides[m.id] ? { ...m, ...overrides[m.id] } as Move : m)
 
   if (!moves.length) return <div className="adm-empty">此角色沒有招式資料</div>
   return (
@@ -250,6 +255,8 @@ function MovesTab({ moves }: { moves: Move[] }) {
         const dot       = suitColor ? SUIT_DOT[suitColor] : null
         const cost      = m.condition ?? 1
         const isOpen    = openId === m.id
+        const isEdit    = editId === m.id
+        const hasOverride = !!overrides[m.id]
 
         return (
           <div key={m.id} className="adm-move" style={{ borderLeftColor: SLOT_COLOR[m.slot] }}>
@@ -259,9 +266,20 @@ function MovesTab({ moves }: { moves: Move[] }) {
               <div className="adm-move-img-col">
                 <MoveImg storageKey={`cb_move_img_${m.id}`} rev={rev[m.id] ?? 0} />
                 <button className="btn sm" style={{ marginTop: 6, width: '100%', fontSize: 10 }}
-                  onClick={() => setOpenId(isOpen ? null : m.id)}>
+                  onClick={() => { setOpenId(isOpen ? null : m.id); setEditId(null) }}>
                   {isOpen ? '收起' : '設定圖片'}
                 </button>
+                <button className="btn sm" style={{ marginTop: 4, width: '100%', fontSize: 10,
+                  background: isEdit ? 'rgba(200,161,90,.15)' : undefined }}
+                  onClick={() => { setEditId(isEdit ? null : m.id); setOpenId(null) }}>
+                  {isEdit ? '收起' : '編輯數值'}
+                </button>
+                {hasOverride && (
+                  <button className="btn sm danger" style={{ marginTop: 4, width: '100%', fontSize: 10 }}
+                    onClick={() => { resetMoveOverride(m.id); forceRender(n => n + 1) }}>
+                    重設預設
+                  </button>
+                )}
               </div>
 
               {/* ── Right: info ── */}
@@ -269,16 +287,14 @@ function MovesTab({ moves }: { moves: Move[] }) {
                 <div className="adm-move-hdr">
                   <span style={{ color: SLOT_COLOR[m.slot], fontWeight: 900, fontSize: 11 }}>{SLOT_LABEL[m.slot]}</span>
                   <b style={{ color: '#d8dcf4', fontSize: 15 }}>{m.name}</b>
+                  {hasOverride && <span style={{ fontSize: 9, color: '#c8a15a', marginLeft: 6 }}>✎ 已修改</span>}
                 </div>
 
-                {/* Activation cost */}
                 <div className="adm-move-cost">
                   {dot
-                    ? <>
-                        <span className="adm-cost-badge" style={{ color: SLOT_COLOR[m.slot] }}>
-                          啟動條件：{dot} {SUIT_NAME[suitColor]} × {cost}
-                        </span>
-                      </>
+                    ? <span className="adm-cost-badge" style={{ color: SLOT_COLOR[m.slot] }}>
+                        啟動條件：{dot} {SUIT_NAME[suitColor]} × {cost}
+                      </span>
                     : <span className="adm-cost-badge" style={{ color: '#888' }}>被動 — 不消耗手牌</span>
                   }
                 </div>
@@ -296,17 +312,117 @@ function MovesTab({ moves }: { moves: Move[] }) {
               </div>
             </div>
 
+            {isEdit && (
+              <MoveEditForm move={m} onSave={() => { setEditId(null); forceRender(n => n + 1) }} />
+            )}
+
             {isOpen && (
               <div className="adm-move-crop">
-                <ImageCrop
-                  storageKey={`cb_move_img_${m.id}`}
-                  onSave={() => markSaved(m.id)}
-                />
+                <ImageCrop storageKey={`cb_move_img_${m.id}`} onSave={() => markSaved(m.id)} />
               </div>
             )}
           </div>
         )
       })}
+    </div>
+  )
+}
+
+// ─── MoveEditForm ─────────────────────────────────────────────────────────────
+
+function MoveEditForm({ move, onSave }: { move: Move; onSave: () => void }) {
+  const [name,       setName]       = useState(move.name)
+  const [condition,  setCondition]  = useState<string>(move.condition != null ? String(move.condition) : '')
+  const [rangeType,  setRangeType]  = useState<string>(move.rangeType ?? '')
+  const [scope,      setScope]      = useState<string>(move.scope ?? '')
+  const [powerRatio, setPowerRatio] = useState<string>(move.powerRatio != null ? String(move.powerRatio) : '')
+  const [hitRate,    setHitRate]    = useState<string>(move.hitRate    != null ? String(Math.round(move.hitRate * 100)) : '')
+  const [critRate,   setCritRate]   = useState<string>(move.critRate   != null ? String(Math.round(move.critRate * 100)) : '')
+  const [cooldown,   setCooldown]   = useState<string>(move.cooldown   != null ? String(move.cooldown) : '')
+  const [desc,       setDesc]       = useState(move.description)
+
+  const num = (s: string) => s.trim() === '' ? null : Number(s)
+  const pct = (s: string) => s.trim() === '' ? null : Number(s) / 100
+
+  const handleSave = () => {
+    saveMoveOverride(move.id, {
+      name,
+      condition:  num(condition),
+      rangeType:  (rangeType  || null) as RangeType,
+      scope:      (scope      || null) as Scope,
+      powerRatio: num(powerRatio),
+      hitRate:    pct(hitRate),
+      critRate:   pct(critRate),
+      cooldown:   num(cooldown),
+      description: desc,
+    })
+    onSave()
+  }
+
+  const row = (label: string, node: React.ReactNode) => (
+    <label className="adm-field" style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <span style={{ minWidth: 60, fontSize: 11 }}>{label}</span>
+      {node}
+    </label>
+  )
+
+  return (
+    <div className="adm-move-edit-form">
+      <div className="adm-move-edit-grid">
+        {row('招式名稱',
+          <input className="adm-input" value={name} onChange={e => setName(e.target.value)} style={{ flex: 1 }} />
+        )}
+        {row('攻擊範圍',
+          <select className="adm-select" value={rangeType} onChange={e => setRangeType(e.target.value)}>
+            <option value="">— 無（被動）</option>
+            <option value="劍">⚔ 近戰（劍）</option>
+            <option value="槍">🔫 遠程（槍）</option>
+            <option value="法">✦ 魔法（法）</option>
+          </select>
+        )}
+        {row('目標範圍',
+          <select className="adm-select" value={scope} onChange={e => setScope(e.target.value)}>
+            <option value="">— 無</option>
+            <option value="單">單體</option>
+            <option value="群">群體</option>
+          </select>
+        )}
+        {row('啟動費用',
+          <input className="adm-input" type="number" min={1} max={10} value={condition}
+            onChange={e => setCondition(e.target.value)}
+            placeholder="空=被動" style={{ width: 80 }} />
+        )}
+        {row('威力倍率',
+          <input className="adm-input" type="number" min={0} step={0.05} value={powerRatio}
+            onChange={e => setPowerRatio(e.target.value)}
+            placeholder="空=不計" style={{ width: 80 }} />
+        )}
+        {row('命中率 %',
+          <input className="adm-input" type="number" min={0} max={100} value={hitRate}
+            onChange={e => setHitRate(e.target.value)}
+            placeholder="空=不計" style={{ width: 80 }} />
+        )}
+        {row('爆擊率 %',
+          <input className="adm-input" type="number" min={0} max={100} value={critRate}
+            onChange={e => setCritRate(e.target.value)}
+            placeholder="空=不計" style={{ width: 80 }} />
+        )}
+        {row('冷卻回合',
+          <input className="adm-input" type="number" min={0} value={cooldown}
+            onChange={e => setCooldown(e.target.value)}
+            placeholder="空=無CD" style={{ width: 80 }} />
+        )}
+        <label className="adm-field" style={{ gridColumn: '1 / -1' }}>
+          <span style={{ fontSize: 11 }}>招式說明</span>
+          <textarea className="adm-input" rows={2}
+            value={desc} onChange={e => setDesc(e.target.value)}
+            style={{ resize: 'vertical', fontFamily: 'inherit', fontSize: 12 }} />
+        </label>
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+        <button className="btn primary sm" onClick={handleSave}>儲存修改</button>
+        <button className="btn sm" onClick={onSave}>取消</button>
+      </div>
     </div>
   )
 }
