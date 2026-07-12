@@ -310,8 +310,8 @@ body { margin: 0; }
    CHAR SELECT
 ══════════════════════════════════════════════════════════════ */
 .char-select {
-  flex: 1; padding: 28px 32px; display: flex; flex-direction: column;
-  gap: 12px; max-width: 1200px; margin: 0 auto; width: 100%;
+  flex: 1; padding: 12px 20px; display: flex; flex-direction: column;
+  gap: 8px; max-width: 1400px; margin: 0 auto; width: 100%; min-height: 0;
 }
 
 /* ── Header ─────────────────────────────────────────────────── */
@@ -432,11 +432,12 @@ body { margin: 0; }
 .cs-carousel {
   position: relative;
   width: 100%;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
   cursor: grab;
   touch-action: pan-y;
   user-select: none;
-  flex-shrink: 0;
 }
 .cs-carousel:active { cursor: grabbing; }
 
@@ -477,12 +478,14 @@ body { margin: 0; }
 
 .cs-car-name {
   position: absolute;
-  bottom: -26px; left: 50%;
-  transform: translateX(-50%);
+  bottom: 0; left: 0; right: 0;
+  padding: 24px 8px 10px;
+  background: linear-gradient(0deg, rgba(0,0,0,.85) 0%, transparent 100%);
   font-size: 14px; font-weight: 700;
-  white-space: nowrap;
-  text-shadow: 0 1px 8px #000;
+  text-align: center;
+  text-shadow: 0 1px 6px #000;
   pointer-events: none;
+  border-radius: 0 0 10px 10px;
 }
 
 /* Nav arrows */
@@ -1802,7 +1805,7 @@ h2 {
 ══════════════════════════════════════════════════════════════ */
 @media (max-width: 640px) {
   /* global padding reduction */
-  .char-select,
+  .char-select  { padding: 8px 8px; gap: 6px; }
   .deck-page    { padding: 12px 10px; gap: 8px; }
 
   /* char info popover full-width on mobile */

@@ -141,20 +141,19 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
     if (n > 0) setFocusIdx(p => (p >= n ? 0 : p))
   }, [n])
 
-  // Sizing — center portrait larger
+  // Sizing — fill available height
   const isLandscape = vh < 500
   const isMobile    = vw < 640
-  const STEP = isLandscape
-    ? Math.min(110, Math.round(vw * 0.16))
-    : isMobile
-      ? Math.min(150, Math.round(vw * 0.26))
-      : Math.min(200, Math.round(vw * 0.15))
-  const CW = isLandscape
-    ? Math.min(120, Math.round(vh * 0.65))
-    : isMobile
-      ? Math.min(210, Math.round(vw * 0.44))
-      : Math.min(260, Math.round(vw * 0.19))
-  const CH = Math.round(CW * 1.55)
+  // Overhead = everything except the carousel (header, filter, nav, selected, confirm, padding)
+  const overhead = isLandscape ? 95 : isMobile ? 175 : 160
+  const availH   = Math.max(220, vh - overhead)
+  // Portrait fills available height; width capped so it doesn't overflow screen
+  const CW = Math.min(
+    Math.round(availH / 1.55),
+    Math.round(vw * (isLandscape ? 0.45 : isMobile ? 0.80 : 0.78))
+  )
+  const CH   = Math.round(CW * 1.55)
+  const STEP = Math.round(CW * 0.65)
 
   const dragIdxOff   = dragStartX !== null ? -dragPixels / STEP : 0
   const displayFocus = focusIdx + dragIdxOff
@@ -240,7 +239,6 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
       {/* ── Carousel */}
       <div
         className="cs-carousel"
-        style={{ height: CH + 46 }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
