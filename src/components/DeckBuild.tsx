@@ -89,7 +89,7 @@ export default function DeckBuild({ onConfirm }: Props) {
       {/* Suit cards row */}
       <div>
         <div className="deck-section-label">花色牌（觸發招式條件）</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+        <div className="deck-suit-grid">
           {suitCards.map(c => <CardRow key={c.id} card={c} />)}
         </div>
       </div>

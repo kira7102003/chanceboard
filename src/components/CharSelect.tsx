@@ -1,39 +1,128 @@
 import { useState, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
-import { getChars } from '../utils/charStore'
+import { getChars, getUrlByKey } from '../utils/charStore'
 import { CharPortrait } from './Admin'
 import { moves as allMoves } from '../data/db'
+import type { Character } from '../types/character'
 import type { MoveSlot } from '../types/move'
 
 type ElFilter = '劍' | '槍' | '法' | 'all'
 
-const EL_COLOR: Record<string, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee' }
-const EL_LABEL: Record<string, string> = { '劍': '⚔ 劍', '槍': '🔫 槍', '法': '✦ 法' }
-
-const SLOT_LABEL: Record<MoveSlot, string> = { '劍': '刀', '槍': '槍', '法': '法', '願': '願', '被': '被' }
+const EL_COLOR:  Record<string, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee' }
+const EL_LABEL:  Record<string, string> = { '劍': '⚔ 劍', '槍': '🔫 槍', '法': '✦ 法' }
 const SLOT_COLOR: Record<MoveSlot, string> = { '劍': '#e85533', '槍': '#22cc77', '法': '#9955ee', '願': '#ddaa22', '被': '#888' }
-const SUIT_DOT:  Record<string, string>    = { red: '🔴', green: '🟢', blue: '🔵', yellow: '🟡' }
-const SUIT_OF:   Record<string, string>    = { '劍': 'red', '槍': 'green', '法': 'blue', '願': 'yellow' }
-const RANGE_LBL: Record<string, string>    = { '劍': '近戰', '槍': '遠程', '法': '魔法' }
+const SLOT_LABEL: Record<MoveSlot, string> = { '劍': '刀', '槍': '槍', '法': '法', '願': '願', '被': '被' }
+const SUIT_DOT:   Record<string, string>   = { red: '🔴', green: '🟢', blue: '🔵', yellow: '🟡' }
+const SUIT_OF:    Record<string, string>   = { '劍': 'red', '槍': 'green', '法': 'blue', '願': 'yellow' }
+const RANGE_LBL:  Record<string, string>   = { '劍': '近戰', '槍': '遠程', '法': '魔法' }
 
 interface Props {
   onConfirm: (ids: string[]) => void
   onToggle:  (id: string) => void
 }
 
+// ── Gallery (大典) modal ────────────────────────────────────────
+function CharGallery({ char, selectedIds, onToggle, onClose }: {
+  char: Character
+  selectedIds: string[]
+  onToggle: (id: string) => void
+  onClose: () => void
+}) {
+  const col      = EL_COLOR[char.element]
+  const isSel    = selectedIds.includes(char.id)
+  const selIdx   = selectedIds.indexOf(char.id)
+  const moves    = allMoves.filter(m => m.ownerId === char.id)
+  const imgUrl   = getUrlByKey(`cb_img_${char.id}`) ?? getUrlByKey(`cb_wide_img_${char.id}`)
+
+  return (
+    <div className="cs-gallery-overlay" onClick={onClose}>
+      <div className="cs-gallery-panel" onClick={e => e.stopPropagation()}>
+        <button className="cs-gallery-close" onClick={onClose}>✕</button>
+
+        {/* Portrait */}
+        <div className="cs-gallery-portrait" style={{ borderColor: col + '55' }}>
+          {imgUrl
+            ? <img src={imgUrl} alt={char.name} className="cs-gallery-img" />
+            : <div className="cs-gallery-placeholder" style={{ color: col }}>{char.name[0]}</div>
+          }
+          {isSel && selIdx >= 0 && (
+            <span className="cs-gallery-pos" style={{ background: col }}>{'前中後'[selIdx]}</span>
+          )}
+        </div>
+
+        {/* Info */}
+        <div className="cs-gallery-info">
+          <div className="cs-gallery-name" style={{ color: col }}>{char.name}</div>
+          {char.title && <div className="cs-gallery-title">{char.title}</div>}
+          <div className="cs-gallery-el" style={{ color: col }}>
+            {char.element === '劍' ? '⚔' : char.element === '槍' ? '🔫' : '✦'} {char.element}元素
+          </div>
+
+          {/* Stats */}
+          <div className="cs-gallery-stats">
+            {[
+              { k: 'HP', v: char.hp },
+              { k: '攻', v: char.atk },
+              { k: '防', v: char.def },
+              { k: '速', v: char.spd },
+            ].map(({ k, v }) => (
+              <div key={k} className="cs-gallery-stat">
+                <span className="cs-gallery-stat-k">{k}</span>
+                <span className="cs-gallery-stat-v">{v}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Move list */}
+          <div className="cs-gallery-moves">
+            {(['劍', '槍', '法', '願', '被'] as MoveSlot[]).map(slot => {
+              const mv = moves.find(m => m.slot === slot)
+              if (!mv) return null
+              const dot = SUIT_DOT[SUIT_OF[slot]] ?? null
+              return (
+                <div key={slot} className="cs-gallery-move">
+                  <span className="cs-gm-slot" style={{ color: SLOT_COLOR[slot] }}>[{SLOT_LABEL[slot]}]</span>
+                  <span className="cs-gm-name">{mv.name}</span>
+                  {dot && <span className="cs-gm-cost">{dot}×{mv.condition ?? 1}</span>}
+                  {mv.rangeType  && <span className="cs-gm-tag">{RANGE_LBL[mv.rangeType]}</span>}
+                  {mv.powerRatio && <span className="cs-gm-tag">威{mv.powerRatio}×</span>}
+                  {mv.description && <div className="cs-gm-desc">{mv.description}</div>}
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Story */}
+          {char.story && <div className="cs-gallery-story">{char.story}</div>}
+
+          {/* Select / Deselect */}
+          <button
+            className={`btn ${isSel ? '' : 'primary'}`}
+            style={isSel ? { borderColor: col + '88', color: col } : undefined}
+            onClick={() => { onToggle(char.id); onClose() }}
+          >
+            {isSel ? `✕ 移除（${['前', '中', '後'][selIdx] ?? ''}）` : '✚ 選取此角色'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Main component ─────────────────────────────────────────────
 export default function CharSelect({ onConfirm, onToggle }: Props) {
   const characters = getChars()
   const { selectedCharIds, mySide, playerCount } = useGameStore()
   const ready = selectedCharIds.length === 3
 
-  const [elFilter,    setElFilter]    = useState<ElFilter>('all')
-  const [infoId,      setInfoId]      = useState<string | null>(null)
-  const [focusIdx,    setFocusIdx]    = useState(0)
-  const [dragStartX,  setDragStartX]  = useState<number | null>(null)
-  const [dragPixels,  setDragPixels]  = useState(0)
-  const [wasDragging, setWasDragging] = useState(false)
-  const [vw,          setVw]          = useState(window.innerWidth)
-  const [vh,          setVh]          = useState(window.innerHeight)
+  const [elFilter,     setElFilter]     = useState<ElFilter>('all')
+  const [galleryChar,  setGalleryChar]  = useState<Character | null>(null)
+  const [focusIdx,     setFocusIdx]     = useState(0)
+  const [dragStartX,   setDragStartX]   = useState<number | null>(null)
+  const [dragPixels,   setDragPixels]   = useState(0)
+  const [wasDragging,  setWasDragging]  = useState(false)
+  const [vw,           setVw]           = useState(window.innerWidth)
+  const [vh,           setVh]           = useState(window.innerHeight)
 
   useEffect(() => {
     const onResize = () => { setVw(window.innerWidth); setVh(window.innerHeight) }
@@ -49,9 +138,9 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
     if (n > 0) setFocusIdx(p => (p >= n ? 0 : p))
   }, [n])
 
-  // Sizing: mobile portrait, mobile landscape, desktop
+  // Sizing
   const isLandscape = vh < 500
-  const isMobile = vw < 640
+  const isMobile    = vw < 640
   const STEP = isLandscape
     ? Math.min(100, Math.round(vw * 0.14))
     : isMobile
@@ -64,12 +153,10 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
       : Math.min(190, Math.round(vw * 0.14))
   const CH = Math.round(CW * 1.55)
 
-  // Current float focus (moves during drag)
-  const dragIdxOff  = dragStartX !== null ? -dragPixels / STEP : 0
+  const dragIdxOff   = dragStartX !== null ? -dragPixels / STEP : 0
   const displayFocus = focusIdx + dragIdxOff
-  const isSnapping  = dragStartX === null
+  const isSnapping   = dragStartX === null
 
-  // Wrapped offset: shortest path around the ring
   function getOff(i: number): number {
     if (n === 0) return 0
     let off = i - displayFocus
@@ -78,7 +165,6 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
     return off
   }
 
-  // ── Pointer drag ─────────────────────────────────────────────
   function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
     setDragStartX(e.clientX)
     setDragPixels(0)
@@ -108,20 +194,21 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
     }
   }
 
-  const focusedInt   = n > 0 ? ((Math.round(displayFocus) % n) + n) % n : 0
-  const focusedChar  = filtered[focusedInt]
+  function handleCharDblClick(charId: string) {
+    if (wasDragging) return
+    const cdata = characters.find(c => c.id === charId)
+    if (cdata) setGalleryChar(cdata)
+  }
 
-  const infoChar  = infoId ? characters.find(c => c.id === infoId) ?? null : null
-  const infoMoves = infoId ? allMoves.filter(m => m.ownerId === infoId) : []
+  const focusedInt  = n > 0 ? ((Math.round(displayFocus) % n) + n) % n : 0
+  const focusedChar = filtered[focusedInt]
 
-  // Sort for z-index: far chars rendered behind center
   const charsWithOff = filtered.map((c, i) => ({ c, i, off: getOff(i) }))
   const sorted = [...charsWithOff].sort((a, b) => Math.abs(b.off) - Math.abs(a.off))
-
   const VISIBLE_CUTOFF = Math.min(7, n * 0.45)
 
   return (
-    <div className="char-select" onClick={() => setInfoId(null)}>
+    <div className="char-select">
 
       {/* ── Header */}
       <div className="cs-header">
@@ -161,13 +248,12 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
         onPointerCancel={onPointerUp}
       >
         {sorted.map(({ c, off }) => {
-          const absOff = Math.abs(off)
+          const absOff   = Math.abs(off)
           if (absOff > VISIBLE_CUTOFF) return null
-
-          const scale   = Math.max(0.28, 1 - absOff * 0.16)
-          const opacity = Math.max(0.04, 1 - absOff * 0.24)
-          const xOff    = Math.round(off * STEP)
-          const zIdx    = Math.round(100 - absOff * 12)
+          const scale    = Math.max(0.28, 1 - absOff * 0.16)
+          const opacity  = Math.max(0.04, 1 - absOff * 0.24)
+          const xOff     = Math.round(off * STEP)
+          const zIdx     = Math.round(100 - absOff * 12)
           const isCenter = absOff < 0.5
           const sel      = selectedCharIds.includes(c.id)
           const selIdx   = selectedCharIds.indexOf(c.id)
@@ -178,23 +264,20 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
               key={c.id}
               className={`cs-car-char${sel ? ' selected' : ''}${isCenter ? ' center' : ''}`}
               style={{
-                width:     CW,
-                height:    CH,
+                width:      CW,
+                height:     CH,
                 marginLeft: -CW / 2,
                 marginTop:  -CH / 2,
-                transform: `translateX(${xOff}px) scale(${scale})`,
+                transform:  `translateX(${xOff}px) scale(${scale})`,
                 opacity,
-                zIndex:    zIdx,
-                '--ecol': col,
+                zIndex:     zIdx,
+                '--ecol':   col,
                 transition: isSnapping
                   ? 'transform .28s cubic-bezier(.25,.46,.45,.94), opacity .28s'
                   : 'none',
               } as React.CSSProperties}
               onClick={e => { e.stopPropagation(); handleCharClick(c.id, off) }}
-              onDoubleClick={e => {
-                e.stopPropagation()
-                if (!wasDragging) setInfoId(p => p === c.id ? null : c.id)
-              }}
+              onDoubleClick={e => { e.stopPropagation(); handleCharDblClick(c.id) }}
             >
               <CharPortrait
                 id={c.id} size={CW} height={CH}
@@ -211,13 +294,17 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
         })}
       </div>
 
-      {/* ── Nav arrows + counter */}
+      {/* ── Nav arrows + counter + 大典 button */}
       <div className="cs-nav-hint">
         <button className="cs-nav-btn" onClick={() => setFocusIdx(p => ((p - 1 + n) % n))}>‹</button>
-        <span className="cs-nav-label">
-          {focusedChar?.name ?? ''}
-          <span className="cs-nav-count">{focusedInt + 1} / {n}</span>
-        </span>
+        <button
+          className="cs-nav-label cs-nav-gallery-btn"
+          onClick={() => focusedChar && setGalleryChar(focusedChar)}
+          title="查看角色大圖"
+        >
+          <span>{focusedChar?.name ?? ''}</span>
+          <span className="cs-nav-count">{focusedInt + 1} / {n} · 雙擊大典</span>
+        </button>
         <button className="cs-nav-btn" onClick={() => setFocusIdx(p => (p + 1) % n)}>›</button>
       </div>
 
@@ -237,37 +324,6 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
         </div>
       )}
 
-      {/* ── Move info popover (double-click) */}
-      {infoChar && (
-        <div className="char-info-overlay" onClick={() => setInfoId(null)}>
-          <div className="char-info-panel" onClick={e => e.stopPropagation()}>
-            <div className="char-info-hdr">
-              <span className="char-info-name">{infoChar.name}</span>
-              <button className="char-info-close" onClick={() => setInfoId(null)}>✕</button>
-            </div>
-            <div className="char-info-moves">
-              {(['劍', '槍', '法', '願', '被'] as MoveSlot[]).map(slot => {
-                const mv = infoMoves.find(m => m.slot === slot)
-                if (!mv) return null
-                const dot = SUIT_DOT[SUIT_OF[slot]] ?? null
-                return (
-                  <div key={slot} className="char-info-move">
-                    <div className="cim-header">
-                      <span className="cim-slot" style={{ color: SLOT_COLOR[slot] }}>[{SLOT_LABEL[slot]}]</span>
-                      <span className="cim-name">{mv.name}</span>
-                      <span className="cim-cost">{dot ? `${dot}×${mv.condition ?? 1}` : '—'}</span>
-                      {mv.rangeType  && <span className="cim-range">{RANGE_LBL[mv.rangeType]}</span>}
-                      {mv.powerRatio && <span className="cim-power">威力 {mv.powerRatio}×</span>}
-                    </div>
-                    {mv.description && <div className="cim-desc">{mv.description}</div>}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* ── Confirm */}
       <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
         <button className="btn primary" disabled={!ready} onClick={() => onConfirm(selectedCharIds)}>
@@ -275,6 +331,16 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
         </button>
         {!ready && <span className="hint">還需 {3 - selectedCharIds.length} 位</span>}
       </div>
+
+      {/* ── 大典 Gallery modal */}
+      {galleryChar && (
+        <CharGallery
+          char={galleryChar}
+          selectedIds={selectedCharIds}
+          onToggle={onToggle}
+          onClose={() => setGalleryChar(null)}
+        />
+      )}
     </div>
   )
 }
