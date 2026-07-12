@@ -200,6 +200,17 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
 
   const focusedInt  = n > 0 ? ((Math.round(displayFocus) % n) + n) % n : 0
   const focusedChar = filtered[focusedInt]
+  const prevIdx     = n > 0 ? ((focusedInt - 1 + n) % n) : 0
+  const nextIdx     = n > 0 ? ((focusedInt + 1) % n) : 0
+  const prevChar    = filtered[prevIdx]
+  const nextChar    = filtered[nextIdx]
+
+  function adjNameSize(name: string): number {
+    // shrink font so name fits inside ~60px (Chinese char ~1em)
+    if (name.length <= 3) return 13
+    if (name.length <= 5) return 11
+    return 9
+  }
 
   const charsWithOff = filtered.map((c, i) => ({ c, i, off: getOff(i) }))
   const sorted = [...charsWithOff].sort((a, b) => Math.abs(b.off) - Math.abs(a.off))
@@ -307,12 +318,25 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
 
       {/* ── Nav arrows + counter */}
       <div className="cs-nav-hint">
-        <button className="cs-nav-btn" onClick={() => setFocusIdx(p => ((p - 1 + n) % n))}>‹</button>
+        <button className="cs-nav-btn prev" onClick={() => setFocusIdx(prevIdx)}>
+          <span className="cs-nav-arrow">‹</span>
+          {prevChar && prevChar.id !== focusedChar?.id && (
+            <span className="cs-nav-adj-name" style={{ fontSize: adjNameSize(prevChar.name) }}>
+              {prevChar.name}
+            </span>
+          )}
+        </button>
         <div className="cs-nav-label">
-          <span>{focusedChar?.name ?? ''}</span>
           <span className="cs-nav-count">{focusedInt + 1} / {n}</span>
         </div>
-        <button className="cs-nav-btn" onClick={() => setFocusIdx(p => (p + 1) % n)}>›</button>
+        <button className="cs-nav-btn next" onClick={() => setFocusIdx(nextIdx)}>
+          <span className="cs-nav-arrow">›</span>
+          {nextChar && nextChar.id !== focusedChar?.id && (
+            <span className="cs-nav-adj-name" style={{ fontSize: adjNameSize(nextChar.name) }}>
+              {nextChar.name}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* ── Selected strip */}
