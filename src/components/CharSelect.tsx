@@ -277,7 +277,12 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
             >
               <CharPortrait
                 id={c.id} size={CW} height={CH}
-                style={{ width: '100%', height: '100%', borderRadius: 10, display: 'block', pointerEvents: 'none' }}
+                style={{
+                  width: '100%', height: '100%',
+                  objectFit: 'cover', objectPosition: 'top center',
+                  borderRadius: 0, background: 'transparent',
+                  display: 'block', pointerEvents: 'none',
+                }}
               />
               {sel && selIdx >= 0 && (
                 <span className="cs-pos" style={{ background: col }}>{'前中後'[selIdx]}</span>
