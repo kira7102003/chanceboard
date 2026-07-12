@@ -4,9 +4,9 @@ import { getChars, saveChars, resetChars, getCharImg, getUrlByKey, uploadByKey, 
 import type { Character } from '../types/character'
 import type { Move } from '../types/move'
 
-const EL_COLOR: Record<string, string>   = { sword: '#e87733', gun: '#22cc77', magic: '#9955ee' }
-const SLOT_COLOR: Record<string, string> = { sword: '#e87733', gun: '#22cc77', magic: '#9955ee', wish: '#ddaa22', passive: '#666688' }
-const SLOT_LABEL: Record<string, string> = { sword: '⚔ 劍槽', gun: '🔫 槍槽', magic: '✦ 法槽', wish: '🌠 願槽', passive: '💠 被動' }
+const EL_COLOR: Record<string, string>   = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee' }
+const SLOT_COLOR: Record<string, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee', '願': '#ddaa22', '被': '#666688' }
+const SLOT_LABEL: Record<string, string> = { '劍': '⚔ 劍槽', '槍': '🔫 槍槽', '法': '✦ 法槽', '願': '🌠 願槽', '被': '💠 被動' }
 
 interface Props { onBack: () => void }
 
