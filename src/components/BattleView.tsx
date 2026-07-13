@@ -20,7 +20,6 @@ function slotDepth(_side: 'A' | 'B', slot: number): number {
   return slot - 1
 }
 const EL_COLOR: Record<string, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee' }
-const SUIT_CLS: Record<string, string>  = { red: 'suit-red', green: 'suit-green', blue: 'suit-blue', yellow: 'suit-yellow', flower: 'suit-flower' }
 const MOVE_SLOTS: MoveSlot[] = ['劍', '槍', '法', '願']
 const SLOT_LABEL: Record<MoveSlot, string> = { '劍': '刀', '槍': '槍', '法': '法', '願': '願', '被': '' }
 const SLOT_COLOR: Record<MoveSlot, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee', '願': '#ddaa22', '被': '#666' }
@@ -584,18 +583,6 @@ function HandPanel({ hand, onPlayCard, onDiscardCard, activeUnit, pendingSlot, o
           </div>
         )}
       </div>
-    </div>
-  )
-}
-
-// ─── CardChip ────────────────────────────────────────────────────────────────
-
-function CardChip({ card, onClick }: { card: Card; onClick: () => void }) {
-  return (
-    <div className={`card-chip ${SUIT_CLS[card.color] ?? ''}`} onClick={onClick}
-         title={card.description ?? ''}>
-      <span className="card-name">{card.name}</span>
-      {!card.isSuitCard && <span className="card-badge">花</span>}
     </div>
   )
 }
