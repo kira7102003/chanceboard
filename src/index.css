@@ -1055,10 +1055,26 @@ h2 {
 }
 
 /* ── Unit card ─────────────────────────────────────────────── */
+/* Poker-card stacking container */
+.slot-cards-stack {
+  position: relative; flex: 1; min-height: 0; overflow: visible;
+}
+.slot-cards-stack > .unit-card {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0; width: 100%;
+  transition: transform .2s, box-shadow .2s, z-index 0s;
+}
+.slot-cards-stack > .unit-card:nth-child(1) { z-index: 3; }
+/* fan LEFT (toward 後): cards peek left */
+.slot-stack-left  > .unit-card:nth-child(2) { z-index: 2; transform: translateX(-32px); opacity: .88; }
+.slot-stack-left  > .unit-card:nth-child(3) { z-index: 1; transform: translateX(-58px); opacity: .70; }
+/* fan RIGHT (後 slot toward 前): cards peek right */
+.slot-stack-right > .unit-card:nth-child(2) { z-index: 2; transform: translateX(32px);  opacity: .88; }
+.slot-stack-right > .unit-card:nth-child(3) { z-index: 1; transform: translateX(58px);  opacity: .70; }
+
 .unit-card {
   background: linear-gradient(155deg, var(--bg3) 0%, var(--bg2) 100%);
   border: 1px solid rgba(200,161,90,.1);
-  border-radius: 10px; padding: 8px 10px; cursor: default;
+  border-radius: 10px; padding: 0; cursor: default;
   transition: border-color .15s, box-shadow .15s, transform .15s;
   position: relative; overflow: hidden;
   flex: 1; display: flex; flex-direction: column; min-height: 0;
@@ -1101,7 +1117,7 @@ h2 {
 .uc-portrait {
   width: 100%; flex: 1; min-height: 120px;
   background-size: cover; background-position: center top;
-  border-radius: 8px; margin-bottom: 5px; position: relative; overflow: hidden;
+  border-radius: 10px 10px 0 0; margin-bottom: 0; position: relative; overflow: hidden;
 }
 .uc-portrait-img {
   position: absolute; inset: 0; width: 100%; height: 100%;
@@ -1120,7 +1136,8 @@ h2 {
   color: rgba(180,60,60,.9); text-shadow: 0 1px 6px rgba(0,0,0,.9);
 }
 .unit-card-row {
-  display: flex; justify-content: space-between; align-items: center; margin-top: 3px;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 2px 6px 4px; margin-top: 0;
 }
 .uc-hp    { font-size: 9px; color: #2c2c48; font-variant-numeric: tabular-nums; }
 .uc-timer { font-size: 9px; color: #22223a; font-variant-numeric: tabular-nums; }
@@ -2118,6 +2135,16 @@ h2 {
   /* 2nd-from-last (mid HP) peeks slightly behind */
   .slot-col .unit-card:nth-last-child(2) { bottom: 14px; left: -3px; opacity: 0.85; }
   /* last-child (highest HP) = front, stays at bottom: 0 left: 0 */
+  /* reset poker stack on mobile — use existing absolute stacking instead */
+  .slot-cards-stack { position: static; flex: 1; overflow: visible; }
+  .slot-cards-stack > .unit-card {
+    position: absolute; top: auto; right: auto; left: 0; bottom: 0;
+    width: 100%; transform: none; opacity: 1;
+  }
+  .slot-stack-left  > .unit-card:nth-child(2),
+  .slot-stack-left  > .unit-card:nth-child(3),
+  .slot-stack-right > .unit-card:nth-child(2),
+  .slot-stack-right > .unit-card:nth-child(3) { transform: none; }
   .unit-card      { padding: 3px 5px; flex: none; }
   .unit-card-name { font-size: 10px; margin-bottom: 2px; }
   /* fixed px — 13vh at 430px = only 56px, far too small */

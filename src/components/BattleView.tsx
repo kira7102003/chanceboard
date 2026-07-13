@@ -307,28 +307,36 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
             </div>
             {/* my-side renders [3,2,1]: 後 on left, 前 on right (facing enemy center) */}
             <div className="slots-row">
-              {([3,2,1] as const).map(slot => (
-                <div key={slot} className="slot-col">
-                  <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(mySide ?? 'A', slot)] }}>{getSlotLabel(mySide ?? 'A', slot)}</div>
-                  {myTeam.filter(u => getPendingSlot(u) === slot).sort((a, b) => a.hp - b.hp).map(u => {
-                    const isActive = !isAIBattle && readyUnits[0]?.id === u.id
-                    return (
-                      <UnitCard key={u.id} unit={u} clock={game.clock}
-                        selectable={isActive}
-                        highlighted={previewUnitId === u.id && !isActive}
-                        isPreview={!isActive}
-                        isCurrentTurn={u.id === globalActiveId}
-                        onClick={u.alive && !isAIBattle && (!isActive || previewUnitId !== null)
-                          ? () => {
-                              if (isActive) { setPreviewUnitId(null) }
-                              else { setPreviewUnitId(prev => prev === u.id ? null : u.id) }
-                            }
-                          : undefined}
-                      />
-                    )
-                  })}
-                </div>
-              ))}
+              {([3,2,1] as const).map(slot => {
+                // 後(slot3) fans right toward 前; 中/前 fan left toward 後
+                const fanClass = slot === 3 ? 'slot-stack-right' : 'slot-stack-left'
+                return (
+                  <div key={slot} className="slot-col">
+                    <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(mySide ?? 'A', slot)] }}>{getSlotLabel(mySide ?? 'A', slot)}</div>
+                    <div className={`slot-cards-stack ${fanClass}`}>
+                      {myTeam.filter(u => getPendingSlot(u) === slot)
+                        .sort((a, b) => b.hp - a.hp)
+                        .map(u => {
+                          const isActive = !isAIBattle && readyUnits[0]?.id === u.id
+                          return (
+                            <UnitCard key={u.id} unit={u} clock={game.clock}
+                              selectable={isActive}
+                              highlighted={previewUnitId === u.id && !isActive}
+                              isPreview={!isActive}
+                              isCurrentTurn={u.id === globalActiveId}
+                              onClick={u.alive && !isAIBattle && (!isActive || previewUnitId !== null)
+                                ? () => {
+                                    if (isActive) { setPreviewUnitId(null) }
+                                    else { setPreviewUnitId(prev => prev === u.id ? null : u.id) }
+                                  }
+                                : undefined}
+                            />
+                          )
+                        })}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </div>
 
@@ -338,14 +346,22 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
               <span className={`side-badge side-${oppSide}`}>{oppSide} 方</span>
             </div>
             <div className="slots-row">
-              {([1,2,3] as const).map(slot => (
-                <div key={slot} className="slot-col">
-                  <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(oppSide, slot)] }}>{getSlotLabel(oppSide, slot)}</div>
-                  {enemyTeam.filter(u => u.slot === slot).sort((a, b) => a.hp - b.hp).map(u => (
-                    <UnitCard key={u.id} unit={u} clock={game.clock} isCurrentTurn={u.id === globalActiveId} />
-                  ))}
-                </div>
-              ))}
+              {([1,2,3] as const).map(slot => {
+                // enemy 後(slot3) is rightmost → fans left toward 前; 前/中 fan right toward 後
+                const fanClass = slot === 3 ? 'slot-stack-left' : 'slot-stack-right'
+                return (
+                  <div key={slot} className="slot-col">
+                    <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(oppSide, slot)] }}>{getSlotLabel(oppSide, slot)}</div>
+                    <div className={`slot-cards-stack ${fanClass}`}>
+                      {enemyTeam.filter(u => u.slot === slot)
+                        .sort((a, b) => b.hp - a.hp)
+                        .map(u => (
+                          <UnitCard key={u.id} unit={u} clock={game.clock} isCurrentTurn={u.id === globalActiveId} />
+                        ))}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </div>
 
