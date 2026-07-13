@@ -13,6 +13,19 @@ import { useAIBattle }           from './hooks/useAIBattle'
 import { supabase }               from './utils/supabase'
 import type { User }              from '@supabase/supabase-js'
 
+// ── Rotate prompt (portrait mobile only) ─────────────────────────────────────
+
+function RotatePrompt() {
+  return (
+    <div className="rotate-prompt">
+      <div className="rotate-phone">📱</div>
+      <div className="rotate-arrow">↻</div>
+      <div className="rotate-text">請旋轉畫面以橫向操作</div>
+      <div className="rotate-sub">Please rotate to landscape</div>
+    </div>
+  )
+}
+
 // ── Waiting room (online only) ────────────────────────────────────────────────
 
 function WaitingRoom({ roomId, mySide }: { roomId: string; mySide: 'A' | 'B' | null }) {
@@ -170,6 +183,8 @@ export default function App() {
   if (!user) return <Login />
 
   return (
+    <>
+    <RotatePrompt />
     <div className="app" style={activeBgUrl ? {
       backgroundImage: `url(${activeBgUrl})`,
       backgroundSize: 'cover',
@@ -243,5 +258,6 @@ export default function App() {
         <div className="room-badge" style={{ color: '#9955ee' }}>🤖 AI 對戰</div>
       )}
     </div>
+    </>
   )
 }
