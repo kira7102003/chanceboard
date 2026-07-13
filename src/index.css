@@ -2063,13 +2063,15 @@ h2 {
   .dk-random-mobile { display: none; }
   .dk-hint          { display: none; }
   .deck-section-label { display: none; }
-  /* Compact card rows */
-  .deck-card        { padding: 5px 8px; gap: 4px; }
-  .deck-card-img    { width: 24px; height: 32px; }
-  .deck-card-main   { flex-direction: row; align-items: center; justify-content: space-between; gap: 6px; }
-  .deck-card-name   { font-size: 11px; }
-  .deck-card-controls .btn.sm { min-width: 30px; min-height: 30px; font-size: 14px; }
-  .deck-suit-grid   { grid-template-columns: repeat(2, 1fr); }
+  /* Compact card rows: only name + count + +/- */
+  .deck-card        { padding: 3px 6px; gap: 0; }
+  .deck-card-img    { display: none; }
+  .deck-card-header { align-items: center; gap: 0; }
+  .deck-card-main   { flex-direction: row; align-items: center; justify-content: space-between; gap: 4px; }
+  .deck-card-name   { font-size: 10px; }
+  .deck-card-controls .btn.sm { min-width: 28px; min-height: 28px; font-size: 12px; }
+  .deck-suit-grid   { grid-template-columns: repeat(2, 1fr); gap: 4px; }
+  .char-grid        { grid-template-columns: repeat(2, 1fr); gap: 4px; }
 
   /* ── Lobby compact ── */
   .lv2-btn-main   { padding: 10px 14px; }
@@ -2418,13 +2420,14 @@ h2 {
   }
   .dk-footer .btn { font-size: 13px; }
 
-  /* Compact card row */
-  .deck-card { flex-direction: column; padding: 7px 9px; gap: 0; }
-  .deck-card-header { align-items: center; gap: 7px; }
-  .deck-card-img    { width: 28px; height: 38px; }
+  /* Ultra-compact card row: name + count + +/- only, no image */
+  .deck-card        { padding: 4px 8px; gap: 0; }
+  .deck-card-header { align-items: center; gap: 0; }
+  .deck-card-img    { display: none; }
   .deck-card-main   { flex-direction: row; align-items: center; justify-content: space-between; gap: 6px; }
-  .deck-card-name   { font-size: 12px; }
+  .deck-card-name   { font-size: 11px; }
   .deck-card-controls { margin-top: 0; }
   .deck-card-controls .btn.sm { min-width: 32px; min-height: 32px; font-size: 15px; }
-  .deck-suit-grid { grid-template-columns: repeat(2, 1fr); }
+  .deck-suit-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .char-grid      { grid-template-columns: repeat(2, 1fr); gap: 6px; }
 }
