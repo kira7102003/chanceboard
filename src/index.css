@@ -2067,11 +2067,11 @@ h2 {
   /* ── Spotlight panel: hide (only hides at ≤640px wide otherwise) ── */
   .unit-spotlight-panel { display: none; }
 
-  /* ── Character slots: no scroll, use fixed px portrait ── */
+  /* ── Character slots: stack 近/中/遠 in same cell ── */
   .battle-side    { overflow: hidden; padding: 4px 8px; gap: 4px; }
-  .slots-row      { overflow: hidden; padding-top: 16px; gap: 3px; }
-  .slot-col       { min-width: 80px; }
-  .slot-name      { font-size: 9px; }
+  .slots-row      { position: relative; overflow: hidden; padding-top: 0; gap: 0; }
+  .slot-col       { position: absolute; bottom: 0; left: 50%; margin-left: -45px; width: 90px; min-width: 0; }
+  .slot-name      { display: none; }
   .unit-card      { padding: 3px 5px; }
   .unit-card-name { font-size: 10px; margin-bottom: 2px; }
   /* fixed px — 13vh at 430px = only 56px, far too small */
@@ -2089,6 +2089,8 @@ h2 {
   .rup-hdr        { padding: 4px 10px; font-size: 11px; }
   .rup-body       { padding: 5px 10px; gap: 4px; }
   .rup-queue      { padding: 2px 10px; }
+  /* Hide skill images to save height */
+  .skill-img-wrap { display: none; }
   /* Single row of 4 skill buttons — use remaining width */
   .rup-skills-grid { flex-wrap: nowrap; gap: 4px; }
   .skill-btn      { flex: 1; min-width: 0; max-width: none; padding: 3px 5px; gap: 2px; font-size: 11px; }
