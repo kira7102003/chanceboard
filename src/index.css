@@ -1039,7 +1039,7 @@ h2 {
 @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .45 } }
 
 /* ── Slot layout — 階梯式：前=底 中=中 後=高 ────────────────── */
-.slots-row { display: flex; gap: 6px; align-items: flex-end; padding-top: 60px; overflow-x: auto; flex: 1; }
+.slots-row { display: flex; gap: 6px; align-items: flex-end; padding-top: 0; overflow-x: auto; flex: 1; }
 .slot-col  { flex: 1 0 95px; max-width: 180px; display: flex; flex-direction: column; gap: 5px; min-width: 95px; transition: transform .25s ease; }
 .slot-name {
   font-size: 11px; font-weight: 900; letter-spacing: 3px;
@@ -1933,7 +1933,7 @@ h2 {
   .unit-spotlight-panel { display: none; }
   .battle-sides { grid-template-columns: 1fr; }
   .battle-side  { padding: 8px 10px; }
-  .slots-row    { gap: 4px; padding-top: 40px; }
+  .slots-row    { gap: 4px; padding-top: 0; }
   .uc-portrait  { height: clamp(130px, 20vh, 250px); }
   .unit-card    { padding: 5px 6px; }
   .unit-card-name { font-size: 11px; }
@@ -2003,7 +2003,7 @@ h2 {
   /* battle landscape: keep 2-col layout but shrink */
   .battle-header { padding: 3px 8px; }
   .atb-queue { padding: 3px 10px; min-height: 28px; }
-  .slots-row { padding-top: 28px; gap: 4px; }
+  .slots-row { padding-top: 0; gap: 4px; }
   .unit-card { padding: 4px 6px; }
   .uc-portrait { height: clamp(100px, 18vh, 180px); }
   .unit-card-name { font-size: 10px; margin-bottom: 2px; }

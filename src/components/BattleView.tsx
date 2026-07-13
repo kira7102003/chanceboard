@@ -15,10 +15,6 @@ function getSlotLabel(_side: 'A' | 'B', slot: number): string {
   if (slot === 2) return '中'
   return '後'
 }
-// depth 0=front/bottom(前), 2=back/top(後); same for both sides
-function slotDepth(_side: 'A' | 'B', slot: number): number {
-  return slot - 1
-}
 const EL_COLOR: Record<string, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee' }
 const MOVE_SLOTS: MoveSlot[] = ['劍', '槍', '法', '願']
 const SLOT_LABEL: Record<MoveSlot, string> = { '劍': '刀', '槍': '槍', '法': '法', '願': '願', '被': '' }
@@ -312,7 +308,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
             {/* my-side renders [3,2,1]: 後 on left, 前 on right (facing enemy center) */}
             <div className="slots-row">
               {([3,2,1] as const).map(slot => (
-                <div key={slot} className="slot-col" style={{ transform: `translateY(${-slotDepth(mySide ?? 'A', slot) * 28}px)` }}>
+                <div key={slot} className="slot-col">
                   <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(mySide ?? 'A', slot)] }}>{getSlotLabel(mySide ?? 'A', slot)}</div>
                   {myTeam.filter(u => getPendingSlot(u) === slot).sort((a, b) => a.hp - b.hp).map(u => {
                     const isActive = !isAIBattle && readyUnits[0]?.id === u.id
@@ -342,7 +338,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
             </div>
             <div className="slots-row">
               {([1,2,3] as const).map(slot => (
-                <div key={slot} className="slot-col" style={{ transform: `translateY(${-slotDepth(oppSide, slot) * 28}px)` }}>
+                <div key={slot} className="slot-col">
                   <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(oppSide, slot)] }}>{getSlotLabel(oppSide, slot)}</div>
                   {enemyTeam.filter(u => u.slot === slot).sort((a, b) => a.hp - b.hp).map(u => (
                     <UnitCard key={u.id} unit={u} clock={game.clock} />
@@ -554,7 +550,7 @@ function HandPanel({ hand, onPlayCard, onDiscardCard, activeUnit, pendingSlot, o
       <div className="hp-body">
         {activeUnit && (
           <div className="hp-pos-col">
-            {([1,2,3] as const).map(s => {
+            {([3,2,1] as const).map(s => {
               const tooFar = Math.abs(s - activeUnit.slot) > 1
               const label  = getSlotLabel(activeUnit.side, s)
               return (
