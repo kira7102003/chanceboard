@@ -2094,7 +2094,7 @@ h2 {
   .battle-side    { overflow: hidden; padding: 4px 8px; gap: 4px; }
   .slots-row      { overflow: visible; padding-top: 0; gap: 3px; }
   .slot-col       { position: relative; min-width: 80px; height: 155px; overflow: visible; }
-  .slot-name      { display: none; }
+  .slot-name      { position: relative; z-index: 2; font-size: 9px; letter-spacing: 1px; padding: 1px 0; }
   /* All unit-cards anchor to slot-col bottom; multiple units stack visually */
   .slot-col .unit-card { position: absolute; width: 100%; bottom: 0; left: 0; }
   /* 3rd-from-last (lowest HP) peeks most behind */

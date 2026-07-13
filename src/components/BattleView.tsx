@@ -7,15 +7,15 @@ import { getReadyUnits } from '../engine/atb'
 import ScorePanel from './ScorePanel'
 import { getCharImg, getCharWideImg, getMoveImg } from '../utils/charStore'
 
-const DIST_COLOR: Record<string, string> = { '近': '#e85533', '中': '#ddaa22', '遠': '#33aacc' }
+const DIST_COLOR: Record<string, string> = { '前': '#e85533', '中': '#ddaa22', '後': '#33aacc' }
 
-// Both sides: slot1=近(front), slot2=中, slot3=遠(back)
+// Both sides: slot1=前(front), slot2=中, slot3=後(back)
 function getSlotLabel(_side: 'A' | 'B', slot: number): string {
-  if (slot === 1) return '近'
+  if (slot === 1) return '前'
   if (slot === 2) return '中'
-  return '遠'
+  return '後'
 }
-// depth 0=front/bottom(近), 2=back/top(遠); same for both sides
+// depth 0=front/bottom(前), 2=back/top(後); same for both sides
 function slotDepth(_side: 'A' | 'B', slot: number): number {
   return slot - 1
 }
@@ -309,7 +309,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
               <span className={`side-badge side-${mySide}`}>{mySide} 方</span>
               <span className="side-meta">手牌 {myHand.length} · 自訂剩 {myCustomLeft}</span>
             </div>
-            {/* my-side renders [3,2,1]: 遠 on left, 近 on right (facing enemy center) */}
+            {/* my-side renders [3,2,1]: 後 on left, 前 on right (facing enemy center) */}
             <div className="slots-row">
               {([3,2,1] as const).map(slot => (
                 <div key={slot} className="slot-col" style={{ transform: `translateY(${-slotDepth(mySide ?? 'A', slot) * 28}px)` }}>
