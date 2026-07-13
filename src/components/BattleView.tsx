@@ -253,8 +253,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
         <div className="bh-item bh-sep">牌庫 <b>{game.drawPublic.length}</b> · 棄牌 <b>{game.discardPublic.length}</b></div>
         {!isAIBattle && (
           <div className="bh-item bh-sep">
-            <span className={`side-badge side-${mySide}`}>{mySide}方</span>
-            &nbsp;手牌 <b>{myHand.length}</b>{myCustomLeft > 0 && <> · 自訂剩 <b>{myCustomLeft}</b></>}
+            手牌 <b>{myHand.length}</b>{myCustomLeft > 0 && <> · 自訂剩 <b>{myCustomLeft}</b></>}
           </div>
         )}
         <div className="bh-atb">
@@ -266,25 +265,40 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
               <div key={u.id} className={`atb-chip atb-${u.side} ${ready ? 'atb-ready' : ''}`}>
                 <span style={{ color: EL_COLOR[u.element], fontSize: 8 }}>⬥</span>
                 {u.name}
-                <span className="atb-t">{ready ? '⚡' : `${Math.ceil(ticks / 10)}s`}</span>
+                <span className="atb-t">{ready ? '⚡行動' : `${Math.ceil(ticks / 10)}s`}</span>
               </div>
             )
           })}
         </div>
         <div style={{ flex: 1 }} />
+        {/* 前中後 PASS — 右側 */}
+        {!isAIBattle && readyUnits.length > 0 && (() => {
+          const au = readyUnits[0]
+          const pending = getPendingSlot(au)
+          return (
+            <div className="bh-pos-row">
+              {([3,2,1] as const).map(s => {
+                const tooFar = Math.abs(s - au.slot) > 1
+                return (
+                  <button key={s}
+                    className={`btn sm ${pending === s ? 'primary' : ''}`}
+                    disabled={tooFar}
+                    onClick={() => !tooFar && setPendingSlots(prev => ({ ...prev, [au.id]: s }))}>
+                    {getSlotLabel(au.side, s)}
+                  </button>
+                )
+              })}
+              <button className="btn danger sm" onClick={() => { applyPendingMove(au); onPass(au.id) }}>PASS</button>
+            </div>
+          )
+        })()}
         {isAIBattle
           ? <span style={{ fontSize: 12, color: '#9955ee', letterSpacing: 1 }}>🤖 AI 對戰觀戰中</span>
           : <>
               <label className="auto-check">
                 <input type="checkbox" checked={isAutoMe} onChange={onToggleAuto} />
-                自動（{mySide}）
+                自動
               </label>
-              {!isSolo && (
-                <label className="auto-check" style={{ opacity: .45 }}>
-                  <input type="checkbox" checked={isAutoOpp} readOnly />
-                  自動（{oppSide}）
-                </label>
-              )}
             </>
         }
         {(isAutoMe || isAIBattle) && (
@@ -400,19 +414,11 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                     : <div className="action-idle">等待行動…</div>
                 }
               </div>
-              {/* Hand panel + position buttons */}
+              {/* Hand panel */}
               <HandPanel
                 hand={myHand}
                 onPlayCard={onPlayCard}
                 onDiscardCard={onDiscardCard}
-                activeUnit={readyUnits.length > 0 ? readyUnits[0] : null}
-                pendingSlot={readyUnits.length > 0 ? getPendingSlot(readyUnits[0]) : undefined}
-                onPendingMove={s => {
-                  if (readyUnits.length > 0) setPendingSlots(prev => ({ ...prev, [readyUnits[0].id]: s }))
-                }}
-                onPass={() => {
-                  if (readyUnits.length > 0) { applyPendingMove(readyUnits[0]); onPass(readyUnits[0].id) }
-                }}
               />
             </div>
           )}
@@ -532,37 +538,15 @@ function ReadyUnitPanel({ unit, clock, suitInHand, onMove }: {
 
 const HP_ICON: Record<string, string> = { red: '劍', green: '槍', blue: '法', yellow: '院' }
 
-function HandPanel({ hand, onPlayCard, onDiscardCard, activeUnit, pendingSlot, onPendingMove, onPass }: {
+function HandPanel({ hand, onPlayCard, onDiscardCard }: {
   hand: Card[]
   onPlayCard: (id: string) => void
   onDiscardCard: (id: string) => void
-  activeUnit?: Unit | null
-  pendingSlot?: 1|2|3
-  onPendingMove?: (s: 1|2|3) => void
-  onPass?: () => void
 }) {
   return (
     <div className="hand-panel">
       <div className="hp-label">手牌 <span className="hp-hint">（× 棄牌）</span></div>
       <div className="hp-body">
-        {activeUnit && (
-          <div className="hp-pos-col">
-            {([3,2,1] as const).map(s => {
-              const tooFar = Math.abs(s - activeUnit.slot) > 1
-              const label  = getSlotLabel(activeUnit.side, s)
-              return (
-                <button key={s}
-                  className={`btn sm ${pendingSlot === s ? 'primary' : ''}`}
-                  disabled={tooFar}
-                  onClick={() => !tooFar && onPendingMove?.(s)}>
-                  {label}
-                </button>
-              )
-            })}
-            <button className="btn danger hp-pos-pass" onClick={onPass}>PASS</button>
-          </div>
-        )}
-
         <div className="hp-chips">
           {hand.map((card, i) => {
             const cardImg = getCardImg(card.id)
