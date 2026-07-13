@@ -980,20 +980,21 @@ h2 {
   display: flex; flex-direction: column; gap: 8px;
   scrollbar-width: thin; scrollbar-color: rgba(200,161,90,.1) transparent;
 }
-.battle-sides {
-  flex: 1; display: grid; grid-template-columns: 1fr 1fr; overflow: hidden; min-height: 0;
-  max-width: 1280px; width: 100%; margin-inline: auto;
+.battle-arena {
+  flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0;
+  padding: 8px 10px; max-width: 1280px; width: 100%; margin-inline: auto;
 }
-.battle-side {
-  padding: 10px 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
-  scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+.slot-col-my {
+  background: linear-gradient(180deg, rgba(8,20,60,.35) 0%, transparent 55%);
+  border-radius: 8px 8px 0 0;
 }
-.battle-side.my-side {
-  background: linear-gradient(160deg, rgba(8,14,40,.9) 0%, var(--bg) 60%);
-  border-right: 1px solid rgba(200,161,90,.07);
+.slot-col-enemy {
+  background: linear-gradient(180deg, rgba(60,8,8,.28) 0%, transparent 55%);
+  border-radius: 8px 8px 0 0;
 }
-.battle-side.enemy-side {
-  background: linear-gradient(160deg, rgba(30,8,8,.7) 0%, var(--bg) 60%);
+.arena-divider {
+  width: 1px; background: rgba(200,161,90,.18); align-self: stretch;
+  flex-shrink: 0; margin: 0 4px;
 }
 
 /* ── Spotlight card ─────────────────────────────────────────── */
@@ -1960,10 +1961,9 @@ h2 {
   /* char info popover full-width on mobile */
   .char-info-panel { min-width: min(90vw, 340px); max-width: 94vw; padding: 14px 14px; }
 
-  /* battle: hide spotlight, stack sides vertically on mobile */
+  /* battle: hide spotlight; single arena row on mobile */
   .unit-spotlight-panel { display: none; }
-  .battle-sides { grid-template-columns: 1fr; }
-  .battle-side  { padding: 8px 10px; }
+  .battle-arena { padding: 4px 6px; }
   .slots-row    { gap: 4px; padding-top: 0; }
   .uc-portrait  { height: clamp(130px, 20vh, 250px); }
   .unit-card    { padding: 5px 6px; }
@@ -2124,7 +2124,7 @@ h2 {
   .unit-spotlight-panel { display: none; }
 
   /* ── Character slots: stack units within same slot ── */
-  .battle-side    { overflow: hidden; padding: 4px 8px; gap: 4px; }
+  .battle-arena   { padding: 2px 6px; }
   .slots-row      { overflow: visible; padding-top: 0; gap: 3px; }
   .slot-col       { position: relative; min-width: 80px; height: 155px; overflow: visible; }
   .slot-name      { position: relative; z-index: 2; font-size: 9px; letter-spacing: 1px; padding: 1px 0; }
