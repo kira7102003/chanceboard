@@ -5,7 +5,7 @@ import type { Card } from '../types/card'
 import type { MoveSlot } from '../types/move'
 import { getReadyUnits } from '../engine/atb'
 import ScorePanel from './ScorePanel'
-import { getCharImg, getCharWideImg, getMoveImg } from '../utils/charStore'
+import { getCharImg, getCharWideImg, getMoveImg, getCardImg } from '../utils/charStore'
 
 const DIST_COLOR: Record<string, string> = { '前': '#e85533', '中': '#ddaa22', '後': '#33aacc' }
 
@@ -117,6 +117,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
   const atbQueue = [...game.teamA, ...game.teamB]
     .filter(u => u.alive)
     .sort((a, b) => a.nextActionAt - b.nextActionAt)
+  const globalActiveId = atbQueue[0]?.id
 
   if (game.phase === 'end') {
     if (isAIBattle) {
@@ -250,6 +251,20 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
           <span className="bh-timer-secs">{10 - Math.floor((game.clock % 100) / 10)}</span>s
         </div>
         <div className="bh-item bh-sep">牌庫 <b>{game.drawPublic.length}</b> · 棄牌 <b>{game.discardPublic.length}</b></div>
+        <div className="bh-atb">
+          <span className="atb-label">行動順序</span>
+          {atbQueue.map(u => {
+            const ticks = Math.max(0, u.nextActionAt - game.clock)
+            const ready = ticks === 0
+            return (
+              <div key={u.id} className={`atb-chip atb-${u.side} ${ready ? 'atb-ready' : ''}`}>
+                <span style={{ color: EL_COLOR[u.element], fontSize: 8 }}>⬥</span>
+                {u.name}
+                <span className="atb-t">{ready ? '⚡' : `${Math.ceil(ticks / 10)}s`}</span>
+              </div>
+            )
+          })}
+        </div>
         <div style={{ flex: 1 }} />
         {isAIBattle
           ? <span style={{ fontSize: 12, color: '#9955ee', letterSpacing: 1 }}>🤖 AI 對戰觀戰中</span>
@@ -277,21 +292,6 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
         )}
       </div>
 
-      {/* ── ATB Queue ── */}
-      <div className="atb-queue">
-        <span className="atb-label">行動順序</span>
-        {atbQueue.map(u => {
-          const ticks = Math.max(0, u.nextActionAt - game.clock)
-          const ready = ticks === 0
-          return (
-            <div key={u.id} className={`atb-chip atb-${u.side} ${ready ? 'atb-ready' : ''}`}>
-              <span style={{ color: EL_COLOR[u.element], fontSize: 8 }}>⬥</span>
-              {u.name}
-              <span className="atb-t">{ready ? '⚡' : `${Math.ceil(ticks / 10)}s`}</span>
-            </div>
-          )
-        })}
-      </div>
 
       {/* ── Battle main: spotlight | 我方 | 敵方 ── */}
       <div className="battle-main">
@@ -317,6 +317,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                         selectable={isActive}
                         highlighted={previewUnitId === u.id && !isActive}
                         isPreview={!isActive}
+                        isCurrentTurn={u.id === globalActiveId}
                         onClick={u.alive && !isAIBattle && (!isActive || previewUnitId !== null)
                           ? () => {
                               if (isActive) { setPreviewUnitId(null) }
@@ -341,7 +342,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                 <div key={slot} className="slot-col">
                   <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(oppSide, slot)] }}>{getSlotLabel(oppSide, slot)}</div>
                   {enemyTeam.filter(u => u.slot === slot).sort((a, b) => a.hp - b.hp).map(u => (
-                    <UnitCard key={u.id} unit={u} clock={game.clock} />
+                    <UnitCard key={u.id} unit={u} clock={game.clock} isCurrentTurn={u.id === globalActiveId} />
                   ))}
                 </div>
               ))}
@@ -418,12 +419,11 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
 
 // ─── UnitCard ────────────────────────────────────────────────────────────────
 
-function UnitCard({ unit, clock, onClick, selectable, highlighted, isPreview }: {
-  unit: Unit; clock: number; onClick?: () => void; selectable?: boolean; highlighted?: boolean; isPreview?: boolean
+function UnitCard({ unit, clock, onClick, selectable, highlighted, isPreview, isCurrentTurn }: {
+  unit: Unit; clock: number; onClick?: () => void; selectable?: boolean; highlighted?: boolean; isPreview?: boolean; isCurrentTurn?: boolean
 }) {
   const pct     = unit.alive ? (unit.hp / unit.maxHp) * 100 : 0
   const ticks   = Math.max(0, unit.nextActionAt - clock)
-  const ready   = ticks === 0 && unit.alive
   const hpColor = pct > 60 ? '#22cc66' : pct > 30 ? '#ccaa22' : '#cc3333'
   const img     = getCharWideImg(unit.characterId) ?? getCharImg(unit.characterId)
   const flip    = unit.side === 'B'
@@ -431,7 +431,7 @@ function UnitCard({ unit, clock, onClick, selectable, highlighted, isPreview }: 
 
   return (
     <div
-      className={`unit-card ${!unit.alive ? 'dead' : ''} ${ready ? 'uc-ready' : ''} ${stateClass} ${highlighted ? 'uc-preview-active' : ''}`}
+      className={`unit-card ${!unit.alive ? 'dead' : ''} ${isCurrentTurn ? 'uc-ready' : ''} ${stateClass} ${highlighted ? 'uc-preview-active' : ''}`}
       onClick={onClick}
     >
       {img
@@ -450,8 +450,8 @@ function UnitCard({ unit, clock, onClick, selectable, highlighted, isPreview }: 
       </div>
       <div className="unit-card-row">
         <span className="uc-hp">{unit.alive ? `${unit.hp}/${unit.maxHp}` : '倒下'}</span>
-        <span className={`uc-timer ${ready ? 'uc-timer-ready' : ''}`}>
-          {ready ? '⚡ 行動' : `${Math.ceil(ticks / 10)}s`}
+        <span className={`uc-timer ${isCurrentTurn ? 'uc-timer-ready' : ''}`}>
+          {isCurrentTurn ? '⚡ 行動' : `${Math.ceil(ticks / 10)}s`}
         </span>
       </div>
       {unit.statuses.length > 0 && (
@@ -492,8 +492,6 @@ function ReadyUnitPanel({ unit, clock, suitInHand, onMove }: {
             const canUse = !sKey || have >= need
             const onCD   = (unit.moveCooldownUntil[move.id] ?? 0) > clock
             const ok     = canUse && !onCD
-            const skillImg = getMoveImg(move.id)
-
             return (
               <button
                 key={slot}
@@ -503,12 +501,6 @@ function ReadyUnitPanel({ unit, clock, suitInHand, onMove }: {
                 onMouseEnter={e => { setHoveredSlot(slot); setPopAnchor(e.currentTarget.getBoundingClientRect()) }}
                 onMouseLeave={() => { setHoveredSlot(null); setPopAnchor(null) }}
               >
-                {skillImg && (
-                  <div className="skill-img-wrap">
-                    <img src={skillImg} className="skill-img" alt="" />
-                    {onCD && <span className="skill-cd-overlay">CD</span>}
-                  </div>
-                )}
                 <div className="skill-top">
                   <span style={{ color: ok ? SLOT_COLOR[slot] : '#444', fontWeight: 800 }}>
                     {SLOT_LABEL[slot]}
@@ -516,7 +508,7 @@ function ReadyUnitPanel({ unit, clock, suitInHand, onMove }: {
                   {sKey && (
                     <span className={canUse ? 'skill-ok' : 'skill-ng'}>{have}/{need}</span>
                   )}
-                  {!skillImg && onCD && <span className="skill-cd">CD</span>}
+                  {onCD && <span className="skill-cd">CD</span>}
                 </div>
                 <div className="skill-name">{move.name}</div>
               </button>
@@ -567,16 +559,25 @@ function HandPanel({ hand, onPlayCard, onDiscardCard, activeUnit, pendingSlot, o
         )}
 
         <div className="hp-chips">
-          {hand.map((card, i) => (
-            <div key={`${card.id}-${i}`}
-                className={`hp-chip hp-${card.color === 'flower' ? 'flower' : card.color}`}>
-              {card.isSuitCard
-                ? <span className="hp-icon">{HP_ICON[card.color]}</span>
-                : <span className="hp-icon hp-flower-name" onClick={() => onPlayCard(card.id)}>花 {card.name}</span>
-              }
-              <button className="hp-discard" title="棄牌" onClick={() => onDiscardCard(card.id)}>×</button>
-            </div>
-          ))}
+          {hand.map((card, i) => {
+            const cardImg = getCardImg(card.id)
+            return (
+              <div key={`${card.id}-${i}`}
+                  className={`hp-chip hp-${card.color === 'flower' ? 'flower' : card.color}`}>
+                {cardImg && (
+                  <img src={cardImg} className="hp-chip-img" alt=""
+                    onClick={!card.isSuitCard ? () => onPlayCard(card.id) : undefined}
+                    style={!card.isSuitCard ? { cursor: 'pointer' } : undefined}
+                    onError={e => { e.currentTarget.style.display = 'none' }} />
+                )}
+                {card.isSuitCard
+                  ? <span className="hp-icon">{HP_ICON[card.color]}</span>
+                  : <span className="hp-icon hp-flower-name" onClick={() => onPlayCard(card.id)}>花 {card.name}</span>
+                }
+                <button className="hp-discard" title="棄牌" onClick={() => onDiscardCard(card.id)}>×</button>
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>
@@ -649,7 +650,6 @@ function UnitPreviewPanel({ unit, clock, onClose }: { unit: Unit; clock: number;
             const move = unit.moves[slot]
             if (!move) return null
             const onCD = (unit.moveCooldownUntil[move.id] ?? 0) > clock
-            const skillImg = localStorage.getItem(`cb_move_img_${move.id}`)
             return (
               <div
                 key={slot}
@@ -658,15 +658,9 @@ function UnitPreviewPanel({ unit, clock, onClose }: { unit: Unit; clock: number;
                 onMouseEnter={e => { setHoveredSlot(slot); setPopAnchor(e.currentTarget.getBoundingClientRect()) }}
                 onMouseLeave={() => { setHoveredSlot(null); setPopAnchor(null) }}
               >
-                {skillImg && (
-                  <div className="skill-img-wrap">
-                    <img src={skillImg} className="skill-img" alt="" />
-                    {onCD && <span className="skill-cd-overlay">CD</span>}
-                  </div>
-                )}
                 <div className="skill-top">
                   <span style={{ color: SLOT_COLOR[slot], fontWeight: 800 }}>{SLOT_LABEL[slot]}</span>
-                  {!skillImg && onCD && <span className="skill-cd">CD</span>}
+                  {onCD && <span className="skill-cd">CD</span>}
                 </div>
                 <div className="skill-name">{move.name}</div>
               </div>

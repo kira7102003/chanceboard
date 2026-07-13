@@ -86,7 +86,7 @@ export default function DeckBuild({ onConfirm }: Props) {
           </span>
         </div>
         <button className="btn dk-random-btn" onClick={randomize}>
-          🎲 {selected.length === 0 ? '隨機' : `補齊`}
+          🎲 {selected.length === 0 ? '隨機配置' : `補齊（+${DECK_SIZE - selected.length}）`}
         </button>
       </div>
 

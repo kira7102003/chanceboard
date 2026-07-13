@@ -908,6 +908,12 @@ h2 {
 }
 .bh-item b { color: var(--text2); }
 .bh-sep { border-left: 1px solid rgba(200,161,90,.08); }
+.bh-atb {
+  display: flex; align-items: center; gap: 5px;
+  overflow-x: auto; flex-shrink: 1; min-width: 0;
+  scrollbar-width: none; padding: 0 6px;
+}
+.bh-atb::-webkit-scrollbar { display: none; }
 .bh-timer { font-size: 11px; color: #6066a0; min-width: 44px; text-align: center; }
 .bh-timer-secs { font-size: 16px; font-weight: 800; color: var(--gold); line-height: 1; }
 
@@ -1040,7 +1046,7 @@ h2 {
 @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .45 } }
 
 /* ── Slot layout — 階梯式：前=底 中=中 後=高 ────────────────── */
-.slots-row { display: flex; gap: 6px; align-items: flex-end; padding-top: 0; overflow-x: auto; flex: 1; }
+.slots-row { display: flex; gap: 6px; align-items: flex-start; padding-top: 0; overflow-x: auto; }
 .slot-col  { flex: 1 0 95px; max-width: 180px; display: flex; flex-direction: column; gap: 5px; min-width: 95px; transition: transform .25s ease; }
 .slot-name {
   font-size: 11px; font-weight: 900; letter-spacing: 3px;
@@ -1098,7 +1104,7 @@ h2 {
 }
 .uc-portrait-img {
   position: absolute; inset: 0; width: 100%; height: 100%;
-  object-fit: contain; object-position: center bottom;
+  object-fit: contain; object-position: center top;
   display: block;
 }
 .uc-portrait-name {
@@ -1387,6 +1393,12 @@ h2 {
 }
 .hp-chip.hp-flower { cursor: pointer; }
 .hp-chip.hp-flower:hover { transform: translateY(-2px); }
+.hp-chip-img {
+  width: 44px; height: 44px; object-fit: cover; border-radius: 4px;
+  display: block; flex-shrink: 0;
+}
+/* hide text icon when card image is displayed */
+.hp-chip:has(.hp-chip-img) .hp-icon { display: none; }
 .hp-icon  { font-size: 15px; font-weight: 900; line-height: 1; }
 .hp-name  { font-size: 7px; color: var(--text); text-align: center; line-height: 1.2;
              max-width: 40px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -2086,8 +2098,9 @@ h2 {
   .bh-timer-secs  { font-size: 12px; }
   .auto-speed-btn { padding: 1px 8px; font-size: 10px; }
 
-  /* ── ATB queue: hide entirely to save 22px ── */
+  /* ── ATB queue: hide entirely to save space ── */
   .atb-queue { display: none; }
+  .bh-atb    { display: none; }
 
   /* ── Spotlight panel: hide (only hides at ≤640px wide otherwise) ── */
   .unit-spotlight-panel { display: none; }
@@ -2134,6 +2147,9 @@ h2 {
   .hand-panel     { height: 90px; overflow: hidden; padding: 4px 6px 4px 8px; gap: 3px; }
   .hp-chips       { overflow: hidden; }
   .hp-chip        { width: 46px; height: 54px; }
+  /* mobile: hide card images, show text icons */
+  .hp-chip-img    { display: none; }
+  .hp-chip:has(.hp-chip-img) .hp-icon { display: flex; }
   .hp-icon        { font-size: 13px; }
   .hp-pos-col     { min-width: 38px; }
   .hp-pos-col .btn.sm { padding: 2px 4px; font-size: 10px; }
