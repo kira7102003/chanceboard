@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { SavedSession } from '../hooks/useRoom'
-import { getChars, getUrlByKey } from '../utils/charStore'
+import { getChars, getUrlByKey, onCloudSynced } from '../utils/charStore'
 import { supabase } from '../utils/supabase'
 import { usePlayerStore } from '../store/playerStore'
 import Collection from './Collection'
@@ -27,6 +27,10 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
   const [showOnline, setShowOnline] = useState(false)
   const [imgFailed,  setImgFailed]  = useState(false)
   const [panel,      setPanel]      = useState<Panel>(null)
+  const [, forceUpdate] = useState(0)
+
+  // Re-evaluate charImgUrl after cloud data loads (desktop fresh-session fix)
+  useEffect(() => onCloudSynced(() => { setImgFailed(false); forceUpdate(n => n + 1) }), [])
 
   const { coins, gems } = usePlayerStore()
 

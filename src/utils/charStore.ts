@@ -117,8 +117,9 @@ export function resetChars(): void {
 
 // ── Move overrides ────────────────────────────────────────────────────────────
 
-const LS_MOVES   = 'cb_moves'
-const MOVES_PATH = 'moves.json'
+const LS_MOVES        = 'cb_moves'
+const MOVES_PATH      = 'moves.json'
+const MOVES_CLOUD_FLAG = 'cb_moves_sb'   // set when moves.json has been uploaded at least once
 
 export function getMoveOverrides(): Record<string, Record<string, unknown>> {
   try {
@@ -135,7 +136,9 @@ export function saveMoveOverride(id: string, patch: Record<string, unknown>): vo
   if (_mvSyncTimer) clearTimeout(_mvSyncTimer)
   _mvSyncTimer = setTimeout(() => {
     const blob = new Blob([JSON.stringify(overrides)], { type: 'application/json' })
-    uploadBlob(MOVES_PATH, blob).catch(err => console.warn('[charStore] moves sync failed:', err))
+    uploadBlob(MOVES_PATH, blob)
+      .then(() => localStorage.setItem(MOVES_CLOUD_FLAG, '1'))
+      .catch(err => console.warn('[charStore] moves sync failed:', err))
   }, 2000)
 }
 
@@ -162,16 +165,18 @@ export async function initFromCloud(): Promise<boolean> {
     }
   } catch {}
 
-  // Fetch move overrides from cloud
-  try {
-    const mvResp = await fetch(storageUrl(MOVES_PATH), { cache: 'no-cache' })
-    if (mvResp.ok) {
-      const overrides = await mvResp.json()
-      if (overrides && typeof overrides === 'object' && !Array.isArray(overrides)) {
-        localStorage.setItem(LS_MOVES, JSON.stringify(overrides))
+  // Fetch move overrides from cloud only if they've been uploaded before
+  if (localStorage.getItem(MOVES_CLOUD_FLAG)) {
+    try {
+      const mvResp = await fetch(storageUrl(MOVES_PATH), { cache: 'no-cache' })
+      if (mvResp.ok) {
+        const overrides = await mvResp.json()
+        if (overrides && typeof overrides === 'object' && !Array.isArray(overrides)) {
+          localStorage.setItem(LS_MOVES, JSON.stringify(overrides))
+        }
       }
-    }
-  } catch {}
+    } catch {}
+  }
 
   // Read image manifest → set _sb flags for all known-uploaded keys
   try {
