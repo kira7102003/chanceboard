@@ -229,9 +229,10 @@ body { margin: 0; }
   40%     { transform: rotate(90deg); }
   60%     { transform: rotate(90deg); }
 }
-/* Show only on small screens in portrait orientation */
-@media (max-width: 640px) and (orientation: portrait) {
+/* Block portrait on mobile / small tablets */
+@media (max-width: 768px) and (orientation: portrait) {
   .rotate-prompt { display: flex; }
+  .app { display: none; }
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -2366,68 +2367,3 @@ h2 {
 /* on desktop keep random btn in header hidden, show in footer */
 .dk-random-btn { display: none; }
 
-@media (max-width: 640px) {
-  /* Page fills 100dvh with no scroll */
-  .deck-page {
-    height: 100dvh !important;
-    overflow: hidden !important;
-    padding: 0 !important;
-    gap: 0 !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-  }
-
-  /* Header row */
-  .dk-header {
-    padding: 10px 14px 8px;
-    flex-shrink: 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .dk-random-btn    { display: flex; }   /* show compact random btn in header */
-  .dk-random-mobile { display: none; }   /* hide full label in footer */
-  .dk-hint          { display: none; }
-
-  /* Selected strip */
-  .dk-strip {
-    padding: 6px 12px;
-    flex-shrink: 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .deck-selected-strip { min-height: 30px; padding: 5px 10px; }
-
-  /* Tab bar */
-  .dk-tabs { display: flex; flex-shrink: 0; border-bottom: 1px solid var(--border); }
-  .dk-tab  {
-    flex: 1; padding: 9px 4px;
-    background: none; border: none; border-bottom: 2px solid transparent;
-    color: var(--text); font-size: 13px; cursor: pointer;
-    transition: color .15s, border-color .15s;
-  }
-  .dk-tab.active { color: var(--gold); border-bottom-color: var(--gold); font-weight: 700; }
-  .dk-tab-count  { font-size: 11px; opacity: .6; margin-left: 4px; }
-
-  /* Card area scrolls */
-  .dk-cards { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 10px; }
-  .dk-tab-hidden { display: none !important; }
-  .deck-section-label { display: none; }
-
-  /* Footer always at bottom */
-  .dk-footer {
-    padding: 10px 14px;
-    flex-shrink: 0;
-    border-top: 1px solid var(--border);
-    flex-wrap: nowrap;
-  }
-  .dk-footer .btn { font-size: 13px; }
-
-  /* Ultra-compact card row: name + count + +/- only, no image */
-  .deck-card        { padding: 4px 8px; gap: 0; }
-  .deck-card-header { align-items: center; gap: 0; }
-  .deck-card-img    { display: none; }
-  .deck-card-main   { flex-direction: row; align-items: center; justify-content: space-between; gap: 6px; }
-  .deck-card-name   { font-size: 11px; }
-  .deck-card-controls { margin-top: 0; }
-  .deck-card-controls .btn.sm { min-width: 32px; min-height: 32px; font-size: 15px; }
-  .deck-suit-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
-  .char-grid      { grid-template-columns: repeat(2, 1fr); gap: 6px; }
-}
