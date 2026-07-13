@@ -299,7 +299,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
       </div>
 
 
-      {/* ── Battle main: all units in one full-width row ── */}
+      {/* ── Battle main: arena (50%) + act row (50%) ── */}
       <div className="battle-main">
         <div className="battle-arena">
           <div className="slots-row">
@@ -355,68 +355,68 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
             })}
           </div>
         </div>
-      </div>
 
-      {/* ── Lower section: log sidebar (left) | action + hand (right) ── */}
-      <div className="battle-lower">
-        <div className="log-panel" ref={logRef}>
-          {game.log.slice(-80).map((l, i) => (
-            <div key={i} className="log-line" dangerouslySetInnerHTML={{ __html: l.html }} />
-          ))}
-        </div>
-
-        {!isAIBattle && (
-          <div className="battle-right">
-            {/* Action / Preview area */}
-            <div className="action-area">
-              {previewUnit && previewUnit.id !== readyUnits[0]?.id
-                ? <UnitPreviewPanel unit={previewUnit} clock={game.clock} onClose={() => setPreviewUnitId(null)} />
-                : readyUnits.length > 0
-                  ? (() => {
-                      const activeUnit = readyUnits[0]
-                      const waitingUnits = readyUnits.slice(1)
-                      return (
-                        <>
-                          {waitingUnits.length > 0 && (
-                            <div className="rup-queue">
-                              <span className="rup-queue-label">待機</span>
-                              {waitingUnits.map(u => (
-                                <div key={u.id} className="rup-queue-chip">
-                                  <span style={{ color: EL_COLOR[u.element] }}>⬥</span>
-                                  <span>{u.name}</span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                          <ReadyUnitPanel
-                            key={activeUnit.id}
-                            unit={activeUnit}
-                            clock={game.clock}
-                            suitInHand={suitInHand}
-                            onMove={slot => handleMoveClick(activeUnit, slot)}
-                          />
-                        </>
-                      )
-                    })()
-                  : <div className="action-idle">等待行動…</div>
-              }
-            </div>
-            {/* Hand panel + position buttons */}
-            <HandPanel
-              hand={myHand}
-              onPlayCard={onPlayCard}
-              onDiscardCard={onDiscardCard}
-              activeUnit={readyUnits.length > 0 ? readyUnits[0] : null}
-              pendingSlot={readyUnits.length > 0 ? getPendingSlot(readyUnits[0]) : undefined}
-              onPendingMove={s => {
-                if (readyUnits.length > 0) setPendingSlots(prev => ({ ...prev, [readyUnits[0].id]: s }))
-              }}
-              onPass={() => {
-                if (readyUnits.length > 0) { applyPendingMove(readyUnits[0]); onPass(readyUnits[0].id) }
-              }}
-            />
+        {/* ── Act row: log (left) | action + hand (right) ── */}
+        <div className="battle-act-row">
+          <div className="log-panel" ref={logRef}>
+            {game.log.slice(-80).map((l, i) => (
+              <div key={i} className="log-line" dangerouslySetInnerHTML={{ __html: l.html }} />
+            ))}
           </div>
-        )}
+
+          {!isAIBattle && (
+            <div className="battle-right">
+              {/* Action / Preview area */}
+              <div className="action-area">
+                {previewUnit && previewUnit.id !== readyUnits[0]?.id
+                  ? <UnitPreviewPanel unit={previewUnit} clock={game.clock} onClose={() => setPreviewUnitId(null)} />
+                  : readyUnits.length > 0
+                    ? (() => {
+                        const activeUnit = readyUnits[0]
+                        const waitingUnits = readyUnits.slice(1)
+                        return (
+                          <>
+                            {waitingUnits.length > 0 && (
+                              <div className="rup-queue">
+                                <span className="rup-queue-label">待機</span>
+                                {waitingUnits.map(u => (
+                                  <div key={u.id} className="rup-queue-chip">
+                                    <span style={{ color: EL_COLOR[u.element] }}>⬥</span>
+                                    <span>{u.name}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <ReadyUnitPanel
+                              key={activeUnit.id}
+                              unit={activeUnit}
+                              clock={game.clock}
+                              suitInHand={suitInHand}
+                              onMove={slot => handleMoveClick(activeUnit, slot)}
+                            />
+                          </>
+                        )
+                      })()
+                    : <div className="action-idle">等待行動…</div>
+                }
+              </div>
+              {/* Hand panel + position buttons */}
+              <HandPanel
+                hand={myHand}
+                onPlayCard={onPlayCard}
+                onDiscardCard={onDiscardCard}
+                activeUnit={readyUnits.length > 0 ? readyUnits[0] : null}
+                pendingSlot={readyUnits.length > 0 ? getPendingSlot(readyUnits[0]) : undefined}
+                onPendingMove={s => {
+                  if (readyUnits.length > 0) setPendingSlots(prev => ({ ...prev, [readyUnits[0].id]: s }))
+                }}
+                onPass={() => {
+                  if (readyUnits.length > 0) { applyPendingMove(readyUnits[0]); onPass(readyUnits[0].id) }
+                }}
+              />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
