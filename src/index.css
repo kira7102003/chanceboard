@@ -2067,11 +2067,18 @@ h2 {
   /* ── Spotlight panel: hide (only hides at ≤640px wide otherwise) ── */
   .unit-spotlight-panel { display: none; }
 
-  /* ── Character slots: stack 近/中/遠 in same cell ── */
+  /* ── Character slots: stack units within same slot ── */
   .battle-side    { overflow: hidden; padding: 4px 8px; gap: 4px; }
-  .slots-row      { position: relative; overflow: hidden; padding-top: 0; gap: 0; }
-  .slot-col       { position: absolute; bottom: 0; left: 50%; margin-left: -45px; width: 90px; min-width: 0; }
+  .slots-row      { overflow: visible; padding-top: 0; gap: 3px; }
+  .slot-col       { position: relative; min-width: 80px; height: 155px; overflow: visible; }
   .slot-name      { display: none; }
+  /* All unit-cards anchor to slot-col bottom; multiple units stack visually */
+  .slot-col .unit-card { position: absolute; width: 100%; bottom: 0; left: 0; }
+  /* 3rd-from-last (lowest HP) peeks most behind */
+  .slot-col .unit-card:nth-last-child(3) { bottom: 28px; left: -5px; opacity: 0.72; }
+  /* 2nd-from-last (mid HP) peeks slightly behind */
+  .slot-col .unit-card:nth-last-child(2) { bottom: 14px; left: -3px; opacity: 0.85; }
+  /* last-child (highest HP) = front, stays at bottom: 0 left: 0 */
   .unit-card      { padding: 3px 5px; }
   .unit-card-name { font-size: 10px; margin-bottom: 2px; }
   /* fixed px — 13vh at 430px = only 56px, far too small */

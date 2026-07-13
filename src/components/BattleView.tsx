@@ -314,7 +314,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
               {([3,2,1] as const).map(slot => (
                 <div key={slot} className="slot-col" style={{ transform: `translateY(${-slotDepth(mySide ?? 'A', slot) * 28}px)` }}>
                   <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(mySide ?? 'A', slot)] }}>{getSlotLabel(mySide ?? 'A', slot)}</div>
-                  {myTeam.filter(u => getPendingSlot(u) === slot).map(u => {
+                  {myTeam.filter(u => getPendingSlot(u) === slot).sort((a, b) => a.hp - b.hp).map(u => {
                     const isActive = !isAIBattle && readyUnits[0]?.id === u.id
                     return (
                       <UnitCard key={u.id} unit={u} clock={game.clock}
@@ -344,7 +344,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
               {([1,2,3] as const).map(slot => (
                 <div key={slot} className="slot-col" style={{ transform: `translateY(${-slotDepth(oppSide, slot) * 28}px)` }}>
                   <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(oppSide, slot)] }}>{getSlotLabel(oppSide, slot)}</div>
-                  {enemyTeam.filter(u => u.slot === slot).map(u => (
+                  {enemyTeam.filter(u => u.slot === slot).sort((a, b) => a.hp - b.hp).map(u => (
                     <UnitCard key={u.id} unit={u} clock={game.clock} />
                   ))}
                 </div>
