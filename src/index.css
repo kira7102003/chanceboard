@@ -1055,7 +1055,7 @@ h2 {
 
 /* ── Slot layout — 階梯式：前=底 中=中 後=高 ────────────────── */
 .slots-row { display: flex; gap: 6px; align-items: stretch; padding-top: 0; overflow-x: auto; flex: 1; min-height: 0; }
-.slot-col  { flex: 1 0 95px; display: flex; flex-direction: column; gap: 5px; min-width: 95px; min-height: 0; transition: transform .25s ease; }
+.slot-col  { flex: 1 0 307px; display: flex; flex-direction: column; gap: 5px; min-width: 307px; min-height: 0; transition: transform .25s ease; }
 .slot-name {
   font-size: 11px; font-weight: 900; letter-spacing: 3px;
   text-align: center; padding: 3px 0;
@@ -1065,7 +1065,7 @@ h2 {
 /* ── Unit card ─────────────────────────────────────────────── */
 /* Poker-card stacking container */
 .slot-cards-stack {
-  position: relative; flex: 1; min-height: 0; overflow: visible;
+  position: relative; aspect-ratio: 307 / 458; width: 100%; overflow: hidden;
 }
 .slot-cards-stack > .unit-card {
   position: absolute; top: 0; left: 0; right: 0; bottom: 0; width: 100%;
@@ -1123,13 +1123,13 @@ h2 {
   font-size: 12px; font-weight: 700; margin-bottom: 5px; letter-spacing: .3px;
 }
 .uc-portrait {
-  width: 100%; flex: 1; min-height: 120px;
-  background-size: cover; background-position: center top;
+  width: 100%; flex: 1; min-height: 0;
   border-radius: 10px 10px 0 0; margin-bottom: 0; position: relative; overflow: hidden;
+  background: var(--bg2);
 }
 .uc-portrait-img {
   position: absolute; inset: 0; width: 100%; height: 100%;
-  object-fit: cover; object-position: center top;
+  object-fit: contain; object-position: center bottom;
   display: block;
 }
 .uc-portrait-name {
@@ -1970,7 +1970,9 @@ h2 {
   .unit-spotlight-panel { display: none; }
   .battle-arena { padding: 4px 6px; }
   .slots-row    { gap: 4px; padding-top: 0; }
-  .uc-portrait  { height: clamp(130px, 20vh, 250px); }
+  /* 手機：移除 307px 限制，6 欄等比縮放 */
+  .slot-col     { flex: 1 1 0; min-width: 0; }
+  .slot-cards-stack { aspect-ratio: 307 / 458; }
   .unit-card    { padding: 5px 6px; }
   .unit-card-name { font-size: 11px; }
   .battle-header { padding: 4px 8px; gap: 4px; flex-wrap: wrap; }
@@ -2040,7 +2042,6 @@ h2 {
   .atb-queue { padding: 3px 10px; min-height: 28px; }
   .slots-row { padding-top: 0; gap: 4px; }
   .unit-card { padding: 4px 6px; }
-  .uc-portrait { height: clamp(100px, 18vh, 180px); }
   .unit-card-name { font-size: 10px; margin-bottom: 2px; }
   .bh-item { padding: 2px 6px; font-size: 10px; }
   .bh-timer-secs { font-size: 13px; }
@@ -2140,7 +2141,7 @@ h2 {
   .slot-col .unit-card:nth-last-child(2) { bottom: 14px; left: -3px; opacity: 0.85; }
   /* last-child (highest HP) = front, stays at bottom: 0 left: 0 */
   /* reset poker stack on mobile — use existing absolute stacking instead */
-  .slot-cards-stack { position: static; flex: 1; overflow: visible; }
+  .slot-cards-stack { position: static; aspect-ratio: auto; flex: 1; overflow: visible; }
   .slot-cards-stack > .unit-card {
     position: absolute; top: auto; right: auto; left: 0; bottom: 0;
     width: 100%; transform: none; opacity: 1;
@@ -2151,8 +2152,7 @@ h2 {
   .slot-stack-right > .unit-card:nth-child(3) { transform: none; }
   .unit-card      { padding: 3px 5px; flex: none; }
   .unit-card-name { font-size: 10px; margin-bottom: 2px; }
-  /* fixed px — 13vh at 430px = only 56px, far too small */
-  .uc-portrait    { height: 115px; }
+  .uc-portrait    { height: 115px; flex: none; }
   .status-chips   { margin-top: 2px; }
   .uc-hp          { font-size: 8px; }
   .uc-timer       { font-size: 8px; }
