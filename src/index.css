@@ -2023,43 +2023,86 @@ h2 {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   RESPONSIVE — iPhone 14 landscape / very short screens (≤440px tall)
+   RESPONSIVE — 932×430 landscape mobile (iPhone 14 / ≤440px tall)
+   Goal: everything fits in viewport, NO scroll except log panel.
 ══════════════════════════════════════════════════════════════ */
 @media (max-height: 440px) {
-  /* charselect: maximum compression */
-  .char-select  { padding: 3px 8px; gap: 2px; }
-  .cs-header    { margin-bottom: 0; gap: 6px; }
+  /* app: hard lock to viewport, prevent any outer scroll */
+  .app { height: 100dvh; overflow: hidden; }
+
+  /* ── CharSelect: maximum compression ── */
+  .char-select  { padding: 3px 8px; gap: 2px; overflow: hidden; }
+  .cs-header    { margin-bottom: 0; gap: 6px; flex-shrink: 0; }
   .cs-header h2 { font-size: 13px; }
-  .cs-nav-hint  { gap: 4px; }
+  .cs-filter-bar { flex-shrink: 0; }
+  .cs-nav-hint  { gap: 4px; flex-shrink: 0; }
   .cs-nav-btn   { width: 76px; padding: 3px 6px; }
   .cs-nav-arrow { font-size: 18px; }
   .cs-nav-cur-name { font-size: 13px; }
   .cs-filter-btn { padding: 1px 8px; font-size: 10px; }
   .cs-filter-count { display: none; }
-  .cs-name      { display: none; }       /* hide portrait names to reclaim vertical space */
+  .cs-name      { display: none; }
   .cs-chip      { padding: 2px 6px; font-size: 10px; gap: 3px; }
-  .cs-selected  { gap: 4px; }
+  .cs-confirm-row { flex-shrink: 0; }
 
-  /* deck page: compact */
+  /* ── DeckBuild compact ── */
   .deck-page { padding: 4px 8px; gap: 6px; }
 
-  /* lobby */
-  .lv2-btn-main { padding: 10px 14px; }
-  .lv2-btn-title { font-size: 15px; }
-  .lv2-grid { gap: 5px; }
-  .lv2-btn-grid { padding: 8px 4px; font-size: 10px; }
-  .lv2-resources { top: 6px; right: 8px; }
+  /* ── Lobby compact ── */
+  .lv2-btn-main   { padding: 10px 14px; }
+  .lv2-btn-title  { font-size: 15px; }
+  .lv2-grid       { gap: 5px; }
+  .lv2-btn-grid   { padding: 8px 4px; font-size: 10px; }
+  .lv2-resources  { top: 6px; right: 8px; }
 
-  /* battle: minimal paddings */
-  .battle-header { padding: 2px 6px; font-size: 10px; }
-  .atb-queue { padding: 2px 8px; min-height: 22px; }
-  .bh-item { padding: 2px 6px; font-size: 10px; }
-  .bh-timer-secs { font-size: 12px; }
-  .slot-name { font-size: 9px; }
-  .unit-card-name { font-size: 10px; }
-  .slots-row { padding-top: 20px; gap: 3px; }
-  .uc-portrait { height: clamp(70px, 13vh, 130px); }
-  .action-bar { padding: 3px 6px; gap: 4px; }
+  /* ── Battle header: ultra-compact ── */
+  .battle-header  { padding: 2px 6px; font-size: 10px; flex-shrink: 0; }
+  .bh-item        { padding: 2px 6px; font-size: 10px; }
+  .bh-timer-secs  { font-size: 12px; }
+  .auto-speed-btn { padding: 1px 8px; font-size: 10px; }
+
+  /* ── ATB queue: hide entirely to save 22px ── */
+  .atb-queue { display: none; }
+
+  /* ── Spotlight panel: hide (only hides at ≤640px wide otherwise) ── */
+  .unit-spotlight-panel { display: none; }
+
+  /* ── Character slots: no scroll, use fixed px portrait ── */
+  .battle-side    { overflow: hidden; padding: 4px 8px; gap: 4px; }
+  .slots-row      { overflow: hidden; padding-top: 16px; gap: 3px; }
+  .slot-col       { min-width: 80px; }
+  .slot-name      { font-size: 9px; }
+  .unit-card      { padding: 3px 5px; }
+  .unit-card-name { font-size: 10px; margin-bottom: 2px; }
+  /* fixed px — 13vh at 430px = only 56px, far too small */
+  .uc-portrait    { height: 115px; }
+  .status-chips   { margin-top: 2px; }
+  .uc-hp          { font-size: 8px; }
+  .uc-timer       { font-size: 8px; }
+
+  /* ── Lower section: fixed compact height ── */
+  .battle-lower   { height: 148px; min-height: 148px; }
+  .log-panel      { overflow-y: auto; font-size: 9px; }  /* ONLY log scrolls */
+
+  /* ── Action area (RUP): no scroll, single-row skills ── */
+  .action-area    { overflow: hidden; }
+  .rup-hdr        { padding: 4px 10px; font-size: 11px; }
+  .rup-body       { padding: 5px 10px; gap: 4px; }
+  .rup-queue      { padding: 2px 10px; }
+  /* Single row of 4 skill buttons — use remaining width */
+  .rup-skills-grid { flex-wrap: nowrap; gap: 4px; }
+  .skill-btn      { flex: 1; min-width: 0; max-width: none; padding: 3px 5px; gap: 2px; font-size: 11px; }
+  .skill-top      { gap: 3px; }
+  .skill-name     { font-size: 9px; }
+  .section-label  { display: none; }
+
+  /* ── Hand panel: compact ── */
+  .hand-panel     { height: 90px; overflow: hidden; padding: 4px 6px 4px 8px; gap: 3px; }
+  .hp-chips       { overflow: hidden; }
+  .hp-chip        { width: 46px; height: 54px; }
+  .hp-icon        { font-size: 13px; }
+  .hp-pos-col     { min-width: 38px; }
+  .hp-pos-col .btn.sm { padding: 2px 4px; font-size: 10px; }
 }
 
 /* ══════════════════════════════════════════════════════════════
