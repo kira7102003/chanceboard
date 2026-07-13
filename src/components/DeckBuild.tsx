@@ -31,13 +31,13 @@ function CardRow({ card, cnt, total, onAdd, onRemove }: CardRowProps) {
       style={{ borderTopColor: cnt > 0 ? col : undefined, borderTopWidth: cnt > 0 ? 2 : 1 }}
       onMouseEnter={() => setShowDesc(true)}
       onMouseLeave={() => setShowDesc(false)}
-      onClick={() => setShowDesc(v => !v)}
     >
       {showDesc && card.description && (
         <div className="deck-card-tooltip">{card.description}</div>
       )}
       <div className="deck-card-header">
-        {imgUrl && <img src={imgUrl} className="deck-card-img" alt="" draggable={false} />}
+        {imgUrl && <img src={imgUrl} className="deck-card-img" alt="" draggable={false}
+          onError={e => { e.currentTarget.style.display = 'none' }} />}
         <div className="deck-card-main">
           <div className="deck-card-name" style={{ color: cnt > 0 ? col : undefined }}>
             <span className="deck-card-icon">{CARD_ICON[card.id]}</span>
