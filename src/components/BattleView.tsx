@@ -552,19 +552,6 @@ function HandPanel({ hand, onPlayCard, onDiscardCard, activeUnit, pendingSlot, o
     <div className="hand-panel">
       <div className="hp-label">手牌 <span className="hp-hint">（× 棄牌）</span></div>
       <div className="hp-body">
-        <div className="hp-chips">
-          {hand.map((card, i) => (
-            <div key={`${card.id}-${i}`}
-                className={`hp-chip hp-${card.color === 'flower' ? 'flower' : card.color}`}>
-              {card.isSuitCard
-                ? <span className="hp-icon">{HP_ICON[card.color]}</span>
-                : <span className="hp-icon hp-flower-name" onClick={() => onPlayCard(card.id)}>花 {card.name}</span>
-              }
-              <button className="hp-discard" title="棄牌" onClick={() => onDiscardCard(card.id)}>×</button>
-            </div>
-          ))}
-        </div>
-
         {activeUnit && (
           <div className="hp-pos-col">
             {([1,2,3] as const).map(s => {
@@ -582,6 +569,19 @@ function HandPanel({ hand, onPlayCard, onDiscardCard, activeUnit, pendingSlot, o
             <button className="btn danger hp-pos-pass" onClick={onPass}>PASS</button>
           </div>
         )}
+
+        <div className="hp-chips">
+          {hand.map((card, i) => (
+            <div key={`${card.id}-${i}`}
+                className={`hp-chip hp-${card.color === 'flower' ? 'flower' : card.color}`}>
+              {card.isSuitCard
+                ? <span className="hp-icon">{HP_ICON[card.color]}</span>
+                : <span className="hp-icon hp-flower-name" onClick={() => onPlayCard(card.id)}>花 {card.name}</span>
+              }
+              <button className="hp-discard" title="棄牌" onClick={() => onDiscardCard(card.id)}>×</button>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )
