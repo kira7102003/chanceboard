@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { SavedSession } from '../hooks/useRoom'
 import { getChars, getUrlByKey, onCloudSynced } from '../utils/charStore'
 import { supabase } from '../utils/supabase'
@@ -28,9 +28,10 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
   const [imgFailed,  setImgFailed]  = useState(false)
   const [panel,      setPanel]      = useState<Panel>(null)
   const [, forceUpdate] = useState(0)
+  const imgErrCount = useRef(0)
 
   // Re-evaluate charImgUrl after cloud data loads (desktop fresh-session fix)
-  useEffect(() => onCloudSynced(() => { setImgFailed(false); forceUpdate(n => n + 1) }), [])
+  useEffect(() => onCloudSynced(() => { imgErrCount.current = 0; setImgFailed(false); forceUpdate(n => n + 1) }), [])
 
   const { coins, gems } = usePlayerStore()
 
@@ -43,10 +44,33 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
   const charImgUrl = activeChar ? getUrlByKey(`cb_img_${activeChar.id}`) : null
 
   const cycleChar = () => {
+    imgErrCount.current = 0
     const next = (charIdx + 1) % chars.length
     setCharIdx(next)
     setImgFailed(false)
     localStorage.setItem(LOBBY_CHAR_KEY, chars[next].id)
+  }
+
+  const handleImgError = () => {
+    // Clear stale '1' flag so this URL isn't tried again next session
+    if (activeChar) {
+      const flagKey = `cb_img_${activeChar.id}_sb`
+      if (localStorage.getItem(flagKey) === '1') localStorage.removeItem(flagKey)
+    }
+    imgErrCount.current += 1
+    if (imgErrCount.current < chars.length) {
+      // Try next character that has an image
+      let next = (charIdx + 1) % chars.length
+      while (next !== charIdx && !getUrlByKey(`cb_img_${chars[next].id}`)) {
+        next = (next + 1) % chars.length
+      }
+      if (next !== charIdx) {
+        setCharIdx(next)
+        // imgFailed stays false so next char's image can attempt to load
+        return
+      }
+    }
+    setImgFailed(true)  // all chars tried or limit reached
   }
 
   const create = () => {
@@ -86,7 +110,7 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
         {charImgUrl && !imgFailed && (
           <div className="lv2-char" onClick={cycleChar} style={{ cursor: 'pointer' }} title="點擊切換角色">
             <img src={charImgUrl} alt="" className="lv2-char-img"
-              onError={() => setImgFailed(true)} />
+              onError={handleImgError} />
           </div>
         )}
 
