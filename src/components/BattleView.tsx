@@ -130,7 +130,6 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
   const [previewUnitId, setPreviewUnitId] = useState<string | null>(null)
   // pick-then-confirm (照抄參考版：點招式/花牌先選取，按「出手」才執行)
   const [pickedMove,   setPickedMove]   = useState<MoveSlot | null>(null)
-  const [pickedCard, setPickedCard] = useState<{ id: string; key: string } | null>(null)
   // 順序條 chip 精簡後，完整資訊改滑鼠移入（手機點一下）浮窗顯示
   const [atbPop, setAtbPop] = useState<{ id: string; rect: DOMRect } | null>(null)
 
@@ -147,7 +146,6 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
   const activeReadyId = game ? getReadyUnits(game).filter(u => u.side === mySide)[0]?.id : undefined
   useEffect(() => {
     setPickedMove(null)
-    setPickedCard(null)
   }, [activeReadyId])
 
   // Watch log for moveAnim entries (triggers for ALL moves incl. AI)
@@ -270,15 +268,9 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
 
   const confirmAct = (unit: Unit) => {
     const slot = pickedMove
-    const cardId = pickedCard?.id ?? null
     if (slot && !unit.moves[slot]) return
 
     setPickedMove(null)
-    setPickedCard(null)
-
-    // One confirm commits the whole staged action. Flower resolves first so
-    // its buff can affect the move selected in the same action.
-    if (cardId && myHand.some(card => card.id === cardId)) onPlayCard(cardId)
     applyPendingMove(unit)
 
     if (slot) onExecuteMove(unit.id, slot, null)
@@ -564,16 +556,11 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                     <div className="act-card-zone">
                       {flowerCards.map((card, i) => {
                         const cardKey = `${card.id}-${i}`
-                        const lockedByOther = !!pickedCard && pickedCard.key !== cardKey
                         return (
                           <FlowerCardFace key={cardKey} card={card}
-                            picked={pickedCard?.key === cardKey}
-                            disabled={flowerUsedThisAction || lockedByOther}
-                            lockedByOther={lockedByOther}
-                            onPick={() => {
-                              setPickedCard(prev => prev?.key === cardKey ? null : { id: card.id, key: cardKey })
-                            }}
-                            onDiscard={discardedThisAction || !!pickedCard ? undefined : () => onDiscardCard(card.id)} />
+                            disabled={flowerUsedThisAction}
+                            onUse={() => onPlayCard(card.id)}
+                            onDiscard={discardedThisAction ? undefined : () => onDiscardCard(card.id)} />
                         )
                       })}
                     </div>
@@ -822,13 +809,12 @@ function SuitCountCard({ slot, cardId, name, count, onDiscard }: {
   )
 }
 
-function FlowerCardFace({ card, picked, disabled, lockedByOther, onPick, onDiscard }: {
-  card: Card; picked: boolean; disabled: boolean; lockedByOther: boolean; onPick: () => void; onDiscard?: () => void
+function FlowerCardFace({ card, disabled, onUse, onDiscard }: {
+  card: Card; disabled: boolean; onUse: () => void; onDiscard?: () => void
 }) {
   const img = getCardImg(card.id)
   return (
-    <div className={`cardface suit-flower ${picked ? 'picked' : ''} ${disabled ? 'cf-disabled' : ''}`}
-      onClick={() => !disabled && onPick()}>
+    <div className={`cardface suit-flower ${disabled ? 'cf-disabled' : ''}`}>
       <div className="cf-corner" style={{ color: '#b499e8' }}>✿ 花</div>
       {img
         ? <img src={img} className="cf-img" alt="" onError={e => { e.currentTarget.style.display = 'none' }} />
@@ -836,8 +822,9 @@ function FlowerCardFace({ card, picked, disabled, lockedByOther, onPick, onDisca
       }
       <div className="cf-name">{card.name}</div>
       {card.description && <div className="cf-desc">{card.description}</div>}
-      {picked && <div className="cf-selection-state is-picked">✓ 已選定</div>}
-      {lockedByOther && <div className="cf-selection-state is-locked">本次不可使用</div>}
+      <button className="cf-use" disabled={disabled} onClick={e => { e.stopPropagation(); onUse() }}>
+        {disabled ? '本次已使用' : '使用'}
+      </button>
       {onDiscard && <button className="cf-discard" title="棄牌" onClick={e => { e.stopPropagation(); onDiscard() }}>×</button>}
     </div>
   )
