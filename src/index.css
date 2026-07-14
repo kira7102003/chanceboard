@@ -1072,6 +1072,8 @@ h2 {
   transition: transform .25s ease, box-shadow .2s, opacity .25s ease;
 }
 .slot-cards-stack > .unit-card:nth-child(1) { z-index: 3; }
+/* front card semi-transparent only when multiple units stacked */
+.slot-cards-stack > .unit-card:not(:only-child):nth-child(1) { opacity: 0.78; }
 /* fan LEFT: back cards peek left, semi-transparent */
 .slot-stack-left  > .unit-card:nth-child(2) { z-index: 2; transform: translateX(-15%); opacity: .55; }
 .slot-stack-left  > .unit-card:nth-child(3) { z-index: 1; transform: translateX(-25%); opacity: .35; }

@@ -449,7 +449,6 @@ function UnitCard({ unit, clock, onClick, selectable, highlighted, isPreview, is
           <div className="uc-portrait">
             <img src={img} className="uc-portrait-img" alt=""
               style={flip ? { transform: 'scaleX(-1)' } : undefined} />
-            <span className="uc-portrait-name" style={{ color: EL_COLOR[unit.element] }}>{unit.name}</span>
             {!unit.alive && <div className="uc-dead-overlay">陣亡</div>}
           </div>
         )
