@@ -601,12 +601,12 @@ body { margin: 0; }
 }
 .cs-gallery-close {
   position: absolute; top: 10px; right: 12px; z-index: 10;
-  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
-  color: #aaa; border-radius: 6px; width: 28px; height: 28px;
+  background: rgba(200,161,90,.08); border: 1px solid rgba(200,161,90,.35);
+  color: var(--gold2); border-radius: 6px; width: 28px; height: 28px;
   cursor: pointer; font-size: 14px; line-height: 28px; text-align: center;
   padding: 0;
 }
-.cs-gallery-close:hover { background: rgba(255,255,255,.14); color: #fff; }
+.cs-gallery-close:hover { background: rgba(200,161,90,.2); color: #fff0bd; }
 
 .cs-gallery-portrait {
   flex-shrink: 0; width: 170px;
@@ -677,14 +677,14 @@ body { margin: 0; }
 }
 .cs-gallery-back {
   background: none;
-  border: 1px solid rgba(255,255,255,.15);
-  color: rgba(255,255,255,.5);
+  border: 1px solid rgba(200,161,90,.35);
+  color: var(--gold2);
   border-radius: 8px; padding: 6px 16px;
   font-size: 13px; cursor: pointer;
   white-space: nowrap;
   transition: background .15s, color .15s;
 }
-.cs-gallery-back:hover { background: rgba(255,255,255,.08); color: #fff; }
+.cs-gallery-back:hover { background: rgba(200,161,90,.16); color: #fff0bd; }
 
 /* Portrait on mobile: stack vertically */
 @media (max-width: 600px) {
