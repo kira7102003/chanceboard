@@ -292,6 +292,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
         const attackFromLeft = moveAnim.attackerSide === 'A'
         const mirrorSkill = !attackFromLeft
         const mirrorTarget = moveAnim.targetSide === 'B'
+        const targetOnRight = moveAnim.targetSide === 'B'
         const sideIsAuto = moveAnim.attackerSide === 'A' ? game.autoBattleA : game.autoBattleB
         const manualAnimation = !isAIBattle && !sideIsAuto && !(isSolo && moveAnim.attackerSide === 'B')
 
@@ -330,7 +331,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
         return (
           <div className={`move-anim-overlay${manualAnimation ? ' ma-manual' : ''}`} key={animKey}
             style={{ '--ma-duration': manualAnimation ? '3.4s' : '2.3s' } as React.CSSProperties}>
-            <div className={`ma-battle-row ${attackFromLeft ? 'ma-from-left' : 'ma-from-right'} ${!moveAnim.dealsDamage || !moveAnim.hasTarget ? 'ma-nondamage' : ''}`}>
+            <div className={`ma-battle-row ${targetOnRight ? 'ma-from-left' : 'ma-from-right'} ${!moveAnim.dealsDamage || !moveAnim.hasTarget ? 'ma-nondamage' : ''}`}>
               <div className="ma-zone-skill">
                 <div className="ma-skill-wrap">
                   {moveAnim.img
