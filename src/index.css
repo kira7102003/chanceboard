@@ -1677,6 +1677,77 @@ h2 {
 }
 .act-confirm:disabled { opacity: .3; cursor: not-allowed; }
 
+/* Battle visual polish: clearer hierarchy over detailed background art. */
+.battle-header {
+  border-bottom-color: rgba(200,161,90,.24);
+  box-shadow: 0 5px 20px rgba(0,0,0,.38);
+}
+.bh-item { color: #747b9e; }
+.bh-item b { color: #d7dbef; }
+.battle-arena {
+  background: linear-gradient(180deg, rgba(3,6,17,.08), rgba(3,5,14,.28));
+}
+.slot-cards-stack {
+  border: 1px solid rgba(255,255,255,.1);
+  border-top-width: 3px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.32);
+}
+.slot-col-my .slot-cards-stack {
+  border-color: rgba(90,174,238,.2); border-top-color: #5aaeee;
+  box-shadow: 0 0 14px rgba(90,174,238,.1) inset, 0 8px 24px rgba(0,0,0,.32);
+}
+.slot-col-enemy .slot-cards-stack {
+  border-color: rgba(238,120,60,.18); border-top-color: #ee7744;
+  box-shadow: 0 0 14px rgba(238,120,60,.1) inset, 0 8px 24px rgba(0,0,0,.32);
+}
+.uc-head { background: linear-gradient(180deg, rgba(3,5,15,.92), rgba(3,5,15,.46), transparent); }
+.uc-footer { background: linear-gradient(0deg, rgba(3,5,15,.96), rgba(3,5,15,.76), transparent); }
+.battle-act-row {
+  border-top-color: rgba(200,161,90,.28);
+  box-shadow: 0 -8px 24px rgba(0,0,0,.3);
+}
+.log-panel-wrap {
+  border-right-color: rgba(200,161,90,.2);
+  box-shadow: 7px 0 22px rgba(0,0,0,.22);
+}
+.log-panel-label {
+  padding-top: 6px; padding-bottom: 5px;
+  color: var(--gold); background: rgba(200,161,90,.055);
+  border-bottom-color: rgba(200,161,90,.2);
+}
+.log-panel .log-line { color: #858dab; }
+.log-panel .log-line b { color: #c2c9e0; }
+.act-panel {
+  padding: 7px 12px;
+  background: linear-gradient(180deg, rgba(9,13,30,.94), rgba(5,8,20,.96));
+}
+.act-flow {
+  padding: 6px 9px; border-radius: 9px;
+  border: 1px solid rgba(200,161,90,.1);
+  background: rgba(0,0,0,.2);
+}
+.act-who { color: #9ba3c4; }
+.act-who b { color: var(--gold2); text-shadow: 0 0 10px rgba(200,161,90,.25); }
+.movebtn {
+  border-color: rgba(255,255,255,.14);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.035), 0 3px 10px rgba(0,0,0,.2);
+}
+.act-cards-row {
+  border-top-color: rgba(200,161,90,.2);
+  background: linear-gradient(180deg, rgba(8,11,25,.96), rgba(3,5,14,.98));
+}
+.cardface.mini { box-shadow: 0 4px 12px rgba(0,0,0,.32); }
+.act-confirm {
+  color: #fff0bd;
+  border-color: rgba(200,161,90,.65);
+  background: linear-gradient(145deg, rgba(116,82,24,.58), rgba(42,31,12,.82));
+  box-shadow: inset 0 0 18px rgba(200,161,90,.12), 0 5px 18px rgba(0,0,0,.36);
+}
+.act-confirm:hover {
+  background: linear-gradient(145deg, rgba(145,104,32,.7), rgba(54,39,14,.9));
+  box-shadow: inset 0 0 20px rgba(232,204,136,.16), 0 0 18px rgba(200,161,90,.18);
+}
+
 /* 卡面（照抄 .cardface 戰鬥尺寸 122×172：花色計數卡與花牌卡） */
 .cardface {
   position: relative; width: 122px; height: 172px; border-radius: 10px;
