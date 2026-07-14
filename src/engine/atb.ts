@@ -348,15 +348,10 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
     return gs
   }
 
-  // Resolve targets FIRST (before consuming cards) so we can bail if no valid targets
+  // Resolve targets before announcing the move. A confirmed move still spends
+  // its cards even when no target is currently reachable.
   const log: LogLine[] = []
   const targets = resolveTargetUnits(move, u, action.targetId, s)
-
-  // Guard: attack move with no valid targets → do NOT consume resources
-  if (targets.length === 0 && move.powerRatio != null) {
-    s.log.push({ html: `<b>${u.name}</b> 的 ${move.name} 無法命中（無目標）` })
-    return gs
-  }
 
   // Check condition: consume suit cards from hand
   const hand  = u.side === 'A' ? s.handA : s.handB
