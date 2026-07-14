@@ -1102,11 +1102,11 @@ h2 {
 .slot-col:hover .slot-stack-right-far > .unit-card:nth-child(2) { transform: translateX(107%);  }
 .slot-col:hover .slot-stack-right-far > .unit-card:nth-child(3) { transform: translateX(214%);  }
 
-/* 中 slot: only 1 column of space; 3rd card Y-offset to stay in bounds */
+/* 中 slot: same horizontal spread, overflow visible handles out-of-bounds */
 .slot-col:hover .slot-stack-left-near  > .unit-card:nth-child(2) { transform: translateX(-107%); }
-.slot-col:hover .slot-stack-left-near  > .unit-card:nth-child(3) { transform: translateX(-90%) translateY(40%); }
+.slot-col:hover .slot-stack-left-near  > .unit-card:nth-child(3) { transform: translateX(-214%); }
 .slot-col:hover .slot-stack-right-near > .unit-card:nth-child(2) { transform: translateX(107%);  }
-.slot-col:hover .slot-stack-right-near > .unit-card:nth-child(3) { transform: translateX(90%) translateY(40%);  }
+.slot-col:hover .slot-stack-right-near > .unit-card:nth-child(3) { transform: translateX(214%);  }
 
 .unit-card {
   background: linear-gradient(155deg, var(--bg3) 0%, var(--bg2) 100%);
