@@ -11,10 +11,13 @@ export function storageUrl(path: string): string {
 }
 
 async function signAndUpload(path: string, blob: Blob): Promise<string> {
+  const { data } = await supabase.auth.getSession()
+  const accessToken = data.session?.access_token
+  if (!accessToken) throw new Error('請先登入後再上傳')
   const signResp = await fetch('/.netlify/functions/sign-upload', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ path }),
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ path, contentType: blob.type, size: blob.size }),
   })
   if (!signResp.ok) {
     const err = await signResp.json().catch(() => ({}))

@@ -5,7 +5,7 @@
  */
 
 import type { GameState } from '../types/game'
-import type { Unit } from '../types/unit'
+import type { Unit, UnitFlags } from '../types/unit'
 import type { Move, MoveSlot } from '../types/move'
 import type { Card } from '../types/card'
 import type { StatusEntry } from '../types/status'
@@ -25,7 +25,7 @@ export function makeUnit(charId: string, side: 'A' | 'B', slot: 1 | 2 | 3, start
   const moveMap = {} as Record<MoveSlot, Move>
   for (const m of charMoves) moveMap[m.slot] = m
 
-  const flags = {}
+  const flags: UnitFlags = {}
   const initStatuses: StatusEntry[] = []
 
   // Apply battleStart passive: staticFlags + initial statuses
@@ -33,8 +33,7 @@ export function makeUnit(charId: string, side: 'A' | 'B', slot: 1 | 2 | 3, start
   if (passive?.effectTrigger === 'battleStart') {
     for (const op of passive.effectOps) {
       if (op.op === 'staticFlag') {
-        // @ts-ignore
-        flags[op.flag as string] = op.value
+        ;(flags as unknown as Record<string, unknown>)[op.flag as string] = op.value
       } else if (op.op === 'status') {
         const dur = (op.duration as number) ?? 9999
         initStatuses.push({
@@ -586,7 +585,7 @@ function resolveTargetUnits(move: Move, actor: Unit, targetId: string | null, s:
   // then tie-break by HP (awakened → lowest HP, default → highest HP)
   function pickBest(pool: Unit[]): Unit | undefined {
     if (pool.length === 0) return undefined
-    const taunting = pool.filter(u => (u.flags as any).taunt)
+    const taunting = pool.filter(u => u.flags.taunt)
     const cands    = taunting.length > 0 ? taunting : pool
     if (cands.length === 1) return cands[0]
     return cands.reduce((b, u) => isAwakened ? (u.hp < b.hp ? u : b) : (u.hp > b.hp ? u : b))
@@ -601,7 +600,7 @@ function resolveTargetUnits(move: Move, actor: Unit, targetId: string | null, s:
       const t = findUnit(s, targetId)
       if (t && t.alive && t.slot === swordTargetSlot && !isHidden(t)) {
         // SA 7.2: redirect to taunter if player did not pick the taunter
-        const taunterAtFront = front.find(u => (u.flags as any).taunt)
+        const taunterAtFront = front.find(u => u.flags.taunt)
         return [taunterAtFront && taunterAtFront.id !== t.id ? taunterAtFront : t]
       }
     }
@@ -635,8 +634,8 @@ function resolveTargetUnits(move: Move, actor: Unit, targetId: string | null, s:
     const t = findUnit(s, targetId)
     if (t && t.alive && !isHidden(t)) {
       // SA 7.2: redirect to taunter if target is not the taunter
-      const taunting = enemies.filter(u => (u.flags as any).taunt)
-      if (taunting.length > 0 && !(t.flags as any).taunt) {
+      const taunting = enemies.filter(u => u.flags.taunt)
+      if (taunting.length > 0 && !t.flags.taunt) {
         const best = pickBest(taunting)
         return best ? [best] : []
       }
@@ -788,8 +787,9 @@ function scoreMoves(
     let targetId: string | null = null
 
     if (move.scope === '群') {
+      const moveElement = move.rangeType === '劍' || move.rangeType === '槍' || move.rangeType === '法' ? move.rangeType : null
       const avgEl = reachable.reduce((s, e) =>
-        s + elementMult(move.rangeType as any, e.element), 0) / reachable.length
+        s + elementMult(moveElement, e.element), 0) / reachable.length
       score = move.powerRatio * reachable.length * avgEl
     } else {
       // SA A6: Gun single-target hits nearest enemy (lowest slot)
@@ -802,7 +802,8 @@ function scoreMoves(
         // Other single-target: prefer lowest HP% (finish kills first)
         best = reachable.reduce((a, b) => (a.hp / a.maxHp) <= (b.hp / b.maxHp) ? a : b)
       }
-      const elBonus = elementMult(move.rangeType as any, best.element)
+      const moveElement = move.rangeType === '劍' || move.rangeType === '槍' || move.rangeType === '法' ? move.rangeType : null
+      const elBonus = elementMult(moveElement, best.element)
       score = move.powerRatio * elBonus * (best.hp / best.maxHp < 0.3 ? 1.4 : 1)
       targetId = best.id
     }
@@ -914,5 +915,5 @@ export function getReadyUnits(gs: GameState): Unit[] {
 }
 
 function deepClone<T>(v: T): T {
-  return JSON.parse(JSON.stringify(v))
+  return structuredClone(v)
 }

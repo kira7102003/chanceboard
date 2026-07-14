@@ -5,6 +5,7 @@ import { randomDeck } from '../engine/randomDeck'
 import { CARD_ICON } from '../data/cardIcons'
 import { getCardImg } from '../utils/charStore'
 import type { Card } from '../types/card'
+import GameImage from './GameImage'
 
 const DECK_SIZE = 10
 
@@ -37,7 +38,7 @@ function CardRow({ card, cnt, total, pulse, onAdd, onRemove }: CardRowProps) {
         <div className="deck-card-tooltip">{card.description}</div>
       )}
       <div className="deck-card-header">
-        {imgUrl && <img src={imgUrl} className="deck-card-img" alt="" draggable={false}
+        {imgUrl && <GameImage storageKey={`cb_card_img_${card.id}`} thumbWidth={160} className="deck-card-img" alt="" draggable={false}
           onError={e => { e.currentTarget.style.display = 'none' }} />}
         <div className="deck-card-main">
           <div className="deck-card-name" style={{ color: cnt > 0 ? col : undefined }}>

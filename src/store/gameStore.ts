@@ -33,7 +33,7 @@ interface Store {
 
   game: GameState | null
   pendingUnitId: string | null    // unit the local player is currently deciding for
-  intervalId: ReturnType<typeof setInterval> | null
+  intervalId: ReturnType<typeof setTimeout> | null
 
   // Actions
   setRoom: (roomId: string, side: 'A' | 'B', isHost: boolean) => void
@@ -75,6 +75,7 @@ interface Store {
 
   resetForSoloReplay: () => void
   resetForAIReplay:   () => void
+  resetToLobby: () => void
 }
 
 export const useGameStore = create<Store>((set, get) => ({
@@ -144,7 +145,9 @@ export const useGameStore = create<Store>((set, get) => ({
     try {
       const g = JSON.parse(json) as GameState
       set({ game: g, appPhase: g.phase === 'end' ? 'end' : 'battle' })
-    } catch { /* ignore */ }
+    } catch (error) {
+      console.warn('[gameStore] rejected invalid remote state', error)
+    }
   },
 
   _applyGame: (g) => {
@@ -185,16 +188,24 @@ export const useGameStore = create<Store>((set, get) => ({
 
   startATBLoop: (onSync, tickMs = 100) => {
     const { isHost, intervalId } = get()
-    if (intervalId) clearInterval(intervalId)
+    if (intervalId) clearTimeout(intervalId)
     set({ _syncCb: onSync })
     if (!isHost) return
-    const id = setInterval(() => { get().tick() }, tickMs)
+    let nextAt = performance.now() + tickMs
+    const loop = () => {
+      if (get().intervalId === null) return
+      get().tick()
+      nextAt += tickMs
+      const nextId = setTimeout(loop, Math.max(0, nextAt - performance.now()))
+      set({ intervalId: nextId })
+    }
+    const id = setTimeout(loop, tickMs)
     set({ intervalId: id })
   },
 
   stopATBLoop: () => {
     const { intervalId } = get()
-    if (intervalId) clearInterval(intervalId)
+    if (intervalId) clearTimeout(intervalId)
     set({ intervalId: null })
   },
 
@@ -268,6 +279,16 @@ export const useGameStore = create<Store>((set, get) => ({
       myDeckIds: [], opponentDeckIds: [],
       soloScore: null, pendingUnitId: null,
       isAIBattle: false, isSolo: false,
+    })
+  },
+
+  resetToLobby: () => {
+    get().stopATBLoop()
+    set({
+      appPhase: 'lobby', mySide: null, isHost: false, roomId: '', playerCount: 0,
+      isSolo: false, isAIBattle: false, soloScore: null, game: null,
+      selectedCharIds: [], opponentCharIds: [], selectedPiece: null, opponentPiece: null,
+      myDeckIds: [], opponentDeckIds: [], pendingUnitId: null, _syncCb: null,
     })
   },
 }))

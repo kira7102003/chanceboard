@@ -9,6 +9,7 @@ import { getReadyUnits } from '../engine/atb'
 import { effectiveATK, effectiveDEF, effectiveSPD } from '../engine/combat'
 import ScorePanel from './ScorePanel'
 import { getCharImg, getCharWideImg, getMoveImg, getCardImg } from '../utils/charStore'
+import BattleLog from './battle/BattleLog'
 import { useFitBattleLayout } from '../hooks/useFitBattleLayout'
 
 const DIST_COLOR: Record<string, string> = { '前': '#e85533', '中': '#ddaa22', '後': '#33aacc' }
@@ -472,11 +473,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                   title={logCollapsed ? '展開戰鬥紀錄' : '收合戰鬥紀錄'}>
                   <span>戰鬥紀錄</span><b>{logCollapsed ? '›' : '‹'}</b>
                 </button>
-                <div className="log-panel" ref={logRef}>
-                  {game.log.slice(-80).map((l, i) => (
-                    <div key={i} className="log-line" dangerouslySetInnerHTML={{ __html: l.html }} />
-                  ))}
-                </div>
+                <BattleLog ref={logRef} entries={game.log.slice(-80)} />
               </div>
 
               {!isAIBattle && (
@@ -617,9 +614,7 @@ function BattleEndDetails({ game, showLog, onOpenLog, onCloseLog }: {
               <button className="panel-back end-log-close" onClick={onCloseLog}>✕ 關閉</button>
             </div>
             <div className="end-log">
-              {game.log.map((line, i) => (
-                <div className="log-line" key={i} dangerouslySetInnerHTML={{ __html: line.html }} />
-              ))}
+              <BattleLog entries={game.log} className="end-log-lines" />
             </div>
           </div>
         </div>

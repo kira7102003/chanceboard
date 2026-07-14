@@ -1,13 +1,13 @@
-import { useState, useEffect, useRef } from 'react'
+import { lazy, Suspense, useState, useEffect, useRef } from 'react'
 import type { SavedSession } from '../hooks/useRoom'
 import { getChars, getUrlByKey, onCloudSynced } from '../utils/charStore'
 import { supabase } from '../utils/supabase'
 import { usePlayerStore } from '../store/playerStore'
-import Collection from './Collection'
-import Shop       from './Shop'
-import Summon     from './Summon'
-import Teams      from './Teams'
-import Settings   from './Settings'
+const Collection = lazy(() => import('./Collection'))
+const Shop = lazy(() => import('./Shop'))
+const Summon = lazy(() => import('./Summon'))
+const Teams = lazy(() => import('./Teams'))
+const Settings = lazy(() => import('./Settings'))
 
 type Panel = 'summon' | 'collection' | 'shop' | 'teams' | 'settings' | null
 
@@ -104,6 +104,7 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
   return (
     <>
       {/* ── Overlay panels ── */}
+      <Suspense fallback={<div className="route-loading">載入畫面中…</div>}>
       {panel === 'summon'     && <Summon     onClose={() => setPanel(null)} />}
       {panel === 'collection' && <Collection onClose={() => setPanel(null)} />}
       {panel === 'shop'       && <Shop       onClose={() => setPanel(null)} />}
@@ -111,6 +112,7 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
       {panel === 'teams'      && (
         <Teams onClose={() => setPanel(null)} />
       )}
+      </Suspense>
 
       <div className="lobby-v2">
 

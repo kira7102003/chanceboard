@@ -1,4 +1,5 @@
 import { cards as allCards } from '../data/db'
+import { shuffled } from '../utils/random'
 
 const DECK_SIZE = 10
 
@@ -16,15 +17,7 @@ export function fillDeck(existing: string[]): string[] {
     for (let i = 0; i < remaining; i++) pool.push(card.id)
   }
 
-  // Fisher–Yates avoids the bias of Array.sort(() => Math.random() - .5).
-  for (let i = pool.length - 1; i > 0; i--) {
-    const random = new Uint32Array(1)
-    crypto.getRandomValues(random)
-    const j = random[0] % (i + 1)
-    ;[pool[i], pool[j]] = [pool[j], pool[i]]
-  }
-
-  deck.push(...pool.slice(0, Math.max(0, DECK_SIZE - deck.length)))
+  deck.push(...shuffled(pool).slice(0, Math.max(0, DECK_SIZE - deck.length)))
 
   return deck
 }

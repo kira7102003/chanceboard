@@ -5,7 +5,7 @@ const BUCKET = 'chanceboard'
 const CORS = {
   'Content-Type': 'application/json',
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 }
 
 export const handler = async (event) => {
@@ -20,8 +20,29 @@ export const handler = async (event) => {
   }
 
   try {
-    const { path } = JSON.parse(event.body ?? '{}')
+    const token = event.headers.authorization?.replace(/^Bearer\s+/i, '')
+    if (!token) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: 'Unauthorized' }) }
+    const userResp = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { Authorization: `Bearer ${token}`, apikey: SERVICE_KEY },
+    })
+    if (!userResp.ok) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: 'Invalid session' }) }
+    const user = await userResp.json()
+    const admins = (process.env.ADMIN_EMAILS ?? '').split(',').map(v => v.trim()).filter(Boolean)
+    if (admins.length && !admins.includes(user.email)) {
+      return { statusCode: 403, headers: CORS, body: JSON.stringify({ error: 'Admin only' }) }
+    }
+
+    const { path, contentType, size } = JSON.parse(event.body ?? '{}')
     if (!path) return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Missing path' }) }
+    if (!/^(?:(?:chars|moves|story|backgrounds|cards)\/[a-zA-Z0-9_.-]+\.(?:webp|json)|chars\.json|moves\.json|image-manifest\.json)$/.test(path)) {
+      return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Invalid path' }) }
+    }
+    if (typeof size !== 'number' || size < 1 || size > 8 * 1024 * 1024) {
+      return { statusCode: 413, headers: CORS, body: JSON.stringify({ error: 'File too large' }) }
+    }
+    if (!['image/webp', 'application/json'].includes(contentType)) {
+      return { statusCode: 415, headers: CORS, body: JSON.stringify({ error: 'Unsupported file type' }) }
+    }
 
     // Use REST API directly to avoid WebSocket dependency
     const resp = await fetch(

@@ -18,7 +18,9 @@ export function warmImageCache(): void {
       : key.startsWith('cb_move_img_') ? 2 : 3
   const urls = [..._manifestKeys]
     .sort((a, b) => priority(a) - priority(b))
-    .map(getUrlByKey)
+    .map(key => key.startsWith('cb_img_') || key.startsWith('cb_card_img_')
+      ? getThumbByKey(key, 260)
+      : getUrlByKey(key))
     .filter((url): url is string => !!url && !_warmedUrls.has(url))
 
   let index = 0
@@ -50,7 +52,7 @@ export function onCloudSynced(fn: SyncListener): () => void {
 
 function pushManifest(): void {
   const blob = new Blob([JSON.stringify([..._manifestKeys])], { type: 'application/json' })
-  uploadBlob(MANIFEST_PATH, blob).catch(() => {})
+  uploadBlob(MANIFEST_PATH, blob).catch(error => console.warn('[charStore] manifest upload failed', error))
 }
 
 type SaveStatus = 'saving' | 'saved' | 'error'
@@ -100,6 +102,16 @@ export function getUrlByKey(storageKey: string): string | null {
   const local = localStorage.getItem(storageKey)
   if (local) return local
   return null
+}
+
+export function getThumbByKey(storageKey: string, width = 240): string | null {
+  const original = getUrlByKey(storageKey)
+  if (!original || original.startsWith('data:')) return original
+  const marker = '/storage/v1/object/public/'
+  if (!original.includes(marker)) return original
+  const rendered = original.replace(marker, '/storage/v1/render/image/public/')
+  const separator = rendered.includes('?') ? '&' : '?'
+  return `${rendered}${separator}width=${width}&quality=72&resize=contain`
 }
 
 export async function uploadByKey(storageKey: string, dataUrl: string): Promise<string> {
@@ -162,7 +174,7 @@ export function getMoveOverrides(): Record<string, Record<string, unknown>> {
 let _mvSyncTimer: ReturnType<typeof setTimeout> | null = null
 export function saveMoveOverride(id: string, patch: Record<string, unknown>): void {
   const overrides = getMoveOverrides()
-  overrides[id] = { ...(overrides[id] ?? {}), ...patch }
+  overrides[id] = { ...overrides[id], ...patch }
   localStorage.setItem(LS_MOVES, JSON.stringify(overrides))
   if (_mvSyncTimer) clearTimeout(_mvSyncTimer)
   _mvSyncTimer = setTimeout(() => {
@@ -178,7 +190,7 @@ export function resetMoveOverride(id: string): void {
   delete overrides[id]
   localStorage.setItem(LS_MOVES, JSON.stringify(overrides))
   const blob = new Blob([JSON.stringify(overrides)], { type: 'application/json' })
-  uploadBlob(MOVES_PATH, blob).catch(() => {})
+  uploadBlob(MOVES_PATH, blob).catch(error => console.warn('[charStore] move reset upload failed', error))
 }
 
 // ── Cloud init ────────────────────────────────────────────────────────────────
@@ -194,7 +206,7 @@ export async function initFromCloud(): Promise<boolean> {
         gotChars = true
       }
     }
-  } catch {}
+  } catch (error) { console.warn('[charStore] character sync failed; using local data', error) }
 
   // Fetch move overrides from cloud only if they've been uploaded before
   if (localStorage.getItem(MOVES_CLOUD_FLAG)) {
@@ -206,7 +218,7 @@ export async function initFromCloud(): Promise<boolean> {
           localStorage.setItem(LS_MOVES, JSON.stringify(overrides))
         }
       }
-    } catch {}
+    } catch (error) { console.warn('[charStore] move sync failed; using local data', error) }
   }
 
   // Read image manifest → set _sb flags for all known-uploaded keys
@@ -222,7 +234,7 @@ export async function initFromCloud(): Promise<boolean> {
         })
       }
     }
-  } catch {}
+  } catch (error) { console.warn('[charStore] image manifest sync failed', error) }
 
   // HEAD-check background images so getBgUrl works cross-browser
   const bgKeysToCheck = [
@@ -234,7 +246,7 @@ export async function initFromCloud(): Promise<boolean> {
       try {
         const r = await fetch(storageUrl(storagePath(key)), { method: 'HEAD', cache: 'no-cache' })
         if (r.ok) localStorage.setItem(FLAG(key), '1')
-      } catch {}
+      } catch (error) { console.warn(`[charStore] background check failed: ${key}`, error) }
     }
   }))
 

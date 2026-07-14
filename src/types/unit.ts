@@ -12,6 +12,7 @@ export interface UnitFlags {
   immuneToRooted?: boolean
   nextMoveEffectMult?: number
   statusDurationExtend?: number
+  lightSourceAura?: boolean
 }
 
 export interface Unit {

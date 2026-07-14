@@ -4,9 +4,10 @@
  */
 import { characters } from '../data/db'
 import { useGameStore } from '../store/gameStore'
+import { shuffled } from '../utils/random'
 
 function pickRandom<T>(arr: T[], n: number): T[] {
-  return [...arr].sort(() => Math.random() - 0.5).slice(0, n)
+  return shuffled(arr).slice(0, n)
 }
 
 export function useSolo() {

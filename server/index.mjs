@@ -4,6 +4,27 @@ const PORT = process.env.PORT ?? 3001
 const wss  = new WebSocketServer({ port: Number(PORT) })
 
 const PIECES = ['pawn', 'knight', 'castle', 'bishop', 'queen', 'king']
+const SIDES = ['A', 'B']
+const ACTIONS = ['playCard', 'discardCard', 'moveUnit', 'executeMove', 'pass', 'toggleAuto']
+const text = (v, max = 100) => typeof v === 'string' && v.length > 0 && v.length <= max
+const strings = (v, max) => Array.isArray(v) && v.length <= max && v.every(x => text(x, 80))
+function validMessage(msg) {
+  if (!msg || typeof msg !== 'object' || typeof msg.type !== 'string') return false
+  if (msg.type === 'join') return text(msg.roomId, 12) && (msg.rejoinSide === undefined || SIDES.includes(msg.rejoinSide))
+  if (msg.type === 'charSelect') return strings(msg.charIds, 3)
+  if (msg.type === 'deckSelect') return strings(msg.deckIds, 10)
+  if (msg.type === 'stateSync') return text(msg.stateJson, 1_000_000)
+  if (msg.type === 'action') {
+    const a = msg.action
+    if (!a || !ACTIONS.includes(a.type)) return false
+    if (a.type === 'playCard' || a.type === 'discardCard') return SIDES.includes(a.side) && text(a.cardId)
+    if (a.type === 'moveUnit') return text(a.unitId) && [1, 2, 3].includes(a.toSlot)
+    if (a.type === 'executeMove') return text(a.unitId) && ['劍', '槍', '法', '願', '被'].includes(a.moveSlot) && (a.targetId === null || text(a.targetId))
+    if (a.type === 'pass') return text(a.unitId)
+    return a.type === 'toggleAuto' && SIDES.includes(a.side)
+  }
+  return false
+}
 
 // rooms: Map<roomId, { players: Map<connId, player>, lastState, piece, deckA, deckB }>
 const rooms = new Map()
@@ -19,8 +40,13 @@ wss.on('connection', ws => {
   let roomId = null
 
   ws.on('message', raw => {
+    if (raw.length > 1_000_000) return
     let msg
     try { msg = JSON.parse(raw) } catch { return }
+    if (!validMessage(msg)) {
+      ws.send(JSON.stringify({ type: 'error', msg: '無效的連線訊息' }))
+      return
+    }
 
     if (msg.type === 'join') {
       roomId = msg.roomId
@@ -106,7 +132,12 @@ wss.on('connection', ws => {
       return
     }
 
-    broadcast(room, connId, msg)
+    if (msg.type === 'action' && self) {
+      const action = msg.action
+      if ('side' in action && action.side !== self.side) return
+      if ('unitId' in action && !action.unitId.startsWith(`${self.side}-`)) return
+      broadcast(room, connId, msg)
+    }
   })
 
   ws.on('close', () => {

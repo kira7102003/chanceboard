@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { usePlayerStore } from '../store/playerStore'
 import { getChars, getUrlByKey } from '../utils/charStore'
+import GameImage from './GameImage'
 import type { Character } from '../types/character'
 
 const PULL_1_COST  = 160
@@ -74,7 +75,7 @@ export default function Summon({ onClose }: Props) {
                   <div key={c.id} className="summon-pool-char"
                     style={{ borderColor: owned ? col + '88' : col + '22' }}>
                     {imgUrl
-                      ? <img src={imgUrl} alt=""
+                      ? <GameImage storageKey={`cb_img_${c.id}`} thumbWidth={120} alt=""
                           style={{ width: '100%', height: '100%', objectFit: 'cover',
                                    objectPosition: 'top',
                                    filter: owned ? 'none' : 'grayscale(.7) brightness(.6)' }} />
@@ -130,7 +131,7 @@ export default function Summon({ onClose }: Props) {
                   {isNew && <span className="summon-new-badge">NEW</span>}
                   <div className="summon-result-portrait" style={{ borderColor: col + '88' }}>
                     {imgUrl
-                      ? <img src={imgUrl} alt={c.name}
+                      ? <GameImage storageKey={`cb_img_${c.id}`} thumbWidth={260} alt={c.name}
                           style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }} />
                       : <span style={{ color: col, fontSize: 18 }}>{c.name[0]}</span>
                     }

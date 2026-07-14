@@ -1,9 +1,5 @@
-import { useState, useEffect } from 'react'
+import { lazy, Suspense, useState, useEffect } from 'react'
 import Lobby      from './components/Lobby'
-import CharSelect  from './components/CharSelect'
-import DeckBuild   from './components/DeckBuild'
-import BattleView  from './components/BattleView'
-import Admin       from './components/Admin'
 import Login       from './components/Login'
 import { useGameStore }           from './store/gameStore'
 import { usePlayerStore }         from './store/playerStore'
@@ -13,6 +9,11 @@ import { useSolo }                from './hooks/useSolo'
 import { useAIBattle }           from './hooks/useAIBattle'
 import { supabase }               from './utils/supabase'
 import type { User }              from '@supabase/supabase-js'
+
+const CharSelect = lazy(() => import('./components/CharSelect'))
+const DeckBuild = lazy(() => import('./components/DeckBuild'))
+const BattleView = lazy(() => import('./components/BattleView'))
+const Admin = lazy(() => import('./components/Admin'))
 
 // ── Rotate prompt (portrait mobile only) ─────────────────────────────────────
 
@@ -66,8 +67,8 @@ export default function App() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setUser(data.session?.user ?? null)
-      setAuthReady(true)
-    })
+    }).catch(error => console.error('[auth] session load failed', error))
+      .finally(() => setAuthReady(true))
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_ev, session) => {
       setUser(session?.user ?? null)
     })
@@ -163,7 +164,9 @@ export default function App() {
 
   const handleEnd = () => {
     clearSession()
-    window.location.reload()
+    setOnlineRoomId('')
+    setBattleBgUrl(null)
+    useGameStore.getState().resetToLobby()
   }
 
   const handleSoloReplay = () => {
@@ -189,6 +192,7 @@ export default function App() {
       backgroundPosition: 'center',
       backgroundRepeat: 'no-repeat',
     } : undefined}>
+      <Suspense fallback={<div className="route-loading">載入畫面中…</div>}>
       {/* 資料編輯器 */}
       {showAdmin && <Admin onBack={() => setShowAdmin(false)} />}
 
@@ -250,6 +254,7 @@ export default function App() {
       {!showAdmin && isAIBattle && (
         <div className="room-badge" style={{ color: '#9955ee' }}>🤖 AI 對戰</div>
       )}
+      </Suspense>
     </div>
     </>
   )

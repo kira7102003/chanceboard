@@ -1,12 +1,18 @@
 import type * as Party from 'partykit/server'
+import { parseClientMessage } from '../src/shared/protocol'
+import type { AppPhase } from '../src/store/gameStore'
+import type { PieceType } from '../src/types/piece'
 
 type Side = 'A' | 'B'
-type RoomPhase = 'lobby' | 'charSelect' | 'pieceSelect' | 'battle' | 'end'
+type RoomPhase = AppPhase
+const PIECES: PieceType[] = ['pawn', 'knight', 'castle', 'bishop', 'queen', 'king']
 
 interface PlayerInfo {
   id: string
   side: Side
   ready: boolean
+  charIds: string[] | null
+  deckIds: string[] | null
 }
 
 interface RoomState {
@@ -33,11 +39,12 @@ export default class ChanceboardRoom implements Party.Server {
       return
     }
 
-    const side: Side = rs.players.length === 0 ? 'A' : 'B'
-    const isHost = rs.players.length === 0
+    const taken = new Set(rs.players.map(player => player.side))
+    const side: Side = !taken.has('A') ? 'A' : 'B'
+    const isHost = side === 'A'
     if (isHost) rs.hostId = conn.id
 
-    rs.players.push({ id: conn.id, side, ready: false })
+    rs.players.push({ id: conn.id, side, ready: false, charIds: null, deckIds: null })
 
     conn.send(JSON.stringify({
       type: 'welcome',
@@ -56,30 +63,42 @@ export default class ChanceboardRoom implements Party.Server {
   }
 
   onMessage(raw: string | ArrayBuffer, sender: Party.Connection) {
-    const msg = JSON.parse(raw as string)
+    if (typeof raw !== 'string' || raw.length > 1_000_000) return
+    let decoded: unknown
+    try { decoded = JSON.parse(raw) } catch { return }
+    const msg = parseClientMessage(decoded)
+    if (!msg) {
+      sender.send(JSON.stringify({ type: 'error', msg: '無效的連線訊息' }))
+      return
+    }
     const rs = this.room_state
+    const player = rs.players.find(p => p.id === sender.id)
 
     switch (msg.type) {
-      case 'charSelect':
-      case 'pieceSelect': {
+      case 'join': break
+      case 'charSelect': {
+        if (player) player.charIds = msg.charIds
         this.broadcast(msg, sender.id)
         break
       }
-
-      case 'ready': {
-        const p = rs.players.find(p => p.id === sender.id)
-        if (p) p.ready = true
-        this.room.broadcast(JSON.stringify(msg))
-
-        const allReady = rs.players.length === 2 && rs.players.every(p => p.ready)
-        if (allReady && rs.phase === 'lobby') {
-          rs.phase = 'charSelect'
-          this.room.broadcast(JSON.stringify({ type: 'phaseChange', phase: 'charSelect' }))
+      case 'deckSelect': {
+        if (!player) break
+        player.deckIds = msg.deckIds
+        if (rs.players.length === 2 && rs.players.every(p => p.deckIds)) {
+          const piece = PIECES[Math.floor(Math.random() * PIECES.length)]
+          const deckA = rs.players.find(p => p.side === 'A')?.deckIds ?? []
+          const deckB = rs.players.find(p => p.side === 'B')?.deckIds ?? []
+          rs.phase = 'battle'
+          this.room.broadcast(JSON.stringify({ type: 'startBattle', piece, deckA, deckB }))
         }
         break
       }
 
       case 'action': {
+        if (!player) break
+        const action = msg.action
+        if ('side' in action && action.side !== player.side) break
+        if ('unitId' in action && !action.unitId.startsWith(`${player.side}-`)) break
         // relay opponent's action to host; relay host's broadcast to guest
         this.room.broadcast(JSON.stringify(msg), [sender.id])
         break
@@ -95,14 +114,6 @@ export default class ChanceboardRoom implements Party.Server {
         break
       }
 
-      case 'phaseChange': {
-        rs.phase = msg.phase
-        this.room.broadcast(JSON.stringify(msg), [sender.id])
-        break
-      }
-
-      default:
-        this.room.broadcast(JSON.stringify(msg), [sender.id])
     }
   }
 

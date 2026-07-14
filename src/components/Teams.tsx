@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { usePlayerStore } from '../store/playerStore'
-import { getChars, getUrlByKey } from '../utils/charStore'
+import { getChars, getThumbByKey, getUrlByKey } from '../utils/charStore'
 
 const EL_COLOR: Record<string, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee' }
 const POS = ['前', '中', '後']
@@ -76,7 +76,9 @@ export default function Teams({ onClose }: Props) {
               {ownedChars.map(c => {
                 const sel    = picking.includes(c.id)
                 const selIdx = picking.indexOf(c.id)
-                const imgUrl = getUrlByKey(`cb_img_${c.id}`)
+                const imageKey = `cb_img_${c.id}`
+                const imgUrl = getThumbByKey(imageKey, 220)
+                const fallbackUrl = getUrlByKey(imageKey)
                 const col    = EL_COLOR[c.element]
                 return (
                   <div key={c.id} className={`coll-card owned${sel ? ' team-sel' : ''}`}
@@ -85,7 +87,8 @@ export default function Teams({ onClose }: Props) {
                       style={{ borderColor: sel ? POS_COL[selIdx] : col + '33',
                                boxShadow: sel ? `0 0 10px ${POS_COL[selIdx]}55` : 'none' }}>
                       {imgUrl
-                        ? <img src={imgUrl} alt={c.name} className="coll-img" decoding="async" />
+                        ? <img src={imgUrl} alt={c.name} className="coll-img" decoding="async"
+                            onError={e => { if (fallbackUrl && e.currentTarget.src !== fallbackUrl) e.currentTarget.src = fallbackUrl }} />
                         : <div className="coll-placeholder" style={{ color: col }}>{c.name[0]}</div>
                       }
                       {sel && (
@@ -120,13 +123,16 @@ export default function Teams({ onClose }: Props) {
                 <div className="team-portraits">
                   {team.charIds.map((cid, i) => {
                     const ch     = allChars.find(c => c.id === cid)
-                    const imgUrl = ch ? getUrlByKey(`cb_img_${cid}`) : null
+                    const imageKey = `cb_img_${cid}`
+                    const imgUrl = ch ? getThumbByKey(imageKey, 160) : null
+                    const fallbackUrl = ch ? getUrlByKey(imageKey) : null
                     const col    = ch ? EL_COLOR[ch.element] : '#888'
                     return (
                       <div key={cid} className="team-portrait-wrap">
                         <div className="team-portrait" style={{ borderColor: POS_COL[i] + '66' }}>
                           {imgUrl
-                            ? <img src={imgUrl} className="team-portrait-img" alt="" decoding="async" />
+                            ? <img src={imgUrl} className="team-portrait-img" alt="" decoding="async"
+                                onError={e => { if (fallbackUrl && e.currentTarget.src !== fallbackUrl) e.currentTarget.src = fallbackUrl }} />
                             : <span style={{ color: col, fontSize: 16 }}>{ch?.name[0]}</span>
                           }
                         </div>

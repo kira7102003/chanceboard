@@ -1,6 +1,9 @@
 import { useEffect, useRef } from 'react'
 import { useGameStore } from '../store/gameStore'
 import type { PieceType } from '../types/piece'
+import type { MoveSlot } from '../types/move'
+import { parseServerMessage } from '../shared/protocol'
+import type { ClientMessage, RemoteAction } from '../shared/protocol'
 
 const WS_HOST = import.meta.env.VITE_WS_URL ?? 'ws://localhost:3001'
 const LS_KEY  = 'chanceboard_session'
@@ -23,7 +26,7 @@ export function useRoom(roomId: string) {
   // Always read fresh state — never capture store in closure
   const gs = () => useGameStore.getState()
 
-  const send = (msg: object) => {
+  const send = (msg: ClientMessage) => {
     const ws = wsRef.current
     if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg))
   }
@@ -42,8 +45,13 @@ export function useRoom(roomId: string) {
     }
 
     ws.onmessage = (e: MessageEvent) => {
-      let msg: any
-      try { msg = JSON.parse(e.data) } catch { return }
+      let decoded: unknown
+      try { decoded = JSON.parse(e.data) } catch { return }
+      const msg = parseServerMessage(decoded)
+      if (!msg) {
+        console.warn('[WS] ignored invalid server message')
+        return
+      }
 
       console.log('[WS ←]', msg.type, msg)
 
@@ -147,12 +155,18 @@ export function useRoom(roomId: string) {
 
   const localPlayCard = (cardId: string) => {
     if (gs().isHost) gs().playCard(cardId)
-    else send({ type: 'action', action: { type: 'playCard', side: gs().mySide, cardId } })
+    else {
+      const side = gs().mySide
+      if (side) send({ type: 'action', action: { type: 'playCard', side, cardId } })
+    }
   }
 
   const localDiscardCard = (cardId: string) => {
     if (gs().isHost) gs().discardCard(cardId)
-    else send({ type: 'action', action: { type: 'discardCard', side: gs().mySide, cardId } })
+    else {
+      const side = gs().mySide
+      if (side) send({ type: 'action', action: { type: 'discardCard', side, cardId } })
+    }
   }
 
   const localMoveUnit = (unitId: string, toSlot: 1 | 2 | 3) => {
@@ -160,8 +174,8 @@ export function useRoom(roomId: string) {
     else send({ type: 'action', action: { type: 'moveUnit', unitId, toSlot } })
   }
 
-  const localExecuteMove = (unitId: string, moveSlot: string, targetId: string | null) => {
-    if (gs().isHost) gs().executeMove(unitId, moveSlot as any, targetId)
+  const localExecuteMove = (unitId: string, moveSlot: MoveSlot, targetId: string | null) => {
+    if (gs().isHost) gs().executeMove(unitId, moveSlot, targetId)
     else send({ type: 'action', action: { type: 'executeMove', unitId, moveSlot, targetId } })
   }
 
@@ -183,7 +197,7 @@ export function useRoom(roomId: string) {
   return { localPlayCard, localDiscardCard, localMoveUnit, localExecuteMove, localPass, localToggleAuto, sendCharSelect, sendDeckSelect }
 }
 
-function applyRemoteAction(action: any) {
+function applyRemoteAction(action: RemoteAction) {
   const store = useGameStore.getState()
   switch (action.type) {
     case 'playCard':    store.playCard(action.cardId, action.side); break

@@ -1,5 +1,6 @@
 import { usePlayerStore } from '../store/playerStore'
 import { getChars, getUrlByKey } from '../utils/charStore'
+import GameImage from './GameImage'
 
 const EL_COLOR:      Record<string, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee' }
 const COIN_TO_GEM    = { coins: 1000, gems: 100 }
@@ -59,7 +60,7 @@ export default function Shop({ onClose }: Props) {
                 <div key={c.id} className={`shop-char-card${owned ? ' owned' : ''}`}>
                   <div className="shop-char-portrait" style={{ borderColor: col + '44' }}>
                     {imgUrl
-                      ? <img src={imgUrl} alt={c.name}
+                      ? <GameImage storageKey={`cb_img_${c.id}`} thumbWidth={220} alt={c.name}
                           style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top',
                                    filter: owned ? 'none' : 'brightness(.55)' }} />
                       : <span style={{ color: col, fontSize: 18 }}>{c.name[0]}</span>

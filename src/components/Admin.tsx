@@ -312,7 +312,7 @@ function BasicTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<C
                 ['moveNameMagic', '✦ 法槽'], ['moveNameWish', '🌠 願槽'],
                 ['passiveName',   '💠 被動'],
               ] as const).map(([key, label]) => (
-                <Field key={key} label={label} value={(char as any)[key] ?? ''}
+                <Field key={key} label={label} value={char[key]}
                   onChange={v => onUpdate({ [key]: v } as Partial<Character>)} />
               ))}
             </div>

@@ -1,5 +1,6 @@
 import { getChars, getUrlByKey } from '../utils/charStore'
 import { usePlayerStore } from '../store/playerStore'
+import GameImage from './GameImage'
 
 const EL_COLOR: Record<string, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee' }
 
@@ -26,7 +27,7 @@ export default function Collection({ onClose }: Props) {
               <div key={c.id} className={`coll-card${owned ? ' owned' : ''}`}>
                 <div className="coll-portrait" style={{ borderColor: owned ? col + '55' : 'rgba(255,255,255,.06)' }}>
                   {imgUrl
-                    ? <img src={imgUrl} alt={c.name} className="coll-img"
+                    ? <GameImage storageKey={`cb_img_${c.id}`} thumbWidth={220} alt={c.name} className="coll-img"
                         style={{ filter: owned ? 'none' : 'grayscale(1) brightness(.35)' }} />
                     : <div className="coll-placeholder" style={{ color: owned ? col : '#333' }}>{c.name[0]}</div>
                   }
