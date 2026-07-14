@@ -465,7 +465,7 @@ body { margin: 0; }
   position: relative;
   width: 100%;
   flex: 1;
-  min-height: 400px; /* 設定最小高度讓角色不會被裁剪 */
+  min-height: 280px; /* 不要太大，讓下面選項能顯示 */
   overflow: visible; /* 改為 visible 讓中間角色不被裁剪 */
   cursor: grab;
   touch-action: pan-y;
