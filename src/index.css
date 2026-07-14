@@ -1475,16 +1475,16 @@ h2 {
 .suit-yellow:hover { box-shadow: 0 4px 14px rgba(221,170,34,.2); border-color: rgba(221,170,34,.7); }
 .suit-flower:hover { box-shadow: 0 4px 14px rgba(190,70,238,.2); border-color: rgba(190,70,238,.7); }
 
-/* ── Act row: 上半（log｜action）+ 下半整排手牌 ─────────────── */
+/* ── Act row: 紀錄整欄（左）｜ 右欄＝出手面板＋手牌整排 ────── */
 /* height driven by useFitBattleLayout() (ported from chanceboard.html's
    fitBattleLayout()); flex-basis fallback keeps the old 50/50 split before
    the layout effect runs on first paint. */
 .battle-act-row {
-  flex: 0 0 var(--act-row-h, 50%); min-height: 0; display: flex; flex-direction: column;
+  flex: 0 0 var(--act-row-h, 50%); min-height: 0; display: flex; flex-direction: row;
   border-top: 1px solid rgba(200,161,90,.08);
 }
-.act-top-row {
-  flex: 1; min-height: 0; display: flex; flex-direction: row;
+.act-right-col {
+  flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column;
 }
 
 /* ── Log panel（左欄，寬度≈棋盤一格，照抄 #logPanelWrap：標題+內捲動） ── */
@@ -1518,12 +1518,14 @@ h2 {
   transform-origin: top left;
 }
 
-/* 輪到 X ＋ 移動到：前/中/後（照抄 #actHintRow） */
-.act-hint-row {
-  display: flex; align-items: center; gap: 10px; flex-shrink: 0;
-  padding: 2px 0;
+/* 一行流式：輪到 X → 招式鈕 → 移動到 後/中/前（塞不下自動換行） */
+.act-flow {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: 6px 10px; padding: 2px 0; flex-shrink: 0;
 }
-.act-who { flex: 1; min-width: 0; font-size: 13px; color: #aab; }
+.act-flow .act-who { flex: 0 0 auto; }
+.act-flow-close { margin-left: auto; }
+.act-who { min-width: 0; font-size: 13px; color: #aab; }
 .act-who b { color: #f0f0ff; font-size: 14px; }
 .act-who-sub { font-size: 10px; color: #556; margin-left: 6px; }
 .act-slotrow { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
@@ -1535,10 +1537,10 @@ h2 {
   box-shadow: 0 0 10px rgba(200,161,90,.25);
 }
 
-/* 招式大按鈕 grid（照抄 #act-movegrid / .movebtn）：寬螢幕一排四欄，窄幅自動換行 */
+/* 招式鈕：跟在「輪到 X」後面流式排列，各自吃自然寬度、塞不下換行 */
 .act-movegrid {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 6px;
-  flex-shrink: 0;
+  display: flex; flex-wrap: wrap; gap: 6px;
+  flex: 1 1 auto; min-width: 0; align-items: center;
 }
 .movebtn {
   display: flex; flex-direction: column; gap: 2px; text-align: left;
@@ -1569,7 +1571,7 @@ h2 {
   padding: 1px 5px; border-radius: 3px;
 }
 .movebtn-blocked-warn {
-  grid-column: 1 / -1; font-size: 10px; color: #cc5555;
+  flex-basis: 100%; font-size: 10px; color: #cc5555;
   padding: 4px 8px; background: rgba(200,60,60,.06);
   border: 1px solid rgba(200,60,60,.2); border-radius: 6px;
 }
@@ -2519,7 +2521,7 @@ h2 {
   .act-panel       { gap: 4px; }
   .act-who         { font-size: 11px; }
   .act-who b       { font-size: 12px; }
-  .act-movegrid    { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 4px; }
+  .act-movegrid    { gap: 4px; }
   .movebtn         { padding: 4px 7px; }
   .movebtn-line1 b { font-size: 11px; }
   /* 卡面縮小；描述在手機上藏起來（詳情走 hover/長按浮窗）

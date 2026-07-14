@@ -457,62 +457,45 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
           const waitingUnits = readyUnits.slice(1)
           return (
             <div className="battle-act-row" ref={actRowRef}>
-              <div className="act-top-row">
-                <div className="log-panel-wrap">
-                  <div className="log-panel-label">戰鬥紀錄</div>
-                  <div className="log-panel" ref={logRef}>
-                    {game.log.slice(-80).map((l, i) => (
-                      <div key={i} className="log-line" dangerouslySetInnerHTML={{ __html: l.html }} />
-                    ))}
-                  </div>
+              {/* 戰鬥紀錄：整欄到底，手牌列不會蓋到它 */}
+              <div className="log-panel-wrap">
+                <div className="log-panel-label">戰鬥紀錄</div>
+                <div className="log-panel" ref={logRef}>
+                  {game.log.slice(-80).map((l, i) => (
+                    <div key={i} className="log-line" dangerouslySetInnerHTML={{ __html: l.html }} />
+                  ))}
                 </div>
+              </div>
 
-                {!isAIBattle && (
+              {!isAIBattle && (
+                <div className="act-right-col">
                   <div className="act-panel" ref={actionAreaRef}>
                     {previewing && previewUnit
                       ? (
-                        <>
-                          <div className="act-hint-row">
-                            <div className="act-who">
-                              查看 <b style={{ color: EL_COLOR[previewUnit.element] }}>{previewUnit.name}</b>
-                              <span className="act-who-sub">
-                                （{getSlotLabel(previewUnit.side, previewUnit.slot)}・
-                                {previewUnit.nextActionAt > game.clock ? `${Math.ceil((previewUnit.nextActionAt - game.clock) / 10)}s 後行動` : '即將行動'}）
-                              </span>
-                            </div>
-                            <button className="btn sm" onClick={() => setPreviewUnitId(null)}>✕</button>
+                        <div className="act-flow">
+                          <div className="act-who">
+                            查看 <b style={{ color: EL_COLOR[previewUnit.element] }}>{previewUnit.name}</b>
+                            <span className="act-who-sub">
+                              （{getSlotLabel(previewUnit.side, previewUnit.slot)}・
+                              {previewUnit.nextActionAt > game.clock ? `${Math.ceil((previewUnit.nextActionAt - game.clock) / 10)}s 後行動` : '即將行動'}）
+                            </span>
                           </div>
                           <MoveGrid unit={previewUnit} clock={game.clock} readOnly />
-                        </>
+                          <button className="btn sm act-flow-close" onClick={() => setPreviewUnitId(null)}>✕</button>
+                        </div>
                       )
                       : au
                         ? (
-                          <>
-                            <div className="act-hint-row">
-                              <div className="act-who">
-                                輪到【我方】<b style={{ color: EL_COLOR[au.element] }}>{EL_ICON[au.element]} {au.name}</b>
-                                {waitingUnits.length > 0 && (
-                                  <span className="act-who-sub">
-                                    （待機：{waitingUnits.map(u => u.name).join('、')}）
-                                  </span>
-                                )}
-                              </div>
-                              <div className="act-slotrow">
-                                <span className="slotrow-label">移動到：</span>
-                                {([3,2,1] as const).map(s => {
-                                  const tooFar = Math.abs(s - au.slot) > 1
-                                  return (
-                                    <button key={s}
-                                      className={`btn sm slotbtn ${getPendingSlot(au) === s ? 'current' : ''}`}
-                                      disabled={tooFar}
-                                      onClick={() => !tooFar && setPendingSlots(prev => ({ ...prev, [au.id]: s }))}>
-                                      {getSlotLabel(au.side, s)}
-                                    </button>
-                                  )
-                                })}
-                              </div>
+                          /* 一行流式：輪到 X → 招式鈕(含牌耗) → 移動到 後/中/前，塞不下自動換行 */
+                          <div className="act-flow">
+                            <div className="act-who">
+                              輪到【我方】<b style={{ color: EL_COLOR[au.element] }}>{EL_ICON[au.element]} {au.name}</b>
+                              {waitingUnits.length > 0 && (
+                                <span className="act-who-sub">
+                                  （待機：{waitingUnits.map(u => u.name).join('、')}）
+                                </span>
+                              )}
                             </div>
-
                             <MoveGrid
                               unit={au}
                               clock={game.clock}
@@ -520,44 +503,56 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                               picked={pickedMove}
                               onPick={s => { setPickedMove(prev => prev === s ? null : s); setPickedCardId(null) }}
                             />
-                          </>
+                            <div className="act-slotrow">
+                              <span className="slotrow-label">移動到：</span>
+                              {([3,2,1] as const).map(s => {
+                                const tooFar = Math.abs(s - au.slot) > 1
+                                return (
+                                  <button key={s}
+                                    className={`btn sm slotbtn ${getPendingSlot(au) === s ? 'current' : ''}`}
+                                    disabled={tooFar}
+                                    onClick={() => !tooFar && setPendingSlots(prev => ({ ...prev, [au.id]: s }))}>
+                                    {getSlotLabel(au.side, s)}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
                         )
                         : <div className="action-idle">等待行動…</div>
                     }
                   </div>
-                )}
-              </div>
 
-              {/* 手牌列＋出手鈕：獨立整排吃滿寬度，不跟紀錄/招式擠、也不被縮放裁切
-                  （查看模式也保留，只藏出手欄） */}
-              {!isAIBattle && (
-                <div className="act-cards-row" ref={cardsRowRef}>
-                  <div className="suit-count-row">
-                    {SUIT_CARDS.map(sc => {
-                      const count = suitInHand[SUIT_FOR[sc.slot]] ?? 0
-                      const discardTarget = myHand.find(c => c.color === SUIT_FOR[sc.slot])
-                      return (
-                        <SuitCountCard key={sc.slot} slot={sc.slot} cardId={sc.id} name={sc.name} count={count}
-                          onDiscard={discardTarget ? () => onDiscardCard(discardTarget.id) : undefined} />
-                      )
-                    })}
-                  </div>
-                  <div className="act-card-zone">
-                    {flowerCards.map((card, i) => (
-                      <FlowerCardFace key={`${card.id}-${i}`} card={card}
-                        picked={pickedCardId === card.id}
-                        onPick={() => { setPickedCardId(prev => prev === card.id ? null : card.id); setPickedMove(null) }}
-                        onDiscard={() => onDiscardCard(card.id)} />
-                    ))}
-                  </div>
-                  {au && !previewing && (
-                    <div className="act-confirm-col">
-                      <button className="btn primary act-confirm"
-                        onClick={() => confirmAct(au)}>
-                        出手 ▸
-                      </button>
+                  {/* 手牌列＋出手鈕：吃滿紀錄右側整寬，自然高度不縮放
+                      （查看模式也保留，只藏出手欄） */}
+                  <div className="act-cards-row" ref={cardsRowRef}>
+                    <div className="suit-count-row">
+                      {SUIT_CARDS.map(sc => {
+                        const count = suitInHand[SUIT_FOR[sc.slot]] ?? 0
+                        const discardTarget = myHand.find(c => c.color === SUIT_FOR[sc.slot])
+                        return (
+                          <SuitCountCard key={sc.slot} slot={sc.slot} cardId={sc.id} name={sc.name} count={count}
+                            onDiscard={discardTarget ? () => onDiscardCard(discardTarget.id) : undefined} />
+                        )
+                      })}
                     </div>
-                  )}
+                    <div className="act-card-zone">
+                      {flowerCards.map((card, i) => (
+                        <FlowerCardFace key={`${card.id}-${i}`} card={card}
+                          picked={pickedCardId === card.id}
+                          onPick={() => { setPickedCardId(prev => prev === card.id ? null : card.id); setPickedMove(null) }}
+                          onDiscard={() => onDiscardCard(card.id)} />
+                      ))}
+                    </div>
+                    {au && !previewing && (
+                      <div className="act-confirm-col">
+                        <button className="btn primary act-confirm"
+                          onClick={() => confirmAct(au)}>
+                          出手 ▸
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
