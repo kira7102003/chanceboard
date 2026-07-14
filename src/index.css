@@ -2831,8 +2831,32 @@ h2 {
 }
 .summon-cost { font-size: 12px; opacity: .75; }
 
-@keyframes summon-spin { 0%{transform:scale(1) rotate(0deg)} 50%{transform:scale(1.4) rotate(180deg)} 100%{transform:scale(1) rotate(360deg)} }
-.summon-anim { font-size: 64px; animation: summon-spin .7s ease-in-out; }
+.summon-animation-screen {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  overflow: hidden; background: radial-gradient(circle at center, rgba(116,72,220,.18), transparent 55%);
+}
+.summon-stage { position: relative; width: min(54vw, 420px); aspect-ratio: 1; display: grid; place-items: center; }
+.summon-rays {
+  position: absolute; inset: 4%; border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg, rgba(232,204,136,.22) 0 2deg, transparent 2deg 18deg);
+  mask-image: radial-gradient(circle, transparent 0 18%, #000 55%, transparent 72%);
+  animation: summonRotate 2.4s linear infinite;
+}
+.summon-ring { position: absolute; border-radius: 50%; border: 2px solid rgba(232,204,136,.7); box-shadow: 0 0 24px rgba(153,85,238,.55), inset 0 0 24px rgba(200,161,90,.2); }
+.summon-ring-one { inset: 18%; animation: summonRotate 1.2s linear infinite, summonPulse .6s ease-in-out infinite alternate; }
+.summon-ring-two { inset: 31%; border-style: dashed; animation: summonRotate .8s linear infinite reverse; }
+.summon-core {
+  font-size: clamp(56px, 10vw, 104px); color: #fff0b8;
+  text-shadow: 0 0 14px #fff, 0 0 38px #d5a8ff, 0 0 72px #8d55ee;
+  animation: summonCore 1.2s ease-in-out forwards;
+}
+.summon-particles { position: absolute; color: var(--gold2); font-size: 20px; letter-spacing: 10px; animation: summonParticles 1.2s ease-out infinite; }
+.summon-casting-text { color: var(--gold2); font-size: 14px; font-weight: 700; letter-spacing: 5px; animation: summonText .8s ease-in-out infinite alternate; }
+@keyframes summonRotate { to { transform: rotate(360deg); } }
+@keyframes summonPulse { to { transform: scale(1.08); opacity: .65; } }
+@keyframes summonCore { 0% { transform: scale(.25) rotate(-45deg); opacity: 0; } 65% { transform: scale(1.25) rotate(8deg); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes summonParticles { 0% { transform: scale(.5) rotate(0); opacity: 0; } 45% { opacity: 1; } 100% { transform: scale(1.8) rotate(20deg); opacity: 0; } }
+@keyframes summonText { to { opacity: .45; } }
 
 .summon-results {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
@@ -2840,8 +2864,10 @@ h2 {
 }
 .summon-result-card {
   display: flex; flex-direction: column; align-items: center; gap: 5px; position: relative;
-  animation: fadeInUp .4s ease both;
+  animation: summonReveal .48s cubic-bezier(.2,.75,.25,1.2) both;
+  animation-delay: var(--delay, 0ms);
 }
+@keyframes summonReveal { from { opacity: 0; transform: translateY(28px) scale(.7) rotateY(70deg); } to { opacity: 1; transform: none; } }
 @keyframes fadeInUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
 .summon-result-card.is-new .summon-result-portrait {
   box-shadow: 0 0 18px rgba(200,161,90,.5);
@@ -2858,6 +2884,29 @@ h2 {
 }
 .summon-result-name  { font-size: 11px; color: var(--text-h); text-align: center; }
 .summon-dup-label    { font-size: 10px; color: #888; }
+
+@media (max-width: 640px), (max-height: 560px) {
+  .panel-overlay .panel-header { padding: 7px 10px; gap: 8px; }
+  .panel-overlay .panel-title { font-size: 14px; }
+  .panel-overlay .panel-back { padding: 4px 9px; font-size: 11px; }
+  .panel-overlay .panel-body { padding: 8px 10px; }
+  .summon-banner { height: 72px; margin-bottom: 8px; border-radius: 9px; }
+  .summon-banner-title { font-size: 16px; }
+  .summon-banner-sub { font-size: 10px; }
+  .summon-banner::before { font-size: 48px; }
+  .summon-pool-section { margin-bottom: 8px; }
+  .summon-pool-row { gap: 3px; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 3px; }
+  .summon-pool-char { width: 30px; height: 40px; flex: 0 0 30px; }
+  .summon-btns { gap: 7px; flex-wrap: nowrap; }
+  .summon-btn { min-width: 0; padding: 7px 10px; font-size: 11px; }
+  .summon-cost { font-size: 10px; }
+  .summon-stage { width: min(52vh, 250px); }
+  .summon-casting-text { font-size: 11px; letter-spacing: 3px; }
+  .summon-results { grid-template-columns: repeat(5, 1fr); gap: 7px 4px; }
+  .summon-result-portrait { width: 46px; height: 61px; }
+  .summon-result-name { max-width: 58px; font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .summon-dup-label { font-size: 8px; }
+}
 
 /* ══════════════════════════════════════════════════════════════
    DECKBUILD — mobile one-screen layout

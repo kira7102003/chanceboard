@@ -34,16 +34,17 @@ export default function Summon({ onClose }: Props) {
       else         addCoins(DUP_COIN)
     }
 
+    setResults(null)
     setAnimating(true)
-    setTimeout(() => { setResults(pulled); setAnimating(false) }, 700)
+    setTimeout(() => { setResults(pulled); setAnimating(false) }, 1200)
   }
 
-  const reset = () => setResults(null)
+  const repeatPull = () => doPull(results?.length ?? 1)
 
   return (
     <div className="panel-overlay">
       <div className="panel-header">
-        <button className="panel-back" onClick={results ? reset : onClose}>
+        <button className="panel-back" disabled={animating} onClick={results ? repeatPull : onClose}>
           {results ? '← 再次招喚' : '← 返回'}
         </button>
         <span className="panel-title">✨ 招喚</span>
@@ -104,8 +105,15 @@ export default function Summon({ onClose }: Props) {
 
       {/* ── Animating ── */}
       {animating && (
-        <div className="panel-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="summon-anim">✨</div>
+        <div className="panel-body summon-animation-screen">
+          <div className="summon-stage">
+            <div className="summon-rays" />
+            <div className="summon-ring summon-ring-one" />
+            <div className="summon-ring summon-ring-two" />
+            <div className="summon-core">✦</div>
+            <div className="summon-particles">✦　·　✧　·　✦</div>
+          </div>
+          <div className="summon-casting-text">命運之輪轉動中</div>
         </div>
       )}
 
@@ -118,7 +126,7 @@ export default function Summon({ onClose }: Props) {
               const col    = EL_COLOR[c.element]
               return (
                 <div key={i} className={`summon-result-card${isNew ? ' is-new' : ''}`}
-                  style={{ '--col': col } as React.CSSProperties}>
+                  style={{ '--col': col, '--delay': `${i * 80}ms` } as React.CSSProperties}>
                   {isNew && <span className="summon-new-badge">NEW</span>}
                   <div className="summon-result-portrait" style={{ borderColor: col + '88' }}>
                     {imgUrl
@@ -134,7 +142,7 @@ export default function Summon({ onClose }: Props) {
             })}
           </div>
           <div style={{ textAlign: 'center', marginTop: 18, display: 'flex', gap: 10, justifyContent: 'center' }}>
-            <button className="btn" onClick={reset}>再次招喚</button>
+            <button className="btn primary" onClick={repeatPull}>再次招喚</button>
             <button className="btn" onClick={onClose}>返回大廳</button>
           </div>
         </div>
