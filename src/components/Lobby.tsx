@@ -18,12 +18,11 @@ interface Props {
   savedSession:  SavedSession | null
   onRejoin:      () => void
   onAdmin:       () => void
-  onStartWithTeam: (charIds: string[]) => void
 }
 
 const LOBBY_CHAR_KEY = 'cb_lobby_char'
 
-export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejoin, onAdmin, onStartWithTeam }: Props) {
+export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejoin, onAdmin }: Props) {
   const [input,      setInput]      = useState('')
   const [showOnline, setShowOnline] = useState(false)
   const [imgFailed,  setImgFailed]  = useState(false)
@@ -109,10 +108,7 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
       {panel === 'shop'       && <Shop       onClose={() => setPanel(null)} />}
       {panel === 'settings'   && <Settings onClose={() => setPanel(null)} />}
       {panel === 'teams'      && (
-        <Teams
-          onClose={() => setPanel(null)}
-          onStartBattle={ids => { setPanel(null); onStartWithTeam(ids) }}
-        />
+        <Teams onClose={() => setPanel(null)} />
       )}
 
       <div className="lobby-v2">

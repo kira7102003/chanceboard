@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useGameStore } from '../store/gameStore'
+import { usePlayerStore } from '../store/playerStore'
 import { getChars, getUrlByKey } from '../utils/charStore'
 import { CharPortrait } from './Admin'
 import { moves as allMoves } from '../data/db'
@@ -116,7 +117,8 @@ function CharGallery({ char, selectedIds, onToggle, onClose }: {
 export default function CharSelect({ onConfirm, onToggle }: Props) {
   const allChars   = getChars()
   const characters = allChars.filter(c => c.enabled !== false)
-  const { selectedCharIds, mySide, playerCount } = useGameStore()
+  const { selectedCharIds, mySide, playerCount, isSolo, loadTeam } = useGameStore()
+  const { savedTeams, defaultTeamId, setDefaultTeam } = usePlayerStore()
   const ready = selectedCharIds.length === 3
 
   const [elFilter,    setElFilter]    = useState<ElFilter>('all')
@@ -265,6 +267,21 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
         </h2>
         <span className="hint">選 3 位（{selectedCharIds.length}/3）</span>
         {playerCount < 2 && <span className="waiting">等待對手…</span>}
+        {isSolo && savedTeams.length > 0 && (
+          <label className="cs-team-picker">
+            <span>隊伍</span>
+            <select value={savedTeams.find(t => t.id === defaultTeamId)?.id ?? ''}
+              onChange={e => {
+                const team = savedTeams.find(t => t.id === e.target.value)
+                if (!team) return
+                setDefaultTeam(team.id)
+                loadTeam(team.charIds)
+              }}>
+              <option value="" disabled>選擇隊伍</option>
+              {savedTeams.map(team => <option key={team.id} value={team.id}>{team.name}</option>)}
+            </select>
+          </label>
+        )}
       </div>
 
       {/* ── Filter bar */}

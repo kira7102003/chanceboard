@@ -7,6 +7,7 @@ interface PlayerState {
   gems:  number
   ownedCharIds: string[]
   savedTeams:   SavedTeam[]
+  defaultTeamId: string | null
 
   // Model mutations (Controller calls these)
   addCoins:   (n: number) => void
@@ -20,6 +21,7 @@ interface PlayerState {
   setGems: (n: number) => void
   removeOwnedChar: (id: string) => void
   clearCollection: () => void
+  setDefaultTeam: (id: string) => void
 }
 
 export const usePlayerStore = create<PlayerState>()(
@@ -29,6 +31,7 @@ export const usePlayerStore = create<PlayerState>()(
       gems:  395,
       ownedCharIds: [],
       savedTeams:   [],
+      defaultTeamId: null,
 
       addCoins:   (n) => set(s => ({ coins: s.coins + n })),
       spendCoins: (n) => {
@@ -54,6 +57,7 @@ export const usePlayerStore = create<PlayerState>()(
       },
       deleteTeam: (id) => set(s => ({
         savedTeams: s.savedTeams.filter(t => t.id !== id),
+        defaultTeamId: s.defaultTeamId === id ? null : s.defaultTeamId,
       })),
       setCoins: (n) => set({ coins: Math.max(0, Math.floor(n)) }),
       setGems: (n) => set({ gems: Math.max(0, Math.floor(n)) }),
@@ -61,6 +65,7 @@ export const usePlayerStore = create<PlayerState>()(
         ownedCharIds: s.ownedCharIds.filter(charId => charId !== id),
       })),
       clearCollection: () => set({ ownedCharIds: [] }),
+      setDefaultTeam: (id) => set({ defaultTeamId: id }),
     }),
     { name: 'cb_player' }
   )

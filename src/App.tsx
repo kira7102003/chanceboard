@@ -6,6 +6,7 @@ import BattleView  from './components/BattleView'
 import Admin       from './components/Admin'
 import Login       from './components/Login'
 import { useGameStore }           from './store/gameStore'
+import { usePlayerStore }         from './store/playerStore'
 import { useRoom, loadSession, clearSession } from './hooks/useRoom'
 import { initFromCloud, getBgUrl, getAvailableBattleBgUrls } from './utils/charStore'
 import { useSolo }                from './hooks/useSolo'
@@ -122,19 +123,13 @@ export default function App() {
 
   const handleSoloStart = () => {
     const store = useGameStore.getState()
+    const player = usePlayerStore.getState()
+    const defaultTeam = player.savedTeams.find(team => team.id === player.defaultTeamId)
     store.setSolo(true)
     store.setRoom('SOLO', 'A', true)
     store.setPlayerCount(2)   // skip "等待對手" in CharSelect
+    if (defaultTeam) store.loadTeam(defaultTeam.charIds)
     store.setAppPhase('charSelect')
-  }
-
-  const handleStartWithTeam = (charIds: string[]) => {
-    const store = useGameStore.getState()
-    store.setSolo(true)
-    store.setRoom('SOLO', 'A', true)
-    store.setPlayerCount(2)
-    store.loadTeam(charIds)   // pre-fill selected chars
-    store.setAppPhase('deckBuild')  // skip charSelect
   }
 
   // ── CharSelect handlers ───────────────────────────────────────────────────────
@@ -203,7 +198,6 @@ export default function App() {
           savedSession={saved}
           onRejoin={handleRejoin}
           onAdmin={() => setShowAdmin(true)}
-          onStartWithTeam={handleStartWithTeam}
         />
       )}
 

@@ -7,12 +7,11 @@ const POS = ['前', '中', '後']
 const POS_COL = ['#e85533', '#ddaa22', '#33aacc']
 
 interface Props {
-  onClose:      () => void
-  onStartBattle: (charIds: string[]) => void
+  onClose: () => void
 }
 
-export default function Teams({ onClose, onStartBattle }: Props) {
-  const { savedTeams, saveTeam, deleteTeam } = usePlayerStore()
+export default function Teams({ onClose }: Props) {
+  const { savedTeams, defaultTeamId, saveTeam, deleteTeam, setDefaultTeam } = usePlayerStore()
   const allChars = getChars().filter(c => c.enabled !== false)
 
   const [creating,  setCreating]  = useState(false)
@@ -123,8 +122,10 @@ export default function Teams({ onClose, onStartBattle }: Props) {
                 <div className="team-footer">
                   <span className="team-name">{team.name}</span>
                   <div className="team-actions">
-                    <button className="btn primary" style={{ fontSize: 12 }}
-                      onClick={() => onStartBattle(team.charIds)}>⚔ 出戰</button>
+                    <button className={`btn ${defaultTeamId === team.id ? 'primary' : ''}`} style={{ fontSize: 12 }}
+                      onClick={() => setDefaultTeam(team.id)}>
+                      {defaultTeamId === team.id ? '✓ 已預設' : '設為預設'}
+                    </button>
                     <button className="btn" style={{ fontSize: 12 }}
                       onClick={() => deleteTeam(team.id)}>刪除</button>
                   </div>
