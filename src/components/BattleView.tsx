@@ -4,6 +4,7 @@ import { useGameStore } from '../store/gameStore'
 import type { Unit } from '../types/unit'
 import type { Card } from '../types/card'
 import type { Move, MoveSlot } from '../types/move'
+import type { GameState } from '../types/game'
 import { getReadyUnits } from '../engine/atb'
 import { effectiveATK, effectiveDEF, effectiveSPD } from '../engine/combat'
 import ScorePanel from './ScorePanel'
@@ -202,6 +203,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
         <div className="battle-end">
           <h2 style={{ fontSize: '2rem' }}>{label}</h2>
           <p>{game.winnerReason}</p>
+          <BattleEndDetails game={game} />
           <div style={{ display: 'flex', gap: 12 }}>
             <button className="btn primary" onClick={onSoloReplay ?? onEnd}>再看一局</button>
             <button className="btn"         onClick={onEnd}>返回大廳</button>
@@ -216,7 +218,9 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
           result={soloScore}
           onReplay={onSoloReplay ?? onEnd}
           onBack={onEnd}
-        />
+        >
+          <BattleEndDetails game={game} />
+        </ScorePanel>
       )
     }
     const result = game.winner === mySide ? '🏆 勝利！' : game.winner === 'draw' ? '⚖ 平局' : '💀 落敗'
@@ -224,6 +228,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
       <div className="battle-end">
         <h2>{result}</h2>
         <p>{game.winnerReason}</p>
+        <BattleEndDetails game={game} />
         <button className="btn primary" onClick={onEnd}>再玩一局</button>
       </div>
     )
@@ -565,6 +570,45 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
 
 // ─── UnitCard — 照抄參考版 renderUnitBlock()：立繪鋪滿背景、名字列疊頂端、
 //     血條(數字疊在條內)+ATK/DEF/SPD+狀態標籤合併疊底端 ────────────────────
+
+function BattleEndDetails({ game }: { game: GameState }) {
+  const Team = ({ side, units }: { side: 'A' | 'B'; units: Unit[] }) => {
+    const survivors = units.filter(u => u.alive)
+    return (
+      <div className={`end-team end-team-${side}`}>
+        <div className="end-detail-title">{side} 方殘存角色</div>
+        {survivors.length === 0
+          ? <div className="end-no-survivor">無</div>
+          : survivors.map(u => {
+              const pct = Math.max(0, Math.min(100, u.hp / u.maxHp * 100))
+              return (
+                <div className="end-unit" key={u.id}>
+                  <div className="end-unit-row"><b>{u.name}</b><span>{u.hp} / {u.maxHp} HP</span></div>
+                  <div className="end-hpbar"><i style={{ width: `${pct}%` }} /></div>
+                </div>
+              )
+            })}
+      </div>
+    )
+  }
+
+  return (
+    <div className="battle-end-details">
+      <div className="end-survivors">
+        <Team side="A" units={game.teamA} />
+        <Team side="B" units={game.teamB} />
+      </div>
+      <div className="end-log-wrap">
+        <div className="end-detail-title">戰鬥 LOG</div>
+        <div className="end-log">
+          {game.log.map((line, i) => (
+            <div className="log-line" key={i} dangerouslySetInnerHTML={{ __html: line.html }} />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function UnitCard({ unit, clock, onClick, selectable, highlighted, isPreview, isCurrentTurn, stackClass }: {
   unit: Unit; clock: number; onClick?: () => void; selectable?: boolean; highlighted?: boolean; isPreview?: boolean; isCurrentTurn?: boolean; stackClass?: string

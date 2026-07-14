@@ -1,12 +1,14 @@
 /**
  * View — solo battle score result panel.
  */
+import type { ReactNode } from 'react'
 import type { ScoreResult } from '../types/score'
 
 interface Props {
   result:   ScoreResult
   onReplay: () => void
   onBack:   () => void
+  children?: ReactNode
 }
 
 const GRADE_STYLE: Record<ScoreResult['grade'], { color: string; shadow: string }> = {
@@ -17,7 +19,7 @@ const GRADE_STYLE: Record<ScoreResult['grade'], { color: string; shadow: string 
   D: { color: '#998899', shadow: '0 0 8px #66446688' },
 }
 
-export default function ScorePanel({ result, onReplay, onBack }: Props) {
+export default function ScorePanel({ result, onReplay, onBack, children }: Props) {
   const gs = GRADE_STYLE[result.grade]
   const b  = result.breakdown
 
@@ -56,6 +58,8 @@ export default function ScorePanel({ result, onReplay, onBack }: Props) {
           </tr>
         </tbody>
       </table>
+
+      {children}
 
       <div className="score-actions">
         <button className="btn primary" onClick={onReplay}>再挑戰</button>
