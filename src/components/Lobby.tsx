@@ -40,12 +40,21 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
   const initIdx  = Math.max(0, chars.findIndex(c => c.id === savedId))
   const [charIdx, setCharIdx] = useState(initIdx)
 
-  const activeChar = chars[charIdx]
+  // 有些角色沒上傳過立繪（getUrlByKey 為 null）——顯示與切換都要跳過它們，
+  // 否則輪到沒圖的角色時整個立繪消失、也點不到它切回來（cb_lobby_char 又記住了它）。
+  const hasImg = (i: number) => !!getUrlByKey(`cb_img_${chars[i].id}`)
+  let dispIdx = charIdx
+  for (let i = 0; i < chars.length; i++) {
+    const idx = (charIdx + i) % chars.length
+    if (hasImg(idx)) { dispIdx = idx; break }
+  }
+  const activeChar = chars[dispIdx]
   const charImgUrl = activeChar ? getUrlByKey(`cb_img_${activeChar.id}`) : null
 
   const cycleChar = () => {
     imgErrCount.current = 0
-    const next = (charIdx + 1) % chars.length
+    let next = (dispIdx + 1) % chars.length
+    while (next !== dispIdx && !hasImg(next)) next = (next + 1) % chars.length
     setCharIdx(next)
     setImgFailed(false)
     localStorage.setItem(LOBBY_CHAR_KEY, chars[next].id)
@@ -60,11 +69,11 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
     imgErrCount.current += 1
     if (imgErrCount.current < chars.length) {
       // Try next character that has an image
-      let next = (charIdx + 1) % chars.length
-      while (next !== charIdx && !getUrlByKey(`cb_img_${chars[next].id}`)) {
+      let next = (dispIdx + 1) % chars.length
+      while (next !== dispIdx && !hasImg(next)) {
         next = (next + 1) % chars.length
       }
-      if (next !== charIdx) {
+      if (next !== dispIdx) {
         setCharIdx(next)
         // imgFailed stays false so next char's image can attempt to load
         return

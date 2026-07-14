@@ -12,24 +12,19 @@ interface FitBattleLayoutRefs {
 // generic 307:458 card shape — see .slot-cards-stack in index.css.
 const CARD_ASPECT = 24 / 43
 
-// Ported from chanceboard.html's fitBattleLayout(): split the space below the
-// header between the arena and the act row by the action panel's actual content
-// size, clamp so neither side collapses, and scale the act row down (instead of
-// letting it grow/scroll) if it still doesn't fit at the clamped height.
-// (The hand row now lives inside the act panel itself, so no extra HAND_H.)
+// 六個角色欄位優先：先讓格子吃到最大（同時受「寬度÷比例」與
+// 「下方面板最低高度」限制），剩餘高度才分給下方面板；面板內容
+// 塞不下時用 transform:scale 縮進去，而不是反過來壓縮人物。
 const ACT_ROW_MIN_H = 170
-const BOARD_RATIO_MIN = 0.35
-const BOARD_RATIO_SHORT_H = 500
-const BOARD_RATIO_TALL_H = 800
+const ACT_ROW_MIN_H_SHORT = 130 // 手機橫向等矮螢幕：面板底線再低一點，多留給人物
+const SHORT_MAIN_H = 520
+const SCALE_FLOOR_SHORT_H = 500
+const SCALE_FLOOR_TALL_H = 800
 const ARENA_CHROME_V = 16 // .battle-arena vertical padding
 const SAFETY = 3
 
 export function useFitBattleLayout(refs: FitBattleLayoutRefs) {
   const rafRef = useRef<number | null>(null)
-  // Largest act-panel content seen so far: the row keeps that height even
-  // while showing shorter content (等待行動/查看), so the log panel and the
-  // 輪到… row stay put instead of jumping every turn.
-  const maxDesiredRef = useRef(0)
 
   useLayoutEffect(() => {
     const { battleMainRef, arenaRef, actRowRef, actionAreaRef, slotColRef } = refs
@@ -48,43 +43,34 @@ export function useFitBattleLayout(refs: FitBattleLayoutRefs) {
       const mainH = mainEl.clientHeight
       if (mainH <= 0) return
 
-      const actionAreaScrollH = actionAreaEl.scrollHeight
-      maxDesiredRef.current = Math.max(maxDesiredRef.current, actionAreaScrollH)
-      const desiredActRowH = maxDesiredRef.current
-
-      const minBoardH = mainH * BOARD_RATIO_MIN
-      const maxActRowH = mainH - minBoardH
-      const actRowH = Math.max(ACT_ROW_MIN_H, Math.min(maxActRowH, desiredActRowH))
-      actRowEl.style.setProperty('--act-row-h', `${Math.round(actRowH)}px`)
-
-      const arenaH = mainH - actRowH
-      let cellH = Math.max(100, Math.round(arenaH - ARENA_CHROME_V - SAFETY))
-
-      // Clamp by available column width too, so a tall-but-narrow viewport
-      // can't blow the card's aspect-ratio-derived width past its column
-      // (mirrors the reference's max-height/max-width formulas, which were
-      // both derived from the same viewport value and so stayed in sync).
       // .slot-col's max-width is itself derived from --board-cell-h, so uncap
       // it first — measuring under the previous value would lock cellH there.
       arenaEl.style.setProperty('--board-cell-h', '9999px')
-      const slotColW = slotColRef.current?.clientWidth
-      if (slotColW && slotColW > 0) {
-        const maxCellHByWidth = Math.floor(slotColW / CARD_ASPECT)
-        cellH = Math.min(cellH, maxCellHByWidth)
-      }
+      const slotColW = slotColRef.current?.clientWidth ?? 0
 
+      const minActRowH = mainH < SHORT_MAIN_H ? ACT_ROW_MIN_H_SHORT : ACT_ROW_MIN_H
+      let cellH = Math.max(100, Math.round(mainH - minActRowH - ARENA_CHROME_V - SAFETY))
+      if (slotColW > 0) {
+        // 寬度上限：六欄均分後，卡片高不能超過 欄寬÷(24/43)，比例才固定
+        cellH = Math.min(cellH, Math.floor(slotColW / CARD_ASPECT))
+      }
       arenaEl.style.setProperty('--board-cell-h', `${cellH}px`)
 
-      const availableForActionArea = actRowH
-      if (actionAreaScrollH > 0 && availableForActionArea > 30 && actionAreaScrollH > availableForActionArea) {
-        const boardRatioT = Math.max(0, Math.min(1, (mainH - BOARD_RATIO_SHORT_H) / (BOARD_RATIO_TALL_H - BOARD_RATIO_SHORT_H)))
-        const scaleFloor = 0.4 + boardRatioT * 0.2
-        const scale = Math.max(scaleFloor, availableForActionArea / actionAreaScrollH)
+      // 面板拿剩下的（寬度限制住 cellH 時剩的會比底線多）。
+      // 高度只由視窗與欄寬決定，不隨回合內容變動 → 面板不會位移。
+      const actRowH = Math.max(minActRowH, mainH - (cellH + ARENA_CHROME_V + SAFETY))
+      actRowEl.style.setProperty('--act-row-h', `${Math.round(actRowH)}px`)
+
+      const actionAreaScrollH = actionAreaEl.scrollHeight
+      if (actionAreaScrollH > 0 && actRowH > 30 && actionAreaScrollH > actRowH) {
+        const t = Math.max(0, Math.min(1, (mainH - SCALE_FLOOR_SHORT_H) / (SCALE_FLOOR_TALL_H - SCALE_FLOOR_SHORT_H)))
+        const scaleFloor = 0.4 + t * 0.2
+        const scale = Math.max(scaleFloor, actRowH / actionAreaScrollH)
         actionAreaEl.style.transform = `scale(${scale})`
         // At the scale floor the content may still be taller than the row —
         // keep it scrollable then, or the confirm row gets clipped away.
         actionAreaEl.style.overflowY =
-          scale * actionAreaScrollH > availableForActionArea + 1 ? 'auto' : 'hidden'
+          scale * actionAreaScrollH > actRowH + 1 ? 'auto' : 'hidden'
       }
     }
 
