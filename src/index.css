@@ -344,6 +344,7 @@ body { margin: 0; }
 .char-select {
   flex: 1; padding: 12px 20px; display: flex; flex-direction: column;
   gap: 8px; max-width: 1400px; margin: 0 auto; width: 100%;
+  position: relative;
   overflow: visible; /* 確保內容可以溢出 */
   align-items: center; /* 中心對齐 */
 }
@@ -3174,4 +3175,42 @@ h2 {
 .dk-hint { /* visible on desktop */ }
 /* Keep random action in the header on every screen size. */
 .dk-random-btn { display: flex; }
+
+.flow-back-lobby {
+  position: absolute; right: 14px; bottom: 10px; z-index: 20;
+  padding: 8px 16px; color: #ffe39a; font-weight: 900;
+  background: linear-gradient(145deg, rgba(48,37,14,.96), rgba(8,10,22,.98));
+  border-color: rgba(232,204,136,.75);
+  box-shadow: 0 5px 18px rgba(0,0,0,.65), inset 0 0 12px rgba(200,161,90,.1);
+  text-shadow: 0 2px 4px #000;
+}
+
+/* Keep every control below the portraits readable over detailed battle art. */
+.battle-act-row {
+  color: #f1f3ff;
+  background: rgba(4,7,18,.82);
+  text-shadow: 0 1px 3px #000;
+}
+.battle-act-row .log-panel-wrap,
+.battle-act-row .act-panel {
+  background: linear-gradient(180deg, rgba(7,11,27,.94), rgba(3,6,17,.96));
+}
+.battle-act-row .log-panel-label {
+  color: #f0cf78; font-size: 11px;
+  background: rgba(24,27,48,.9);
+}
+.battle-act-row .log-panel .log-line {
+  color: #e3e7f5; font-size: 11px; font-weight: 650;
+  background: rgba(25,31,57,.94);
+}
+.battle-act-row .log-panel .log-line:nth-child(odd) { background: rgba(34,42,73,.96); }
+.battle-act-row .log-panel .log-line b { color: #fff4c7; }
+.battle-act-row .act-who { color: #dce1f3; font-weight: 700; }
+.battle-act-row .act-who b { color: #ffe39a; font-weight: 900; text-shadow: 0 1px 4px #000; }
+.battle-act-row .slotrow-label { color: #eef1ff; font-size: 12px; }
+.battle-act-row .movebtn { background: rgba(15,20,43,.96); }
+.battle-act-row .movebtn-line1 b { color: #fff; font-weight: 900; text-shadow: 0 1px 3px #000; }
+.battle-act-row .cardface { background-color: rgba(9,12,28,.96); }
+.battle-act-row .cf-name,
+.battle-act-row .cf-desc { color: #fff; font-weight: 800; text-shadow: 0 2px 4px #000, 0 0 7px #000; }
 

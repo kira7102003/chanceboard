@@ -211,12 +211,13 @@ export default function App() {
         <CharSelect
           onConfirm={handleCharConfirm}
           onToggle={id => useGameStore.getState().toggleCharSelect(id)}
+          onBack={handleEnd}
         />
       )}
 
       {/* 組牌 */}
       {!showAdmin && isActive && appPhase === 'deckBuild' && (
-        <DeckBuild onConfirm={handleDeckConfirm} />
+        <DeckBuild onConfirm={handleDeckConfirm} onBack={handleEnd} />
       )}
 
       {/* 戰鬥 */}

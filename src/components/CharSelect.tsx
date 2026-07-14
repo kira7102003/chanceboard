@@ -20,6 +20,7 @@ const RANGE_LBL:  Record<string, string>   = { '劍': '近戰', '槍': '遠程',
 interface Props {
   onConfirm: (ids: string[]) => void
   onToggle:  (id: string) => void
+  onBack: () => void
 }
 
 // ── Gallery (大典) modal ────────────────────────────────────────
@@ -114,7 +115,7 @@ function CharGallery({ char, selectedIds, onToggle, onClose }: {
 }
 
 // ── Main component ─────────────────────────────────────────────
-export default function CharSelect({ onConfirm, onToggle }: Props) {
+export default function CharSelect({ onConfirm, onToggle, onBack }: Props) {
   const allChars   = getChars()
   const characters = allChars.filter(c => c.enabled !== false)
   const { selectedCharIds, isSolo, loadTeam } = useGameStore()
@@ -418,6 +419,8 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
           )
         })}
       </div>
+
+      <button className="btn flow-back-lobby" onClick={onBack}>← 返回大廳</button>
 
       {/* ── 大典 Gallery modal */}
       {galleryChar && (

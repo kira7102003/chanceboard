@@ -58,9 +58,9 @@ function CardRow({ card, cnt, total, pulse, onAdd, onRemove }: CardRowProps) {
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
-interface Props { onConfirm: (deckIds: string[]) => void }
+interface Props { onConfirm: (deckIds: string[]) => void; onBack: () => void }
 
-export default function DeckBuild({ onConfirm }: Props) {
+export default function DeckBuild({ onConfirm, onBack }: Props) {
   const { mySide, isSolo } = useGameStore()
   const [selected, setSelected] = useState<string[]>([])
   const [tab,      setTab]      = useState<'suit' | 'flower'>('suit')
@@ -200,6 +200,8 @@ export default function DeckBuild({ onConfirm }: Props) {
           {isSolo ? '確認牌組 — 開始挑戰' : '確認牌組 — 等待對手'}
         </button>
       </div>
+
+      <button className="btn flow-back-lobby" onClick={onBack}>← 返回大廳</button>
 
     </div>
   )
