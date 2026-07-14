@@ -53,8 +53,8 @@ const PERMANENT_TICKS = 6000
 function statusTagText(key: string, mode: string, value: number, remainTicks: number): string {
   const label = STATUS_LABEL[key] ?? key
   const mag = mode === 'pct'
-    ? (value ? `(${Math.round(value * 100)}%)` : '')
-    : (value ? `+${value}` : '')
+    ? (value ? `(${Math.round(value)}%)` : '')
+    : (value ? `${value}` : '')
   const remain = remainTicks >= PERMANENT_TICKS ? '常駐' : `${Math.max(0, Math.ceil(remainTicks / 10))}s`
   return `${label}${mag} ${remain}`
 }
@@ -217,7 +217,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
 
   const atbQueue = [...game.teamA, ...game.teamB]
     .filter(u => u.alive)
-    .sort((a, b) => a.nextActionAt - b.nextActionAt)
+    .sort((a, b) => a.nextActionAt - b.nextActionAt || effectiveSPD(b) - effectiveSPD(a))
   const globalActiveId = atbQueue[0]?.id
 
   if (game.phase === 'end') {

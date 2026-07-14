@@ -11,7 +11,7 @@ import type { Card } from '../types/card'
 import type { StatusEntry } from '../types/status'
 import { characters, moves as allMoves, cards as allCards, deckWeights } from '../data/db'
 import type { PieceType } from '../types/piece'
-import { calcBAT, resolveHit, applyDamage, elementMult } from './combat'
+import { calcBAT, effectiveSPD, resolveHit, applyDamage, elementMult } from './combat'
 import { runEffectOps, runCardEffects, tickStatuses } from './effects'
 import type { LogLine } from './effects'
 
@@ -123,6 +123,10 @@ export function initBattleState(
   const slotOrderA: (1|2|3)[] = [1, 2, 3]
   const teamA = charIdsA.map((id, i) => makeUnit(id, 'A', slotOrderA[i], startClock))
   const teamB = charIdsB.map((id, i) => makeUnit(id, 'B', (i + 1) as 1 | 2 | 3, startClock))
+
+  // The first turn follows the same SPD → BAT rule as every later turn.
+  // Previously every unit started at tick 0, so array order incorrectly won.
+  for (const unit of [...teamA, ...teamB]) unit.nextActionAt = startClock + calcBAT(unit)
 
   const pubDeck = buildPublicDeck(piece)
   const [handA, deckAfterA] = drawN(pubDeck, HAND_LIMIT)
@@ -958,7 +962,7 @@ export function autoPlayUnit(gs: GameState, unit: Unit): GameState {
 export function getReadyUnits(gs: GameState): Unit[] {
   return [...gs.teamA, ...gs.teamB]
     .filter(u => u.alive && !u.statuses.some(s => s.key === 'frozen') && u.nextActionAt <= gs.clock)
-    .sort((a, b) => a.nextActionAt - b.nextActionAt)
+    .sort((a, b) => a.nextActionAt - b.nextActionAt || effectiveSPD(b) - effectiveSPD(a))
 }
 
 function deepClone<T>(v: T): T {

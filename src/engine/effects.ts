@@ -3,7 +3,7 @@ import type { Unit } from '../types/unit'
 import type { Card } from '../types/card'
 import type { GameState } from '../types/game'
 import type { StatusEntry } from '../types/status'
-import { applyDamage } from './combat'
+import { applyDamage, effectiveSPD } from './combat'
 
 export type LogLine = { html: string; moveAnim?: { moveId: string; moveName: string; moveSlot: string; charName: string; charId?: string; targetName?: string; targetCharId?: string; targetUnitId?: string; groupTargets?: Array<{ name: string; charId?: string }> } }
 
@@ -42,6 +42,7 @@ function resolveTarget(
 }
 
 function addStatus(unit: Unit, op: EffectOp, clock: number, durationMult = 1) {
+  const oldSpd = effectiveSPD(unit)
   const key    = op.key as StatusEntry['key']
   const value  = (op.value as number) ?? 0
   const mode   = (op.mode as StatusEntry['mode']) ?? 'flat'
@@ -55,6 +56,14 @@ function addStatus(unit: Unit, op: EffectOp, clock: number, durationMult = 1) {
 
   unit.statuses = unit.statuses.filter(s => s.key !== key)
   unit.statuses.push({ key, mode, value, expiresAt: clock + dur * 10 })
+
+  // SPD changes immediately affect the remaining ATB wait, not only the next
+  // action scheduled after this one.
+  const newSpd = effectiveSPD(unit)
+  if (newSpd !== oldSpd && unit.nextActionAt > clock) {
+    const remaining = unit.nextActionAt - clock
+    unit.nextActionAt = clock + Math.max(1, Math.round(remaining * oldSpd / newSpd))
+  }
 
   // 結冰 special: push action timer forward so the unit can't act while frozen
   if (key === 'frozen' && unit.nextActionAt > clock) {
@@ -484,6 +493,7 @@ export function runCardEffects(card: Card, actor: Unit, gs: GameState, clock: nu
 export function tickStatuses(gs: GameState, clock: number, log: LogLine[]) {
   for (const u of allUnits(gs)) {
     if (!u.alive) continue
+    const oldSpd = effectiveSPD(u)
     u.statuses = u.statuses.filter(s => {
       if (s.expiresAt !== -1 && s.expiresAt <= clock) {
         log.push({ html: `<b>${u.name}</b> 的 ${s.key} 狀態解除` })
@@ -491,6 +501,11 @@ export function tickStatuses(gs: GameState, clock: number, log: LogLine[]) {
       }
       return true
     })
+    const newSpd = effectiveSPD(u)
+    if (newSpd !== oldSpd && u.nextActionAt > clock) {
+      const remaining = u.nextActionAt - clock
+      u.nextActionAt = clock + Math.max(1, Math.round(remaining * oldSpd / newSpd))
+    }
     const hpPlus  = u.statuses.find(s => s.key === 'hpPlus')
     const hpMinus = u.statuses.find(s => s.key === 'hpMinus')
     if (hpPlus)  healUnit(u, hpPlus.value)
