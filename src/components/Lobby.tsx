@@ -33,16 +33,16 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
   // Re-evaluate charImgUrl after cloud data loads (desktop fresh-session fix)
   useEffect(() => onCloudSynced(() => { imgErrCount.current = 0; setImgFailed(false); forceUpdate(n => n + 1) }), [])
 
-  const { coins, gems } = usePlayerStore()
+  const { coins, gems, ownedCharIds } = usePlayerStore()
 
-  const chars  = getChars()
+  const chars  = getChars().filter(c => ownedCharIds.includes(c.id))
   const savedId  = localStorage.getItem(LOBBY_CHAR_KEY)
   const initIdx  = Math.max(0, chars.findIndex(c => c.id === savedId))
   const [charIdx, setCharIdx] = useState(initIdx)
 
   // 有些角色沒上傳過立繪（getUrlByKey 為 null）——顯示與切換都要跳過它們，
   // 否則輪到沒圖的角色時整個立繪消失、也點不到它切回來（cb_lobby_char 又記住了它）。
-  const hasImg = (i: number) => !!getUrlByKey(`cb_img_${chars[i].id}`)
+  const hasImg = (i: number) => !!chars[i] && !!getUrlByKey(`cb_img_${chars[i].id}`)
   let dispIdx = charIdx
   for (let i = 0; i < chars.length; i++) {
     const idx = (charIdx + i) % chars.length
@@ -52,6 +52,7 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
   const charImgUrl = activeChar ? getUrlByKey(`cb_img_${activeChar.id}`) : null
 
   const cycleChar = () => {
+    if (chars.length === 0) return
     imgErrCount.current = 0
     let next = (dispIdx + 1) % chars.length
     while (next !== dispIdx && !hasImg(next)) next = (next + 1) % chars.length
@@ -135,7 +136,6 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
             <span className="lv2-btn-icon">⚔</span>
             <div>
               <div className="lv2-btn-title">單人對戰</div>
-              <div className="lv2-btn-sub">挑一支隊伍，跟電腦對戰</div>
             </div>
           </button>
 

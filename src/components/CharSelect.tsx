@@ -117,7 +117,7 @@ function CharGallery({ char, selectedIds, onToggle, onClose }: {
 export default function CharSelect({ onConfirm, onToggle }: Props) {
   const allChars   = getChars()
   const characters = allChars.filter(c => c.enabled !== false)
-  const { selectedCharIds, mySide, playerCount, isSolo, loadTeam } = useGameStore()
+  const { selectedCharIds, isSolo, loadTeam } = useGameStore()
   const { savedTeams, defaultTeamId, setDefaultTeam } = usePlayerStore()
   const ready = selectedCharIds.length === 3
 
@@ -262,11 +262,6 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
 
       {/* ── Header */}
       <div className="cs-header">
-        <h2 style={{ margin: 0 }}>
-          選擇角色 — <span className={`side side-${mySide}`}>{mySide}</span>
-        </h2>
-        <span className="hint">選 3 位（{selectedCharIds.length}/3）</span>
-        {playerCount < 2 && <span className="waiting">等待對手…</span>}
         <div className="cs-filter-bar">
           {(['all', '劍', '槍', '法'] as ElFilter[]).map(el => (
             <button
