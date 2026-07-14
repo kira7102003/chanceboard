@@ -221,6 +221,17 @@ export function tickATB(gs: GameState): GameState {
   return s
 }
 
+// When nobody can act, resolve the otherwise idle countdown immediately while
+// still processing every status tick and round boundary along the way.
+export function fastForwardToNextReady(gs: GameState): GameState {
+  let s = gs
+  const MAX_IDLE_TICKS = 10000
+  for (let i = 0; i < MAX_IDLE_TICKS && s.phase !== 'end' && getReadyUnits(s).length === 0; i++) {
+    s = tickATB(s)
+  }
+  return s
+}
+
 function runRoundPassives(s: GameState, trigger: 'roundStart' | 'roundEnd') {
   const log: LogLine[] = []
   for (const u of [...s.teamA, ...s.teamB]) {

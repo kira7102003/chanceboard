@@ -7,7 +7,7 @@ const ALL_PIECES: PieceType[] = ['pawn', 'knight', 'castle', 'bishop', 'queen', 
 function randomPiece(): PieceType { return ALL_PIECES[Math.floor(Math.random() * ALL_PIECES.length)] }
 import type { ScoreResult } from '../types/score'
 import {
-  initBattleState, tickATB, doPlayCard, doMoveUnit,
+  initBattleState, tickATB, fastForwardToNextReady, doPlayCard, doMoveUnit,
   doExecuteMove, doPass, doToggleAuto, autoPlayUnit, getReadyUnits, doDiscardCard,
 } from '../engine/atb'
 import { calcScore } from '../engine/score'
@@ -167,7 +167,10 @@ export const useGameStore = create<Store>((set, get) => ({
     const aPending = !game.autoBattleA && readyNow.some(u => u.side === 'A')
     const bPending = !game.autoBattleB && readyNow.some(u => u.side === 'B')
     if (aPending || bPending) return
-    let next = tickATB(game)
+    // If both sides are only waiting for ATB, jump through the idle time to the
+    // next actionable unit. Existing ready/automatic turns still advance one
+    // normal tick at a time.
+    let next = readyNow.length === 0 ? fastForwardToNextReady(game) : tickATB(game)
     // SA doc 7.10: one AI action per tick so every move is visible (not batched)
     const ready = getReadyUnits(next)
     const toPlay = ready.find(u =>
