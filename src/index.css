@@ -988,7 +988,7 @@ h2 {
   scrollbar-width: thin; scrollbar-color: rgba(200,161,90,.1) transparent;
 }
 .battle-arena {
-  flex: 1 1 0; display: flex; flex-direction: column; overflow: hidden; min-height: 0;
+  flex: 1 1 0; display: flex; flex-direction: column; overflow: visible; min-height: 0;
   padding: 8px 10px;
 }
 .slot-col-my {
@@ -1054,7 +1054,7 @@ h2 {
 @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .45 } }
 
 /* ── Slot layout — 階梯式：前=底 中=中 後=高 ────────────────── */
-.slots-row { display: flex; gap: 6px; align-items: stretch; padding-top: 0; overflow: hidden; flex: 1; min-height: 0; }
+.slots-row { display: flex; gap: 6px; align-items: stretch; padding-top: 0; overflow: visible; flex: 1; min-height: 0; }
 .slot-col  { flex: 1 1 0; display: flex; flex-direction: column; gap: 5px; max-width: 307px; min-width: 0; min-height: 0; transition: transform .25s ease; }
 .slot-name {
   font-size: 11px; font-weight: 900; letter-spacing: 3px;
@@ -1091,9 +1091,11 @@ h2 {
 .slot-stack-right-far  > .unit-card:nth-child(3),
 .slot-stack-right-near > .unit-card:nth-child(3) { z-index: 1; transform: translateX(25%);  opacity: .35; }
 
-/* Hover: spread all cards, all opaque */
+/* Hover: spread all cards, full size, all opaque */
 .slot-col { position: relative; }
-.slot-col:hover { z-index: 20; }
+.slot-col:hover { z-index: 50; }
+/* Remove viewport-height constraint on hover so cards expand at full natural size */
+.slot-col:hover .slot-cards-stack { max-height: none; max-width: min(100%, 307px); }
 .slot-col:hover .slot-cards-stack > .unit-card { opacity: 1; }
 
 /* 前/後 slots: 2 columns of space, spread fully */
