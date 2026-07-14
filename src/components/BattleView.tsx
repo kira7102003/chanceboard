@@ -285,27 +285,28 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
         const mirrorSkill = !attackFromLeft
         const mirrorTarget = attackFromLeft
 
-        const Portrait = ({ img, name, flip }: { img: string|null; name: string; flip: boolean }) => (
+        const Portrait = ({ img, name, flip, showName = true }: { img: string|null; name: string; flip: boolean; showName?: boolean }) => (
           <>
             {img
               ? <img src={img} className="ma-portrait" alt=""
                   style={flip ? { transform: 'scaleX(-1)' } : undefined} />
               : <div className="ma-no-img">{name[0]}</div>
             }
-            <div className="ma-char-name">{name}</div>
+            {showName && <div className="ma-char-name">{name}</div>}
           </>
         )
 
         const TargetZone = (
           <div className="ma-zone-target">
-            {moveAnim.isGroup && moveAnim.groupTargets.length > 0
+            {moveAnim.isGroup
               ? (
                 <div className="ma-group-row">
                   {moveAnim.groupTargets.map((t, i) => (
                     <div key={i}>
-                      <Portrait img={t.charImg} name={t.name} flip={mirrorTarget} />
+                      <Portrait img={t.charImg} name={t.name} flip={mirrorTarget} showName={false} />
                     </div>
                   ))}
+                  <div className="ma-char-name ma-group-name">群體</div>
                 </div>
               )
               : moveAnim.targetName

@@ -2338,9 +2338,13 @@ h2 {
   font-size: 2.4rem; color: rgba(200,200,240,.3);
 }
 .ma-char-name {
-  font-size: 11px; color: var(--gold2); letter-spacing: 1px; text-align: center;
+  font-family: 'Cinzel', 'Microsoft YaHei', serif;
+  font-size: clamp(.85rem, 2vw, 1.25rem); font-weight: 700;
+  color: var(--gold2); letter-spacing: 3px; text-align: center;
   text-shadow: 0 0 12px rgba(200,161,90,.55), 0 2px 6px rgba(0,0,0,.9);
 }
+.ma-group-row { position: relative; }
+.ma-group-name { position: absolute; left: 50%; bottom: -34px; transform: translateX(-50%); white-space: nowrap; }
 
 /* Center skill zone — image slides toward target */
 .ma-zone-skill {
