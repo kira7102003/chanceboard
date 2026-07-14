@@ -6,6 +6,7 @@ interface FitBattleLayoutRefs {
   actRowRef: RefObject<HTMLDivElement | null>
   actionAreaRef: RefObject<HTMLDivElement | null>
   slotColRef: RefObject<HTMLDivElement | null>
+  cardsRowRef: RefObject<HTMLDivElement | null>
 }
 
 // Matches the Admin portrait-crop tool's 768x1376 target (24:43), not the
@@ -13,10 +14,11 @@ interface FitBattleLayoutRefs {
 const CARD_ASPECT = 24 / 43
 
 // 六個角色欄位優先：先讓格子吃到最大（同時受「寬度÷比例」與
-// 「下方面板最低高度」限制），剩餘高度才分給下方面板；面板內容
-// 塞不下時用 transform:scale 縮進去，而不是反過來壓縮人物。
-const ACT_ROW_MIN_H = 170
-const ACT_ROW_MIN_H_SHORT = 130 // 手機橫向等矮螢幕：面板底線再低一點，多留給人物
+// 「下方面板最低高度」限制），剩餘高度才分給下方面板。
+// 面板底線 = 手牌列自然高度（整排最寬、不縮放不裁切）+ 訊息/招式區底線；
+// 訊息/招式區塞不下時用 transform:scale 縮進去，而不是反過來壓縮人物。
+const ACT_TOP_MIN_H = 110
+const ACT_TOP_MIN_H_SHORT = 60 // 手機橫向等矮螢幕：上半底線再低，多留給人物
 const SHORT_MAIN_H = 520
 const SCALE_FLOOR_SHORT_H = 500
 const SCALE_FLOOR_TALL_H = 800
@@ -27,18 +29,22 @@ export function useFitBattleLayout(refs: FitBattleLayoutRefs) {
   const rafRef = useRef<number | null>(null)
 
   useLayoutEffect(() => {
-    const { battleMainRef, arenaRef, actRowRef, actionAreaRef, slotColRef } = refs
+    const { battleMainRef, arenaRef, actRowRef, actionAreaRef, slotColRef, cardsRowRef } = refs
 
     const fit = () => {
       const mainEl = battleMainRef.current
       const arenaEl = arenaRef.current
       const actRowEl = actRowRef.current
+      // actionArea / cardsRow 在觀戰模式不存在 — arena 的計算照常跑
       const actionAreaEl = actionAreaRef.current
-      if (!mainEl || !arenaEl || !actRowEl || !actionAreaEl) return
+      const cardsRowEl = cardsRowRef.current
+      if (!mainEl || !arenaEl || !actRowEl) return
 
       // Reset any previous scale before measuring natural content height.
-      actionAreaEl.style.transform = 'none'
-      actionAreaEl.style.overflowY = 'auto'
+      if (actionAreaEl) {
+        actionAreaEl.style.transform = 'none'
+        actionAreaEl.style.overflowY = 'auto'
+      }
 
       const mainH = mainEl.clientHeight
       if (mainH <= 0) return
@@ -48,7 +54,9 @@ export function useFitBattleLayout(refs: FitBattleLayoutRefs) {
       arenaEl.style.setProperty('--board-cell-h', '9999px')
       const slotColW = slotColRef.current?.clientWidth ?? 0
 
-      const minActRowH = mainH < SHORT_MAIN_H ? ACT_ROW_MIN_H_SHORT : ACT_ROW_MIN_H
+      const cardsRowH = cardsRowEl?.offsetHeight ?? 0
+      const minTopH = mainH < SHORT_MAIN_H ? ACT_TOP_MIN_H_SHORT : ACT_TOP_MIN_H
+      const minActRowH = cardsRowH + minTopH
       let cellH = Math.max(100, Math.round(mainH - minActRowH - ARENA_CHROME_V - SAFETY))
       if (slotColW > 0) {
         // 寬度上限：六欄均分後，卡片高不能超過 欄寬÷(24/43)，比例才固定
@@ -61,16 +69,20 @@ export function useFitBattleLayout(refs: FitBattleLayoutRefs) {
       const actRowH = Math.max(minActRowH, mainH - (cellH + ARENA_CHROME_V + SAFETY))
       actRowEl.style.setProperty('--act-row-h', `${Math.round(actRowH)}px`)
 
-      const actionAreaScrollH = actionAreaEl.scrollHeight
-      if (actionAreaScrollH > 0 && actRowH > 30 && actionAreaScrollH > actRowH) {
-        const t = Math.max(0, Math.min(1, (mainH - SCALE_FLOOR_SHORT_H) / (SCALE_FLOOR_TALL_H - SCALE_FLOOR_SHORT_H)))
-        const scaleFloor = 0.4 + t * 0.2
-        const scale = Math.max(scaleFloor, actRowH / actionAreaScrollH)
-        actionAreaEl.style.transform = `scale(${scale})`
-        // At the scale floor the content may still be taller than the row —
-        // keep it scrollable then, or the confirm row gets clipped away.
-        actionAreaEl.style.overflowY =
-          scale * actionAreaScrollH > actRowH + 1 ? 'auto' : 'hidden'
+      if (actionAreaEl) {
+        // 手牌列吃固定高度，訊息/招式區只能用剩下的上半
+        const topH = actRowH - cardsRowH
+        const actionAreaScrollH = actionAreaEl.scrollHeight
+        if (actionAreaScrollH > 0 && topH > 30 && actionAreaScrollH > topH) {
+          const t = Math.max(0, Math.min(1, (mainH - SCALE_FLOOR_SHORT_H) / (SCALE_FLOOR_TALL_H - SCALE_FLOOR_SHORT_H)))
+          const scaleFloor = 0.4 + t * 0.2
+          const scale = Math.max(scaleFloor, topH / actionAreaScrollH)
+          actionAreaEl.style.transform = `scale(${scale})`
+          // At the scale floor the content may still be taller than the row —
+          // keep it scrollable then, or the bottom rows get clipped away.
+          actionAreaEl.style.overflowY =
+            scale * actionAreaScrollH > topH + 1 ? 'auto' : 'hidden'
+        }
       }
     }
 
@@ -85,12 +97,21 @@ export function useFitBattleLayout(refs: FitBattleLayoutRefs) {
     if (battleMainRef.current) ro.observe(battleMainRef.current)
     if (actionAreaRef.current) ro.observe(actionAreaRef.current)
     if (slotColRef.current) ro.observe(slotColRef.current)
+    if (cardsRowRef.current) ro.observe(cardsRowRef.current)
+
+    // act-panel 的盒子尺寸固定（flex 撐滿），內容變多時 ResizeObserver 不會觸發
+    // → 換回合/選招後 scale 會沿用舊值、把底下內容截掉；改盯 DOM 內容變動重算。
+    const mo = new MutationObserver(schedule)
+    if (actionAreaRef.current) {
+      mo.observe(actionAreaRef.current, { childList: true, subtree: true, characterData: true })
+    }
 
     window.addEventListener('resize', schedule)
     window.addEventListener('orientationchange', schedule)
 
     return () => {
       ro.disconnect()
+      mo.disconnect()
       window.removeEventListener('resize', schedule)
       window.removeEventListener('orientationchange', schedule)
       if (rafRef.current) cancelAnimationFrame(rafRef.current)

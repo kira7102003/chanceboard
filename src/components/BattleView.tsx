@@ -103,7 +103,8 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
   const actRowRef      = useRef<HTMLDivElement>(null)
   const actionAreaRef  = useRef<HTMLDivElement>(null)
   const slotColRef     = useRef<HTMLDivElement>(null)
-  useFitBattleLayout({ battleMainRef, arenaRef, actRowRef, actionAreaRef, slotColRef })
+  const cardsRowRef    = useRef<HTMLDivElement>(null)
+  useFitBattleLayout({ battleMainRef, arenaRef, actRowRef, actionAreaRef, slotColRef, cardsRowRef })
   const [moveAnim,  setMoveAnim]  = useState<MoveAnim | null>(null)
   const [animKey,   setAnimKey]   = useState(0)
   // pending destination slot per unit (preview before confirming with a skill/pass)
@@ -113,6 +114,8 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
   // pick-then-confirm (照抄參考版：點招式/花牌先選取，按「出手」才執行)
   const [pickedMove,   setPickedMove]   = useState<MoveSlot | null>(null)
   const [pickedCardId, setPickedCardId] = useState<string | null>(null)
+  // 順序條 chip 精簡後，完整資訊改滑鼠移入（手機點一下）浮窗顯示
+  const [atbPop, setAtbPop] = useState<{ id: string; rect: DOMRect } | null>(null)
 
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight
@@ -341,14 +344,23 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
             const ticks = Math.max(0, u.nextActionAt - game.clock)
             const ready = ticks === 0
             return (
-              <div key={u.id} className={`atb-chip atb-${u.side} ${ready ? 'atb-ready' : ''}`}>
-                <div className="atb-name">
-                  <span style={{ color: EL_COLOR[u.element], fontSize: 8 }}>⬥</span> {u.name}
-                </div>
-                <div className="atb-time">{ready ? '行動中' : `${Math.ceil(ticks / 10)}s`}</div>
+              <div key={u.id} className={`atb-chip atb-${u.side} ${ready ? 'atb-ready' : ''}`}
+                onMouseEnter={e => setAtbPop({ id: u.id, rect: e.currentTarget.getBoundingClientRect() })}
+                onMouseLeave={() => setAtbPop(null)}
+                onClick={e => {
+                  const rect = e.currentTarget.getBoundingClientRect()
+                  setAtbPop(p => p && p.id === u.id ? null : { id: u.id, rect })
+                }}>
+                <span className="atb-dot" style={{ color: EL_COLOR[u.element] }}>⬥</span>
+                <span className="atb-name">{u.name}</span>
+                <span className="atb-time">{ready ? '行動中' : `${Math.ceil(ticks / 10)}s`}</span>
               </div>
             )
           })}
+          {atbPop && (() => {
+            const u = atbQueue.find(x => x.id === atbPop.id)
+            return u ? <AtbPopup unit={u} clock={game.clock} mySide={mySide ?? 'A'} anchor={atbPop.rect} /> : null
+          })()}
         </div>
         <div style={{ flex: 1 }} />
         {isAIBattle
@@ -438,81 +450,88 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
           </div>
         </div>
 
-        {/* ── Act row: 戰鬥紀錄 (left) | 出手面板 (right) — 照抄參考版 #actRow ── */}
-        <div className="battle-act-row" ref={actRowRef}>
-          <div className="log-panel-wrap">
-            <div className="log-panel-label">戰鬥紀錄</div>
-            <div className="log-panel" ref={logRef}>
-              {game.log.slice(-80).map((l, i) => (
-                <div key={i} className="log-line" dangerouslySetInnerHTML={{ __html: l.html }} />
-              ))}
-            </div>
-          </div>
+        {/* ── Act row: 上半（戰鬥紀錄 | 出手面板）+ 下半整排手牌 ── */}
+        {(() => {
+          const au = readyUnits[0]
+          const previewing = !!previewUnit && previewUnit.id !== au?.id
+          const waitingUnits = readyUnits.slice(1)
+          return (
+            <div className="battle-act-row" ref={actRowRef}>
+              <div className="act-top-row">
+                <div className="log-panel-wrap">
+                  <div className="log-panel-label">戰鬥紀錄</div>
+                  <div className="log-panel" ref={logRef}>
+                    {game.log.slice(-80).map((l, i) => (
+                      <div key={i} className="log-line" dangerouslySetInnerHTML={{ __html: l.html }} />
+                    ))}
+                  </div>
+                </div>
 
-          {!isAIBattle && (() => {
-            const au = readyUnits[0]
-            const previewing = !!previewUnit && previewUnit.id !== au?.id
-            const waitingUnits = readyUnits.slice(1)
-            return (
-              <div className="act-panel" ref={actionAreaRef}>
-                {previewing && previewUnit
-                  ? (
-                    <>
-                      <div className="act-hint-row">
-                        <div className="act-who">
-                          查看 <b style={{ color: EL_COLOR[previewUnit.element] }}>{previewUnit.name}</b>
-                          <span className="act-who-sub">
-                            （{getSlotLabel(previewUnit.side, previewUnit.slot)}・
-                            {previewUnit.nextActionAt > game.clock ? `${Math.ceil((previewUnit.nextActionAt - game.clock) / 10)}s 後行動` : '即將行動'}）
-                          </span>
-                        </div>
-                        <button className="btn sm" onClick={() => setPreviewUnitId(null)}>✕</button>
-                      </div>
-                      <MoveGrid unit={previewUnit} clock={game.clock} readOnly />
-                    </>
-                  )
-                  : au
-                    ? (
-                      <>
-                        <div className="act-hint-row">
-                          <div className="act-who">
-                            輪到【我方】<b style={{ color: EL_COLOR[au.element] }}>{EL_ICON[au.element]} {au.name}</b>
-                            {waitingUnits.length > 0 && (
+                {!isAIBattle && (
+                  <div className="act-panel" ref={actionAreaRef}>
+                    {previewing && previewUnit
+                      ? (
+                        <>
+                          <div className="act-hint-row">
+                            <div className="act-who">
+                              查看 <b style={{ color: EL_COLOR[previewUnit.element] }}>{previewUnit.name}</b>
                               <span className="act-who-sub">
-                                （待機：{waitingUnits.map(u => u.name).join('、')}）
+                                （{getSlotLabel(previewUnit.side, previewUnit.slot)}・
+                                {previewUnit.nextActionAt > game.clock ? `${Math.ceil((previewUnit.nextActionAt - game.clock) / 10)}s 後行動` : '即將行動'}）
                               </span>
-                            )}
+                            </div>
+                            <button className="btn sm" onClick={() => setPreviewUnitId(null)}>✕</button>
                           </div>
-                          <div className="act-slotrow">
-                            <span className="slotrow-label">移動到：</span>
-                            {([3,2,1] as const).map(s => {
-                              const tooFar = Math.abs(s - au.slot) > 1
-                              return (
-                                <button key={s}
-                                  className={`btn sm slotbtn ${getPendingSlot(au) === s ? 'current' : ''}`}
-                                  disabled={tooFar}
-                                  onClick={() => !tooFar && setPendingSlots(prev => ({ ...prev, [au.id]: s }))}>
-                                  {getSlotLabel(au.side, s)}
-                                </button>
-                              )
-                            })}
-                          </div>
-                        </div>
+                          <MoveGrid unit={previewUnit} clock={game.clock} readOnly />
+                        </>
+                      )
+                      : au
+                        ? (
+                          <>
+                            <div className="act-hint-row">
+                              <div className="act-who">
+                                輪到【我方】<b style={{ color: EL_COLOR[au.element] }}>{EL_ICON[au.element]} {au.name}</b>
+                                {waitingUnits.length > 0 && (
+                                  <span className="act-who-sub">
+                                    （待機：{waitingUnits.map(u => u.name).join('、')}）
+                                  </span>
+                                )}
+                              </div>
+                              <div className="act-slotrow">
+                                <span className="slotrow-label">移動到：</span>
+                                {([3,2,1] as const).map(s => {
+                                  const tooFar = Math.abs(s - au.slot) > 1
+                                  return (
+                                    <button key={s}
+                                      className={`btn sm slotbtn ${getPendingSlot(au) === s ? 'current' : ''}`}
+                                      disabled={tooFar}
+                                      onClick={() => !tooFar && setPendingSlots(prev => ({ ...prev, [au.id]: s }))}>
+                                      {getSlotLabel(au.side, s)}
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            </div>
 
-                        <MoveGrid
-                          unit={au}
-                          clock={game.clock}
-                          suitInHand={suitInHand}
-                          picked={pickedMove}
-                          onPick={s => { setPickedMove(prev => prev === s ? null : s); setPickedCardId(null) }}
-                        />
-                      </>
-                    )
-                    : <div className="action-idle">等待行動…</div>
-                }
+                            <MoveGrid
+                              unit={au}
+                              clock={game.clock}
+                              suitInHand={suitInHand}
+                              picked={pickedMove}
+                              onPick={s => { setPickedMove(prev => prev === s ? null : s); setPickedCardId(null) }}
+                            />
+                          </>
+                        )
+                        : <div className="action-idle">等待行動…</div>
+                    }
+                  </div>
+                )}
+              </div>
 
-                {/* 手牌列＋出手鈕固定顯示（查看模式也保留，只藏出手欄） */}
-                <div className="act-cards-row">
+              {/* 手牌列＋出手鈕：獨立整排吃滿寬度，不跟紀錄/招式擠、也不被縮放裁切
+                  （查看模式也保留，只藏出手欄） */}
+              {!isAIBattle && (
+                <div className="act-cards-row" ref={cardsRowRef}>
                   <div className="suit-count-row">
                     {SUIT_CARDS.map(sc => {
                       const count = suitInHand[SUIT_FOR[sc.slot]] ?? 0
@@ -540,10 +559,10 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                     </div>
                   )}
                 </div>
-              </div>
-            )
-          })()}
-        </div>
+              )}
+            </div>
+          )
+        })()}
       </div>
     </div>
   )
@@ -623,6 +642,35 @@ function MovePopup({ move, slot, anchor }: { move: Move; slot: MoveSlot; anchor:
       <div className="move-pop-stats">{stats}</div>
       {rule && <div className="move-pop-rule">{rule}</div>}
       {move.description && <div className="move-pop-desc">{move.description}</div>}
+    </div>,
+    document.body
+  )
+}
+
+// ─── AtbPopup — 順序條 chip 精簡後的完整資訊浮窗（滑入/點擊顯示，portal 到 body）───
+
+function AtbPopup({ unit, clock, mySide, anchor }: { unit: Unit; clock: number; mySide: 'A' | 'B'; anchor: DOMRect }) {
+  const ticks = Math.max(0, unit.nextActionAt - clock)
+  const isMine = unit.side === mySide
+  const cx = Math.min(Math.max(anchor.left + anchor.width / 2, 110), window.innerWidth - 110)
+  return createPortal(
+    <div className="atb-pop" style={{ left: cx, top: anchor.bottom + 6 }}>
+      <div className="atb-pop-name" style={{ color: EL_COLOR[unit.element] }}>
+        {EL_ICON[unit.element]} {unit.name}
+        <span className={`atb-pop-side ${isMine ? 'mine' : 'enemy'}`}>{isMine ? '我方' : '敵方'}</span>
+      </div>
+      <div className="atb-pop-stats">
+        {getSlotLabel(unit.side, unit.slot)}排 · HP {unit.hp}/{unit.maxHp} ·
+        ATK {effectiveATK(unit)} DEF {effectiveDEF(unit)} SPD {effectiveSPD(unit)}
+      </div>
+      <div className="atb-pop-time">{ticks === 0 ? '⚡ 行動中' : `⏳ ${Math.ceil(ticks / 10)}s 後行動`}</div>
+      {unit.statuses.length > 0 && (
+        <div className="atb-pop-tags">
+          {unit.statuses.map((s, i) => (
+            <span key={i} className="uc-tag">{statusTagText(s.key, s.mode, s.value, s.expiresAt - clock)}</span>
+          ))}
+        </div>
+      )}
     </div>,
     document.body
   )

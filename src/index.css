@@ -1475,13 +1475,16 @@ h2 {
 .suit-yellow:hover { box-shadow: 0 4px 14px rgba(221,170,34,.2); border-color: rgba(221,170,34,.7); }
 .suit-flower:hover { box-shadow: 0 4px 14px rgba(190,70,238,.2); border-color: rgba(190,70,238,.7); }
 
-/* ── Act row: log（左） | action + hand（右） ────────────────── */
+/* ── Act row: 上半（log｜action）+ 下半整排手牌 ─────────────── */
 /* height driven by useFitBattleLayout() (ported from chanceboard.html's
    fitBattleLayout()); flex-basis fallback keeps the old 50/50 split before
    the layout effect runs on first paint. */
 .battle-act-row {
-  flex: 0 0 var(--act-row-h, 50%); min-height: 0; display: flex; flex-direction: row;
+  flex: 0 0 var(--act-row-h, 50%); min-height: 0; display: flex; flex-direction: column;
   border-top: 1px solid rgba(200,161,90,.08);
+}
+.act-top-row {
+  flex: 1; min-height: 0; display: flex; flex-direction: row;
 }
 
 /* ── Log panel（左欄，寬度≈棋盤一格，照抄 #logPanelWrap：標題+內捲動） ── */
@@ -1604,11 +1607,13 @@ h2 {
 .suitchip.sc-法 { background: #1c2c4a; color: #8fbaff; }
 .suitchip.sc-願 { background: #463a12; color: #ffe08f; }
 
-/* 底列：花色計數卡 + 花牌區 + 出手鈕（照抄 #actCardsRow） */
+/* 底列：花色計數卡 + 花牌區 + 出手鈕 — 獨立整排吃滿視窗寬度，
+   自然高度不縮放（fit hook 量它的 offsetHeight 來扣） */
 .act-cards-row {
   display: flex; gap: 8px; align-items: stretch; flex-shrink: 0;
-  margin-top: auto; padding-top: 4px;
+  padding: 4px 10px 6px;
   border-top: 1px solid rgba(200,161,90,.07);
+  background: linear-gradient(180deg, rgba(8,10,22,.98) 0%, rgba(5,6,14,.98) 100%);
 }
 .suit-count-row { display: flex; gap: 5px; flex-shrink: 0; }
 .act-card-zone {
@@ -1694,13 +1699,18 @@ h2 {
   box-shadow: 0 0 10px rgba(200,161,90,.3);
 }
 
-/* 順序條兩行卡（照抄 .obchip：名字/時間兩行 + 陣營色左邊） */
+/* 順序條精簡單行卡（色點+名字+秒數；完整資訊滑入/點擊浮窗 .atb-pop） */
 .atb-chip {
-  flex-direction: column; align-items: flex-start; gap: 0;
-  padding: 2px 8px 3px; border-radius: 6px; border-left-width: 3px;
+  align-items: center; gap: 3px;
+  padding: 2px 8px; border-radius: 6px; border-left-width: 3px;
+  cursor: default;
 }
-.atb-chip .atb-name { font-size: 10px; font-weight: 700; white-space: nowrap; line-height: 1.3; }
-.atb-chip .atb-time { font-size: 9px; opacity: .75; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.atb-chip .atb-dot  { font-size: 8px; flex-shrink: 0; }
+.atb-chip .atb-name {
+  font-size: 10px; font-weight: 700; white-space: nowrap; line-height: 1.3;
+  max-width: 76px; overflow: hidden; text-overflow: ellipsis;
+}
+.atb-chip .atb-time { font-size: 9px; opacity: .75; font-variant-numeric: tabular-nums; line-height: 1.2; flex-shrink: 0; }
 .atb-chip.atb-A { border-left-color: #5aaeee; }
 .atb-chip.atb-B { border-left-color: #ee7744; }
 .atb-chip.atb-ready {
@@ -1710,6 +1720,27 @@ h2 {
 }
 .atb-chip.atb-ready.atb-A { border-left-color: #5aaeee; }
 .atb-chip.atb-ready.atb-B { border-left-color: #ee7744; }
+
+/* 順序 chip 浮窗：portal 到 body、fixed 定位在 chip 下方置中（同 .move-pop 手法） */
+.atb-pop {
+  position: fixed; transform: translateX(-50%); z-index: 300;
+  width: 210px; max-width: 88vw;
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 9px 11px; border-radius: 10px;
+  background: linear-gradient(165deg, rgba(20,24,46,.98), rgba(10,12,28,.98));
+  border: 1px solid rgba(200,161,90,.45);
+  box-shadow: 0 10px 34px rgba(0,0,0,.7), 0 0 12px rgba(200,161,90,.12);
+  pointer-events: none;
+  animation: atbPopIn .12s ease;
+}
+@keyframes atbPopIn { from { opacity: 0; transform: translateX(-50%) translateY(-4px) } to { opacity: 1; transform: translateX(-50%) translateY(0) } }
+.atb-pop-name  { font-size: 13px; font-weight: 800; display: flex; align-items: center; gap: 6px; }
+.atb-pop-side  { font-size: 9px; font-weight: 800; padding: 1px 6px; border-radius: 8px; }
+.atb-pop-side.mine  { background: rgba(90,174,238,.15); color: #8fc6ee; }
+.atb-pop-side.enemy { background: rgba(238,120,60,.15); color: #eea070; }
+.atb-pop-stats { font-size: 10px; color: #b8c0e0; font-variant-numeric: tabular-nums; line-height: 1.5; }
+.atb-pop-time  { font-size: 11px; color: var(--gold2); font-weight: 700; }
+.atb-pop-tags  { display: flex; flex-wrap: wrap; gap: 3px; }
 
 /* ── Hand panel ─────────────────────────────────────────────── */
 .hand-panel {
@@ -2458,9 +2489,13 @@ h2 {
   .bh-timer-secs  { font-size: 12px; }
   .auto-speed-btn { padding: 1px 8px; font-size: 10px; }
 
-  /* ── ATB queue: hide entirely to save space ── */
+  /* ── ATB queue: 保留（一樣位置），資訊縮到只剩色點+名字，詳情走浮窗 ── */
   .atb-queue { display: none; }
-  .bh-atb    { display: none; }
+  .bh-atb    { padding: 0 4px; gap: 3px; }
+  .atb-label { display: none; }
+  .atb-chip  { padding: 1px 6px; gap: 2px; border-left-width: 2px; }
+  .atb-chip .atb-name { font-size: 9px; max-width: 52px; }
+  .atb-chip .atb-time { display: none; }
 
   /* ── Spotlight panel: hide (only hides at ≤640px wide otherwise) ── */
   .unit-spotlight-panel { display: none; }
@@ -2487,14 +2522,17 @@ h2 {
   .act-movegrid    { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 4px; }
   .movebtn         { padding: 4px 7px; }
   .movebtn-line1 b { font-size: 11px; }
-  /* 卡面縮小；描述在手機上藏起來（詳情走 hover/長按浮窗） */
-  .cardface        { width: 74px; height: 104px; padding: 8px 4px 12px; gap: 2px; }
+  /* 卡面縮小；描述在手機上藏起來（詳情走 hover/長按浮窗）
+     手牌列整排吃固定高度，卡面越小、人物格越大 */
+  .cardface        { width: 64px; height: 88px; padding: 7px 3px 11px; gap: 2px; }
   .cf-name         { font-size: 8px; }
   .cf-desc         { display: none; }
-  .cf-bigicon      { font-size: 20px; }
-  .cf-corner       { font-size: 9px; top: 2px; left: 5px; }
+  .cf-bigicon      { font-size: 17px; }
+  .cf-corner       { font-size: 8px; top: 2px; left: 4px; }
   .cf-badge        { font-size: 9px; }
-  .act-confirm     { min-width: 84px; padding: 8px 12px; font-size: 13px; }
+  .act-cards-row   { padding: 3px 6px 4px; gap: 5px; }
+  .suit-count-row  { gap: 4px; }
+  .act-confirm     { min-width: 76px; padding: 6px 10px; font-size: 13px; }
 }
 
 /* ══════════════════════════════════════════════════════════════
