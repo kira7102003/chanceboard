@@ -6,6 +6,7 @@ import type { MoveSlot } from '../types/move'
 import { getReadyUnits } from '../engine/atb'
 import ScorePanel from './ScorePanel'
 import { getCharImg, getCharWideImg, getMoveImg, getCardImg } from '../utils/charStore'
+import { useFitBattleLayout } from '../hooks/useFitBattleLayout'
 
 const DIST_COLOR: Record<string, string> = { '前': '#e85533', '中': '#ddaa22', '後': '#33aacc' }
 
@@ -52,6 +53,13 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
   const logRef         = useRef<HTMLDivElement>(null)
   const animTimer      = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastAnimIdx    = useRef(-1)
+  const battleMainRef  = useRef<HTMLDivElement>(null)
+  const arenaRef       = useRef<HTMLDivElement>(null)
+  const actRowRef      = useRef<HTMLDivElement>(null)
+  const actionAreaRef  = useRef<HTMLDivElement>(null)
+  const slotNameRef    = useRef<HTMLDivElement>(null)
+  const slotColRef     = useRef<HTMLDivElement>(null)
+  useFitBattleLayout({ battleMainRef, arenaRef, actRowRef, actionAreaRef, slotNameRef, slotColRef })
   const [moveAnim,  setMoveAnim]  = useState<MoveAnim | null>(null)
   const [animKey,   setAnimKey]   = useState(0)
   // pending destination slot per unit (preview before confirming with a skill/pass)
@@ -312,16 +320,16 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
       </div>
 
 
-      {/* ── Battle main: arena (50%) + act row (50%) ── */}
-      <div className="battle-main">
-        <div className="battle-arena">
+      {/* ── Battle main: arena (dynamically fit) + act row (dynamically fit) ── */}
+      <div className="battle-main" ref={battleMainRef}>
+        <div className="battle-arena" ref={arenaRef}>
           <div className="slots-row">
             {/* 我方: 後→中→前 (facing enemy on the right) */}
             {([3,2,1] as const).map(slot => {
               const fanClass = slot === 3 ? 'slot-stack-right-far' : slot === 2 ? 'slot-stack-left-near' : 'slot-stack-left-far'
               return (
-                <div key={`my-${slot}`} className="slot-col slot-col-my">
-                  <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(mySide ?? 'A', slot)] }}>{getSlotLabel(mySide ?? 'A', slot)}</div>
+                <div key={`my-${slot}`} className="slot-col slot-col-my" ref={slot === 3 ? slotColRef : undefined}>
+                  <div className="slot-name" ref={slot === 3 ? slotNameRef : undefined} style={{ color: DIST_COLOR[getSlotLabel(mySide ?? 'A', slot)] }}>{getSlotLabel(mySide ?? 'A', slot)}</div>
                   <div className={`slot-cards-stack ${fanClass}`}>
                     {myTeam.filter(u => getPendingSlot(u) === slot)
                       .sort((a, b) => b.hp - a.hp)
@@ -370,7 +378,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
         </div>
 
         {/* ── Act row: log (left) | action + hand (right) ── */}
-        <div className="battle-act-row">
+        <div className="battle-act-row" ref={actRowRef}>
           <div className="log-panel" ref={logRef}>
             {game.log.slice(-80).map((l, i) => (
               <div key={i} className="log-line" dangerouslySetInnerHTML={{ __html: l.html }} />
@@ -380,7 +388,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
           {!isAIBattle && (
             <div className="battle-right">
               {/* Action / Preview area */}
-              <div className="action-area">
+              <div className="action-area" ref={actionAreaRef}>
                 {previewUnit && previewUnit.id !== readyUnits[0]?.id
                   ? <UnitPreviewPanel unit={previewUnit} clock={game.clock} onClose={() => setPreviewUnitId(null)} />
                   : readyUnits.length > 0
@@ -510,6 +518,12 @@ function ReadyUnitPanel({ unit, clock, suitInHand, onMove }: {
                 onMouseEnter={e => { setHoveredSlot(slot); setPopAnchor(e.currentTarget.getBoundingClientRect()) }}
                 onMouseLeave={() => { setHoveredSlot(null); setPopAnchor(null) }}
               >
+                <span
+                  className="act-infobtn"
+                  onClick={e => { e.stopPropagation(); setHoveredSlot(slot); setPopAnchor(e.currentTarget.getBoundingClientRect()) }}
+                >
+                  ⓘ
+                </span>
                 <div className="skill-top">
                   <span style={{ color: ok ? SLOT_COLOR[slot] : '#444', fontWeight: 800 }}>
                     {SLOT_LABEL[slot]}
@@ -526,7 +540,10 @@ function ReadyUnitPanel({ unit, clock, suitInHand, onMove }: {
         </div>
       </div>
       {hoveredMove && hoveredSlot && popAnchor && (
-        <MoveInfoBox move={hoveredMove} slot={hoveredSlot} anchor={popAnchor} />
+        <>
+          <MoveInfoBox move={hoveredMove} slot={hoveredSlot} anchor={popAnchor} />
+          <ActDetailPopup move={hoveredMove} slot={hoveredSlot} onClose={() => { setHoveredSlot(null); setPopAnchor(null) }} />
+        </>
       )}
     </div>
   )
@@ -579,18 +596,15 @@ const RANGE_LABEL: Record<string, string> = {
 
 const POP_W = 252
 
-function MoveInfoBox({ move, slot, anchor }: {
-  move: { name: string; description: string; powerRatio: number | null; hitRate: number | null; critRate: number | null; rangeType: string | null; scope: string | null; condition: number | null; cooldown: number | null; effectChance: number }
-  slot: MoveSlot
-  anchor: DOMRect
-}) {
-  const left = anchor.right + 10 + POP_W > window.innerWidth
-    ? anchor.left - POP_W - 6
-    : anchor.right + 10
-  const top = Math.min(anchor.top, window.innerHeight - 230)
+type MoveInfoData = {
+  name: string; description: string; powerRatio: number | null; hitRate: number | null
+  critRate: number | null; rangeType: string | null; scope: string | null
+  condition: number | null; cooldown: number | null; effectChance: number
+}
 
+function MoveInfoContent({ move, slot }: { move: MoveInfoData; slot: MoveSlot }) {
   return (
-    <div className="move-info-box" style={{ position: 'fixed', top, left, width: POP_W, zIndex: 9200 }}>
+    <>
       <div className="mib-header">
         <span style={{ color: SLOT_COLOR[slot], fontWeight: 800 }}>{SLOT_LABEL[slot]}</span>
         <b style={{ marginLeft: 5 }}>{move.name}</b>
@@ -607,6 +621,32 @@ function MoveInfoBox({ move, slot, anchor }: {
         {move.condition != null && <span className="mib-stat">需 <b>{move.condition}</b> 張</span>}
         {move.cooldown  != null && <span className="mib-stat">CD <b>{move.cooldown}s</b></span>}
         {move.effectChance > 0 && move.effectChance < 1 && <span className="mib-stat">觸發 <b>{Math.round(move.effectChance * 100)}%</b></span>}
+      </div>
+    </>
+  )
+}
+
+function MoveInfoBox({ move, slot, anchor }: { move: MoveInfoData; slot: MoveSlot; anchor: DOMRect }) {
+  const left = anchor.right + 10 + POP_W > window.innerWidth
+    ? anchor.left - POP_W - 6
+    : anchor.right + 10
+  const top = Math.min(anchor.top, window.innerHeight - 230)
+
+  return (
+    <div className="move-info-box" style={{ position: 'fixed', top, left, width: POP_W, zIndex: 9200 }}>
+      <MoveInfoContent move={move} slot={slot} />
+    </div>
+  )
+}
+
+// Tap-friendly counterpart to MoveInfoBox: centered fixed overlay + backdrop,
+// shown instead of the anchored hover box on short/touch viewports (CSS-gated
+// under the existing ≤440px compact breakpoint, see .act-detail-popup in index.css).
+function ActDetailPopup({ move, slot, onClose }: { move: MoveInfoData; slot: MoveSlot; onClose: () => void }) {
+  return (
+    <div className="act-detail-backdrop" onClick={onClose}>
+      <div className="act-detail-popup" onClick={e => e.stopPropagation()}>
+        <MoveInfoContent move={move} slot={slot} />
       </div>
     </div>
   )
@@ -645,6 +685,12 @@ function UnitPreviewPanel({ unit, clock, onClose }: { unit: Unit; clock: number;
                 onMouseEnter={e => { setHoveredSlot(slot); setPopAnchor(e.currentTarget.getBoundingClientRect()) }}
                 onMouseLeave={() => { setHoveredSlot(null); setPopAnchor(null) }}
               >
+                <span
+                  className="act-infobtn"
+                  onClick={e => { e.stopPropagation(); setHoveredSlot(slot); setPopAnchor(e.currentTarget.getBoundingClientRect()) }}
+                >
+                  ⓘ
+                </span>
                 <div className="skill-top">
                   <span style={{ color: SLOT_COLOR[slot], fontWeight: 800 }}>{SLOT_LABEL[slot]}</span>
                   {onCD && <span className="skill-cd">CD</span>}
@@ -656,7 +702,10 @@ function UnitPreviewPanel({ unit, clock, onClose }: { unit: Unit; clock: number;
         </div>
       </div>
       {hoveredMove && hoveredSlot && popAnchor && (
-        <MoveInfoBox move={hoveredMove} slot={hoveredSlot} anchor={popAnchor} />
+        <>
+          <MoveInfoBox move={hoveredMove} slot={hoveredSlot} anchor={popAnchor} />
+          <ActDetailPopup move={hoveredMove} slot={hoveredSlot} onClose={() => { setHoveredSlot(null); setPopAnchor(null) }} />
+        </>
       )}
     </div>
   )
