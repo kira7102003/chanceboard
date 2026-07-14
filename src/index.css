@@ -1097,30 +1097,27 @@ h2 {
 }
 /* 單獨一隻：滿版，hover 不移動（沒有任何 transform 規則會命中） */
 
-/* 兩、三隻同格：卡寬縮到約 2/3 格，撲克牌式重疊。
-   前排卡貼在「面向敵方」那側，後面的卡往展開方向探出、微降透明度。
+/* 兩、三隻同格：卡維持原尺寸（滿格），撲克牌式重疊，
+   後面的卡往展開方向探出、微降透明度。
    .uc-i0/.uc-i1/.uc-i2 由 JSX 依疊序標上（slotlabel 也是子元素，
    nth-child 會錯位，所以用明確 class）。 */
-.stack-multi > .unit-card { width: 66.6%; }
-.stack-expand-left  > .unit-card { left: auto; right: 0; }
-.stack-expand-right > .unit-card { left: 0; }
-
 .slot-cards-stack > .uc-i0 { z-index: 3; }
-.stack-expand-left  > .uc-i1 { z-index: 2; transform: translateX(-14%); opacity: .75; }
-.stack-expand-left  > .uc-i2 { z-index: 1; transform: translateX(-28%); opacity: .55; }
-.stack-expand-right > .uc-i1 { z-index: 2; transform: translateX(14%);  opacity: .75; }
-.stack-expand-right > .uc-i2 { z-index: 1; transform: translateX(28%);  opacity: .55; }
+.stack-expand-left  > .uc-i1 { z-index: 2; transform: translateX(-10%); opacity: .75; }
+.stack-expand-left  > .uc-i2 { z-index: 1; transform: translateX(-20%); opacity: .55; }
+.stack-expand-right > .uc-i1 { z-index: 2; transform: translateX(10%);  opacity: .75; }
+.stack-expand-right > .uc-i2 { z-index: 1; transform: translateX(20%);  opacity: .55; }
 
 /* Hover 展開（只有疊 2+ 張的 .stack-multi 會動）：
-   前/中格往後展開、後格往前展開；步距 75% 卡寬（≈ 半格寬），
-   第三張最遠 150% 卡寬 ≈ 一格 — 不會超出畫面。展開後每張都可點選。 */
+   前/中格往後展開、後格往前展開；卡不縮小，改用半疊撲克牌 —
+   步距 50% 卡寬，第三張最遠 100% ≈ 只蓋到隔壁一格，不會超出畫面。
+   每張露出的半邊都可點選。 */
 .slot-col { position: relative; }
 .slot-col:hover { z-index: 50; }
 .slot-col:hover .stack-multi > .unit-card { opacity: 1; }
-.slot-col:hover .stack-expand-left  > .uc-i1 { transform: translateX(-75%); }
-.slot-col:hover .stack-expand-left  > .uc-i2 { transform: translateX(-150%); }
-.slot-col:hover .stack-expand-right > .uc-i1 { transform: translateX(75%);  }
-.slot-col:hover .stack-expand-right > .uc-i2 { transform: translateX(150%); }
+.slot-col:hover .stack-expand-left  > .uc-i1 { transform: translateX(-50%); }
+.slot-col:hover .stack-expand-left  > .uc-i2 { transform: translateX(-100%); }
+.slot-col:hover .stack-expand-right > .uc-i1 { transform: translateX(50%);  }
+.slot-col:hover .stack-expand-right > .uc-i2 { transform: translateX(100%); }
 
 .unit-card {
   background: linear-gradient(155deg, var(--bg3) 0%, var(--bg2) 100%);
@@ -1546,13 +1543,14 @@ h2 {
   font: inherit; font-size: 11px;
   transition: border-color .15s, box-shadow .15s, transform .08s;
 }
-.movebtn:not(:disabled):hover {
+.movebtn:not(.movebtn-off):hover {
   transform: translateY(-1px);
   border-color: rgba(200,161,90,.4);
   box-shadow: 0 4px 16px rgba(0,0,0,.5);
 }
-.movebtn:disabled { opacity: .35; cursor: not-allowed; }
-.movebtn.movebtn-ro:disabled { opacity: .8; cursor: default; }
+/* 不可用時不用 disabled 屬性（會吃掉 mouseenter、浮窗出不來），改 class */
+.movebtn-off { opacity: .35; cursor: not-allowed; }
+.movebtn-ro.movebtn-off { opacity: .8; cursor: default; }
 .movebtn.picked {
   border-color: var(--gold);
   background: linear-gradient(155deg, rgba(60,48,20,.9), var(--bg3));
@@ -1565,14 +1563,34 @@ h2 {
   font-size: 9px; color: #889; background: rgba(0,0,0,.5);
   padding: 1px 5px; border-radius: 3px;
 }
-.movebtn-stats { font-size: 10px; color: #8890b8; font-variant-numeric: tabular-nums; }
-.movebtn-targetrule { font-size: 9px; color: #6a8a7a; }
-.movebtn-desc { font-size: 9px; color: #556; line-height: 1.45; }
 .movebtn-blocked-warn {
   grid-column: 1 / -1; font-size: 10px; color: #cc5555;
   padding: 4px 8px; background: rgba(200,60,60,.06);
   border: 1px solid rgba(200,60,60,.2); border-radius: 6px;
 }
+
+/* 招式浮窗：滑到招式鈕時 portal 到 body 的說明卡（圖片＋數值＋規則＋描述），
+   fixed 定位在按鈕上方置中，left/bottom 由 JSX 依按鈕位置算好 */
+.move-pop {
+  position: fixed; transform: translateX(-50%); z-index: 300;
+  width: 280px; max-width: 88vw;
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 10px 12px; border-radius: 10px;
+  background: linear-gradient(165deg, rgba(20,24,46,.98), rgba(10,12,28,.98));
+  border: 1px solid rgba(200,161,90,.45);
+  box-shadow: 0 10px 34px rgba(0,0,0,.7), 0 0 12px rgba(200,161,90,.12);
+  pointer-events: none;
+  animation: movePopIn .12s ease;
+}
+@keyframes movePopIn { from { opacity: 0; transform: translateX(-50%) translateY(4px) } to { opacity: 1; transform: translateX(-50%) translateY(0) } }
+.move-pop-img {
+  width: 100%; max-height: 130px; object-fit: contain;
+  border-radius: 6px; background: rgba(0,0,0,.3);
+}
+.move-pop-name  { font-size: 13px; font-weight: 800; }
+.move-pop-stats { font-size: 11px; color: #b8c0e0; font-variant-numeric: tabular-nums; }
+.move-pop-rule  { font-size: 10px; color: #6a8a7a; }
+.move-pop-desc  { font-size: 10px; color: #99a; line-height: 1.5; }
 
 /* 花色 chip（照抄 .suitchip：劍紅 槍綠 法藍 願黃） */
 .suitchip {

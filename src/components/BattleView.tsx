@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useGameStore } from '../store/gameStore'
 import type { Unit } from '../types/unit'
 import type { Card } from '../types/card'
@@ -602,8 +603,29 @@ function UnitCard({ unit, clock, onClick, selectable, highlighted, isPreview, is
   )
 }
 
-// ─── MoveGrid — 照抄參考版 #act-movegrid：2欄大按鈕，名稱+花色chip、
-//     威力/命中/爆擊、目標規則、完整描述常駐顯示；點選=picked 金框 ─────────
+// ─── MoveGrid — 精簡按鈕：只留名稱+消耗；威力/命中/目標規則/描述/圖片
+//     改成滑鼠移到按鈕上時浮出視窗（portal 到 body，不會被面板裁掉） ─────────
+
+function MovePopup({ move, slot, anchor }: { move: Move; slot: MoveSlot; anchor: DOMRect }) {
+  const img   = getMoveImg(move.id)
+  const stats = move.powerRatio != null
+    ? `威力${move.powerRatio} 命中${Math.round((move.hitRate ?? 0) * 100)}%`
+      + (move.critRate ? ` 爆擊${Math.round(move.critRate * 100)}%` : '')
+      + (move.effectChance > 0 && move.effectChance < 1 ? ` 觸發${Math.round(move.effectChance * 100)}%` : '')
+    : '（支援型招式）'
+  const rule = moveTargetRule(move)
+  const cx = Math.min(Math.max(anchor.left + anchor.width / 2, 150), window.innerWidth - 150)
+  return createPortal(
+    <div className="move-pop" style={{ left: cx, bottom: window.innerHeight - anchor.top + 8 }}>
+      {img && <img src={img} className="move-pop-img" alt="" />}
+      <div className="move-pop-name" style={{ color: SLOT_COLOR[slot] }}>{move.name}</div>
+      <div className="move-pop-stats">{stats}</div>
+      {rule && <div className="move-pop-rule">{rule}</div>}
+      {move.description && <div className="move-pop-desc">{move.description}</div>}
+    </div>,
+    document.body
+  )
+}
 
 function MoveGrid({ unit, clock, suitInHand, picked, onPick, readOnly }: {
   unit: Unit; clock: number
@@ -614,6 +636,9 @@ function MoveGrid({ unit, clock, suitInHand, picked, onPick, readOnly }: {
 }) {
   const lib = unit.statuses.some(s => s.key === 'liberated')
   const blocked = unit.statuses.some(s => s.key === 'sealed')
+  const [hover, setHover] = useState<{ slot: MoveSlot; rect: DOMRect } | null>(null)
+  // 換角色時清掉殘留的浮窗
+  useEffect(() => { setHover(null) }, [unit.id])
   return (
     <div className="act-movegrid">
       {MOVE_SLOTS.map(slot => {
@@ -624,30 +649,26 @@ function MoveGrid({ unit, clock, suitInHand, picked, onPick, readOnly }: {
         const canUse = have >= need
         const onCD   = (unit.moveCooldownUntil[move.id] ?? 0) > clock
         const ok     = canUse && !onCD && !blocked && !readOnly && !!onPick
-        const stats  = move.powerRatio != null
-          ? `威力${move.powerRatio} 命中${Math.round((move.hitRate ?? 0) * 100)}%`
-            + (move.critRate ? ` 爆擊${Math.round(move.critRate * 100)}%` : '')
-            + (move.effectChance > 0 && move.effectChance < 1 ? ` 觸發${Math.round(move.effectChance * 100)}%` : '')
-          : ''
-        const rule = moveTargetRule(move)
         return (
+          // 不用 disabled 屬性：disabled 的按鈕不會觸發 mouseenter，浮窗會失效
           <button key={slot}
-            className={`movebtn ${picked === slot ? 'picked' : ''} ${readOnly ? 'movebtn-ro' : ''}`}
-            disabled={!ok}
-            onClick={() => ok && onPick?.(slot)}>
+            className={`movebtn ${picked === slot ? 'picked' : ''} ${readOnly ? 'movebtn-ro' : ''} ${!ok ? 'movebtn-off' : ''}`}
+            onClick={() => ok && onPick?.(slot)}
+            onMouseEnter={e => setHover({ slot, rect: e.currentTarget.getBoundingClientRect() })}
+            onMouseLeave={() => setHover(null)}>
             <div className="movebtn-line1">
               <b>{move.name}</b>
               <span className={`suitchip sc-${slot}`}>{slot}×{need}</span>
               {suitInHand && !canUse && <span className="movebtn-lack">{have}/{need}</span>}
               {onCD && <span className="movebtn-cdchip">⏳冷卻中</span>}
             </div>
-            <div className="movebtn-stats">{stats || '（支援型招式）'}</div>
-            {rule && <div className="movebtn-targetrule">{rule}</div>}
-            {move.description && <div className="movebtn-desc">{move.description}</div>}
           </button>
         )
       })}
       {blocked && <div className="movebtn-blocked-warn">此角色目前處於「封招」狀態，無法使用招式。</div>}
+      {hover && unit.moves[hover.slot] && (
+        <MovePopup move={unit.moves[hover.slot]!} slot={hover.slot} anchor={hover.rect} />
+      )}
     </div>
   )
 }

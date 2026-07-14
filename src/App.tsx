@@ -248,11 +248,6 @@ export default function App() {
         </div>
       )}
 
-      {/* Solo 標籤 */}
-      {!showAdmin && isSolo && appPhase !== 'charSelect' && appPhase !== 'deckBuild' && (
-        <div className="room-badge">⚔ 單人模式</div>
-      )}
-
       {/* AI 對戰標籤 */}
       {!showAdmin && isAIBattle && (
         <div className="room-badge" style={{ color: '#9955ee' }}>🤖 AI 對戰</div>
