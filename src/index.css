@@ -160,7 +160,9 @@ body { margin: 0; }
 .lv2-btn-icon {
   font-size: 26px; width: 48px; height: 48px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  background: transparent; border-radius: 0;
+  background: rgba(200,161,90,.12); border-radius: 10px;
+  color: var(--gold2);
+  text-shadow: 0 0 12px rgba(200,161,90,.55);
 }
 .lv2-btn-title { font-size: 18px; font-weight: 800; color: var(--text-h); letter-spacing: 1px; }
 .lv2-btn-sub   { font-size: 11px; color: #555570; margin-top: 3px; }
@@ -178,13 +180,13 @@ body { margin: 0; }
 .lv2-btn-grid.disabled { opacity: .3; cursor: default; pointer-events: none; }
 .lv2-btn-settings {
   display: flex; align-items: center; gap: 8px; width: 100%;
-  background: transparent; backdrop-filter: none;
-  border: 1px solid transparent; border-radius: 10px;
+  background: rgba(8,10,24,.65); backdrop-filter: blur(8px);
+  border: 1px solid rgba(200,161,90,.07); border-radius: 10px;
   padding: 11px 18px; cursor: pointer;
-  font-size: 12px; font-weight: 600; color: #44445a;
+  font-size: 12px; font-weight: 600; color: var(--gold);
   transition: color .15s, border-color .15s;
 }
-.lv2-btn-settings:hover { color: var(--text-h); border-color: rgba(200,161,90,.2); }
+.lv2-btn-settings:hover { color: var(--gold2); border-color: rgba(200,161,90,.3); }
 .lv2-btn-settings span:first-child { font-size: 15px; }
 .lv2-online {
   background: rgba(6,8,20,.92); backdrop-filter: blur(10px);
