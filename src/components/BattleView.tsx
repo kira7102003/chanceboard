@@ -102,6 +102,9 @@ interface MoveAnim {
   isGroup: boolean
   groupTargets: Array<{ name: string; charImg: string | null }>
   color: string
+  dealsDamage: boolean
+  hasTarget: boolean
+  missed: boolean
 }
 
 export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onExecuteMove, onPass, onToggleAuto, onEnd, onSoloReplay, bgUrl }: Props) {
@@ -155,7 +158,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
       const entry = game.log[i]
       if (!entry.moveAnim) continue
       lastAnimIdx.current = i
-      const { moveId, moveName, moveSlot, charName, charId, attackerSide, targetName, targetCharId, targetUnitId, groupTargets } = entry.moveAnim
+      const { moveId, moveName, moveSlot, charName, charId, attackerSide, targetName, targetCharId, targetUnitId, groupTargets, dealsDamage, hasTarget, missed } = entry.moveAnim
       const img = getMoveImg(moveId)
       const charImg = charId ? (getCharWideImg(charId) ?? getCharImg(charId)) : null
       const targetCharImg = targetCharId ? (getCharWideImg(targetCharId) ?? getCharImg(targetCharId)) : null
@@ -173,6 +176,9 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
         isGroup: !targetName,
         groupTargets: resolvedGroupTargets,
         color: SLOT_COLOR[moveSlot as MoveSlot] ?? '#aaa',
+        dealsDamage: dealsDamage ?? true,
+        hasTarget: hasTarget ?? (!!targetName || !!groupTargets?.length),
+        missed: missed ?? false,
       })
       setAnimKey(k => k + 1)
       animTimer.current = setTimeout(() => setMoveAnim(null), 2000)
@@ -306,7 +312,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
         )
 
         const TargetZone = (
-          <div className="ma-zone-target">
+          <div className={`ma-zone-target${moveAnim.missed ? ' ma-missed' : ''}`}>
             {moveAnim.isGroup
               ? (
                 <div className="ma-group-row">
@@ -322,12 +328,13 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                 ? <Portrait img={moveAnim.targetCharImg} name={moveAnim.targetName} flip={mirrorTarget} />
                 : <div className="ma-no-img" style={{ opacity: .15 }}>⚔</div>
             }
+            {moveAnim.missed && <div className="ma-miss-text">MISS</div>}
           </div>
         )
 
         return (
           <div className="move-anim-overlay" key={animKey}>
-            <div className={`ma-battle-row ${attackFromLeft ? 'ma-from-left' : 'ma-from-right'}`}>
+            <div className={`ma-battle-row ${attackFromLeft ? 'ma-from-left' : 'ma-from-right'} ${!moveAnim.dealsDamage || !moveAnim.hasTarget ? 'ma-nondamage' : ''}`}>
               <div className="ma-zone-skill">
                 <div className="ma-skill-wrap">
                   {moveAnim.img
@@ -341,7 +348,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                 </div>
                 <div className="ma-skill-name" style={{ color: moveAnim.color }}>{moveAnim.name}</div>
               </div>
-              {TargetZone}
+              {moveAnim.dealsDamage && moveAnim.hasTarget && TargetZone}
             </div>
           </div>
         )

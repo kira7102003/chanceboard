@@ -398,7 +398,8 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
   const moveLabel = `<span style="color:${moveColor}">【${move.name}】</span>`
   const firstTarget = move.scope === '群' ? undefined : targets[0]
   const groupTargets = move.scope === '群' ? targets.map(t => ({ name: t.name, charId: t.characterId })) : undefined
-  const moveAnim  = { moveId: move.id, moveName: move.name, moveSlot: action.moveSlot, charName: u.name, charId: u.characterId, attackerSide: u.side as 'A' | 'B', targetName: firstTarget?.name, targetCharId: firstTarget?.characterId, targetUnitId: firstTarget?.id, groupTargets }
+  const dealsDamage = typeof move.powerRatio === 'number' && move.powerRatio > 0
+  const moveAnim  = { moveId: move.id, moveName: move.name, moveSlot: action.moveSlot, charName: u.name, charId: u.characterId, attackerSide: u.side as 'A' | 'B', targetName: firstTarget?.name, targetCharId: firstTarget?.characterId, targetUnitId: firstTarget?.id, groupTargets, dealsDamage, hasTarget: targets.length > 0, missed: false }
   const targetDesc = move.scope === '群'
     ? '⚔ 群體'
     : targets.length > 0
@@ -412,12 +413,14 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
 
   // Resolve hits
   let killedAny = false
+  let landedHits = 0
   const isGroup = move.scope === '群'
   for (const t of targets) {
     // Confused: 50% chance attack self
     if (u.statuses.some(st => st.key === 'confused') && Math.random() < 0.5) {
       const { hit, rawDamage } = resolveHit(u, u, move)
       if (hit) {
+        landedHits++
         const { hpLost } = applyDamage(u, rawDamage)
         log.push({ html: `🔄 混亂！<b>${u.name}</b> 攻擊自己 <span class="dmg-num">-${hpLost}</span>` })
       }
@@ -434,6 +437,8 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
         })
         continue
       }
+
+      landedHits++
 
       const hasReflect = move.effectOps.some(op => op.op === 'reflectHalfHeal')
       const { hpLost } = applyDamage(t, rawDamage)
@@ -508,6 +513,7 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
       }
     }
   }
+  moveAnim.missed = dealsDamage && targets.length > 0 && landedHits === 0
 
   // onKill effects
   if (killedAny && move.effectTrigger === 'onKill') {
