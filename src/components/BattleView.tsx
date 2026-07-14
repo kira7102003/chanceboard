@@ -117,7 +117,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
   const [previewUnitId, setPreviewUnitId] = useState<string | null>(null)
   // pick-then-confirm (照抄參考版：點招式/花牌先選取，按「出手」才執行)
   const [pickedMove,   setPickedMove]   = useState<MoveSlot | null>(null)
-  const [pickedCardId, setPickedCardId] = useState<string | null>(null)
+  const [pickedCard, setPickedCard] = useState<{ id: string; key: string } | null>(null)
   // 順序條 chip 精簡後，完整資訊改滑鼠移入（手機點一下）浮窗顯示
   const [atbPop, setAtbPop] = useState<{ id: string; rect: DOMRect } | null>(null)
 
@@ -134,7 +134,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
   const activeReadyId = game ? getReadyUnits(game).filter(u => u.side === mySide)[0]?.id : undefined
   useEffect(() => {
     setPickedMove(null)
-    setPickedCardId(null)
+    setPickedCard(null)
   }, [activeReadyId])
 
   // Watch log for moveAnim entries (triggers for ALL moves incl. AI)
@@ -253,13 +253,13 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
     if (pickedMove) {
       const slot = pickedMove
       setPickedMove(null)
-      setPickedCardId(null)
+      setPickedCard(null)
       if (!unit.moves[slot]) return
       applyPendingMove(unit)
       onExecuteMove(unit.id, slot, null)
-    } else if (pickedCardId) {
-      const id = pickedCardId
-      setPickedCardId(null)
+    } else if (pickedCard) {
+      const id = pickedCard.id
+      setPickedCard(null)
       // 卡已不在手上（被棄/被偷）就只清掉選取，不誤觸跳過
       if (myHand.some(c => c.id === id)) onPlayCard(id)
     } else {
@@ -506,7 +506,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                               clock={game.clock}
                               suitInHand={suitInHand}
                               picked={pickedMove}
-                              onPick={s => { setPickedMove(prev => prev === s ? null : s); setPickedCardId(null) }}
+                              onPick={s => { setPickedMove(prev => prev === s ? null : s); setPickedCard(null) }}
                             />
                             <div className="act-slotrow">
                               <span className="slotrow-label">移動到：</span>
@@ -542,13 +542,20 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                       })}
                     </div>
                     <div className="act-card-zone">
-                      {flowerCards.map((card, i) => (
-                        <FlowerCardFace key={`${card.id}-${i}`} card={card}
-                          picked={pickedCardId === card.id}
-                          disabled={flowerUsedThisAction}
-                          onPick={() => { setPickedCardId(prev => prev === card.id ? null : card.id); setPickedMove(null) }}
-                          onDiscard={discardedThisAction ? undefined : () => onDiscardCard(card.id)} />
-                      ))}
+                      {flowerCards.map((card, i) => {
+                        const cardKey = `${card.id}-${i}`
+                        const lockedByOther = !!pickedCard && pickedCard.key !== cardKey
+                        return (
+                          <FlowerCardFace key={cardKey} card={card}
+                            picked={pickedCard?.key === cardKey}
+                            disabled={flowerUsedThisAction || lockedByOther}
+                            onPick={() => {
+                              setPickedCard(prev => prev?.key === cardKey ? null : { id: card.id, key: cardKey })
+                              setPickedMove(null)
+                            }}
+                            onDiscard={discardedThisAction || lockedByOther ? undefined : () => onDiscardCard(card.id)} />
+                        )
+                      })}
                     </div>
                     {au && !previewing && (
                       <div className="act-confirm-col">
