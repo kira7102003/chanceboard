@@ -35,4 +35,6 @@ export interface Unit {
   flags: UnitFlags
   _didNotMoveThisTurn: boolean
   _lastHitMoveId?: string
+  /** Flower card selected for this unit's current action. */
+  assignedCardName?: string
 }

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { SavedTeam } from '../types/player'
+import type { SavedDeck, SavedTeam } from '../types/player'
 
 interface PlayerState {
   coins: number
@@ -8,6 +8,8 @@ interface PlayerState {
   ownedCharIds: string[]
   savedTeams:   SavedTeam[]
   defaultTeamId: string | null
+  savedDecks: SavedDeck[]
+  defaultDeckId: string | null
   dailyClaims: Record<string, string[]>
 
   // Model mutations (Controller calls these)
@@ -23,6 +25,9 @@ interface PlayerState {
   removeOwnedChar: (id: string) => void
   clearCollection: () => void
   setDefaultTeam: (id: string | null) => void
+  saveDeck: (deck: Omit<SavedDeck, 'id'>) => void
+  deleteDeck: (id: string) => void
+  setDefaultDeck: (id: string | null) => void
   claimDailyReward: (userId: string, dateKey: string, coins: number, gems: number) => boolean
 }
 
@@ -34,6 +39,8 @@ export const usePlayerStore = create<PlayerState>()(
       ownedCharIds: [],
       savedTeams:   [],
       defaultTeamId: null,
+      savedDecks: [],
+      defaultDeckId: null,
       dailyClaims: {},
 
       addCoins:   (n) => set(s => ({ coins: s.coins + n })),
@@ -69,6 +76,16 @@ export const usePlayerStore = create<PlayerState>()(
       })),
       clearCollection: () => set({ ownedCharIds: [] }),
       setDefaultTeam: (id) => set({ defaultTeamId: id }),
+      saveDeck: (deck) => {
+        if (deck.cardIds.length !== 10 || get().savedDecks.length >= 10) return
+        const id = `deck_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`
+        set(s => ({ savedDecks: [...s.savedDecks, { ...deck, cardIds: [...deck.cardIds], id }] }))
+      },
+      deleteDeck: (id) => set(s => ({
+        savedDecks: s.savedDecks.filter(deck => deck.id !== id),
+        defaultDeckId: s.defaultDeckId === id ? null : s.defaultDeckId,
+      })),
+      setDefaultDeck: (id) => set({ defaultDeckId: id }),
       claimDailyReward: (userId, dateKey, coins, gems) => {
         const claims = get().dailyClaims ?? {}
         const userClaims = claims[userId] ?? []

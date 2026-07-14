@@ -12,7 +12,7 @@ function validMessage(msg) {
   if (!msg || typeof msg !== 'object' || typeof msg.type !== 'string') return false
   if (msg.type === 'join') return text(msg.roomId, 12) && (msg.rejoinSide === undefined || SIDES.includes(msg.rejoinSide))
   if (msg.type === 'charSelect') return strings(msg.charIds, 3)
-  if (msg.type === 'deckSelect') return strings(msg.deckIds, 10)
+    if (msg.type === 'deckSelect') return strings(msg.deckIds, 10) && msg.deckIds.length === 10
   if (msg.type === 'stateSync') return text(msg.stateJson, 1_000_000)
   if (msg.type === 'action') {
     const a = msg.action

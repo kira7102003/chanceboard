@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useGameStore } from '../store/gameStore'
+import { usePlayerStore } from '../store/playerStore'
 import { cards as allCards } from '../data/db'
 import { randomDeck } from '../engine/randomDeck'
 import { CARD_ICON } from '../data/cardIcons'
@@ -63,7 +64,10 @@ interface Props { onConfirm: (deckIds: string[]) => void; onBack: () => void }
 
 export default function DeckBuild({ onConfirm, onBack }: Props) {
   const { mySide, isSolo } = useGameStore()
-  const [selected, setSelected] = useState<string[]>([])
+  const { savedDecks, defaultDeckId, saveDeck, deleteDeck, setDefaultDeck } = usePlayerStore()
+  const defaultDeck = savedDecks.find(deck => deck.id === defaultDeckId)
+  const [selected, setSelected] = useState<string[]>(() => defaultDeck?.cardIds.slice(0, DECK_SIZE) ?? [])
+  const [selectedPresetId, setSelectedPresetId] = useState(defaultDeck?.id ?? '')
   const [tab,      setTab]      = useState<'suit' | 'flower'>('suit')
   const [randomPhase, setRandomPhase] = useState<'gather' | 'deal' | null>(null)
   const [dealtCardId, setDealtCardId] = useState<string | null>(null)
@@ -73,13 +77,24 @@ export default function DeckBuild({ onConfirm, onBack }: Props) {
   useEffect(() => () => timersRef.current.forEach(clearTimeout), [])
 
   const countOf  = (id: string) => selected.filter(x => x === id).length
-  const add      = (id: string) => { if (selected.length < DECK_SIZE) setSelected(s => [...s, id]) }
+  const add      = (id: string) => { if (selected.length < DECK_SIZE) { setSelectedPresetId(''); setSelected(s => [...s, id]) } }
   const remove   = (id: string) => {
     const idx = selected.lastIndexOf(id)
-    if (idx !== -1) setSelected(s => { const a = [...s]; a.splice(idx, 1); return a })
+    if (idx !== -1) { setSelectedPresetId(''); setSelected(s => { const a = [...s]; a.splice(idx, 1); return a }) }
+  }
+  const loadPreset = (id: string) => {
+    setSelectedPresetId(id)
+    const deck = savedDecks.find(item => item.id === id)
+    if (deck) setSelected(deck.cardIds.slice(0, DECK_SIZE))
+  }
+  const saveCurrent = () => {
+    if (selected.length !== DECK_SIZE) return
+    const name = window.prompt('請輸入牌組名稱', `牌組 ${savedDecks.length + 1}`)?.trim()
+    if (name) saveDeck({ name, cardIds: selected })
   }
   const randomize = () => {
     if (randomPhase) return
+    setSelectedPresetId('')
     const additions = randomDeck()
 
     setDealTotal(additions.length)
@@ -130,13 +145,18 @@ export default function DeckBuild({ onConfirm, onBack }: Props) {
             自訂牌組 — <span className={`side side-${mySide}`}>{mySide} 方</span>
           </h2>
         </div>
-        <button className="btn dk-random-btn" disabled={!!randomPhase} onClick={randomize}>
-          🎲 隨機配置
-        </button>
+        <div className="dk-preset-controls">
+          <select className="dk-preset-select" value={selectedPresetId} onChange={e => loadPreset(e.target.value)} aria-label="選擇牌組">
+            <option value="">自選牌組</option>
+            {savedDecks.map(deck => <option key={deck.id} value={deck.id}>{deck.name}{deck.id === defaultDeckId ? '（預設）' : ''}</option>)}
+          </select>
+          <button className="btn dk-random-btn" disabled={!!randomPhase} onClick={randomize}>🎲 隨機配置</button>
+        </div>
       </div>
 
       {/* ── Selected strip ── */}
       <div className="dk-strip">
+        <strong className="dk-selected-count">已選 {selected.length}/{DECK_SIZE}</strong>
         <div className="deck-selected-strip">
           {selected.length === 0 && <span className="deck-empty-hint">尚未選牌</span>}
           {(() => {
@@ -197,7 +217,11 @@ export default function DeckBuild({ onConfirm, onBack }: Props) {
 
       {/* ── Footer ── */}
       <div className="dk-footer">
-        <button className="btn primary" disabled={selected.length === 0 || !!randomPhase} onClick={() => onConfirm(selected)}>
+        <button className="btn" disabled={selected.length === 0 || !!randomPhase} onClick={() => { setSelected([]); setSelectedPresetId('') }}>清空</button>
+        <button className="btn" disabled={selected.length !== DECK_SIZE || savedDecks.length >= 10} onClick={saveCurrent}>儲存牌組</button>
+        {selectedPresetId && <button className="btn" onClick={() => setDefaultDeck(selectedPresetId)}>{selectedPresetId === defaultDeckId ? '已設為預設' : '設為預設'}</button>}
+        {selectedPresetId && <button className="btn danger" onClick={() => { deleteDeck(selectedPresetId); setSelectedPresetId('') }}>刪除牌組</button>}
+        <button className="btn primary" disabled={selected.length !== DECK_SIZE || !!randomPhase} onClick={() => onConfirm(selected)}>
           {isSolo ? '確認牌組 — 開始挑戰' : '確認牌組 — 等待對手'}
         </button>
       </div>

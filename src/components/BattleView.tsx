@@ -59,6 +59,15 @@ function statusTagText(key: string, mode: string, value: number, remainTicks: nu
   return `${label}${mag} ${remain}`
 }
 
+function statusTagTexts(unit: Unit, clock: number): string[] {
+  const counts = new Map<string, number>()
+  for (const status of unit.statuses) {
+    const text = statusTagText(status.key, status.mode, status.value, status.expiresAt - clock)
+    counts.set(text, (counts.get(text) ?? 0) + 1)
+  }
+  return [...counts].map(([text, count]) => count > 1 ? `${text} ×${count}` : text)
+}
+
 // Ported from the reference's moveTargetRuleShort(): one-line targeting rule
 function moveTargetRule(move: Move): string | null {
   if (move.powerRatio == null) return null
@@ -178,8 +187,8 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
   const previewUnit = previewUnitId
     ? [...myTeam, ...enemyTeam].find(u => u.id === previewUnitId && u.alive) ?? null
     : null
-  const myHand    = mySide === 'A' ? game.handA : game.handB
-  const oppHand   = mySide === 'A' ? game.handB : game.handA
+  const myHand    = mySide === 'A' ? [...game.handA, ...(game.handCustomA ?? [])] : [...game.handB, ...(game.handCustomB ?? [])]
+  const oppHand   = mySide === 'A' ? [...game.handB, ...(game.handCustomB ?? [])] : [...game.handA, ...(game.handCustomA ?? [])]
   const myCustomLeft = mySide === 'A' ? game.customDeckOrder.length : game.customDeckOrderB.length
   const oppSide = mySide === 'A' ? 'B' : 'A'
 
@@ -672,8 +681,8 @@ function UnitCard({ unit, clock, onClick, selectable, highlighted, isPreview, is
           <span className="uc-tag uc-tag-next">
             {isCurrentTurn ? '⏳行動中' : `下次 ${Math.ceil(ticks / 10)}s`}
           </span>
-          {unit.statuses.map((s, i) => {
-            const text = statusTagText(s.key, s.mode, s.value, s.expiresAt - clock)
+          {unit.assignedCardName && <span className="uc-tag uc-tag-flower">🃏 {unit.assignedCardName}</span>}
+          {statusTagTexts(unit, clock).map((text, i) => {
             return <span key={i} className="uc-tag uc-tag-status" title={text}>{text}</span>
           })}
         </div>
@@ -724,10 +733,11 @@ function AtbPopup({ unit, clock, mySide, anchor }: { unit: Unit; clock: number; 
         ATK {effectiveATK(unit)} DEF {effectiveDEF(unit)} SPD {effectiveSPD(unit)}
       </div>
       <div className="atb-pop-time">{ticks === 0 ? '⚡ 行動中' : `⏳ ${Math.ceil(ticks / 10)}s 後行動`}</div>
+      {unit.assignedCardName && <div className="atb-pop-tags"><span className="uc-tag uc-tag-flower">🃏 {unit.assignedCardName}</span></div>}
       {unit.statuses.length > 0 && (
         <div className="atb-pop-tags">
-          {unit.statuses.map((s, i) => (
-            <span key={i} className="uc-tag">{statusTagText(s.key, s.mode, s.value, s.expiresAt - clock)}</span>
+          {statusTagTexts(unit, clock).map((text, i) => (
+            <span key={i} className="uc-tag">{text}</span>
           ))}
         </div>
       )}

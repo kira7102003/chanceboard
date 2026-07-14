@@ -51,7 +51,7 @@ export function parseClientMessage(raw: unknown): ClientMessage | null {
   if (!object(raw) || typeof raw.type !== 'string') return null
   if (raw.type === 'join' && text(raw.roomId, 12) && (raw.rejoinSide === undefined || side(raw.rejoinSide))) return raw as ClientMessage
   if (raw.type === 'charSelect' && strings(raw.charIds, 3)) return raw as ClientMessage
-  if (raw.type === 'deckSelect' && strings(raw.deckIds, 10)) return raw as ClientMessage
+  if (raw.type === 'deckSelect' && strings(raw.deckIds, 10) && raw.deckIds.length === 10) return raw as ClientMessage
   if (raw.type === 'stateSync' && text(raw.stateJson, 1_000_000) && (raw.phase === undefined || phases.includes(raw.phase as AppPhase))) return raw as ClientMessage
   if (raw.type === 'action' && isRemoteAction(raw.action)) return raw as ClientMessage
   return null
@@ -66,7 +66,7 @@ export function parseServerMessage(raw: unknown): ServerMessage | null {
     case 'resumeGame': return raw as ServerMessage
     case 'phaseChange': return phases.includes(raw.phase as AppPhase) ? raw as ServerMessage : null
     case 'charSelect': return strings(raw.charIds, 3) ? raw as ServerMessage : null
-    case 'startBattle': return pieces.includes(raw.piece as PieceType) && strings(raw.deckA, 10) && strings(raw.deckB, 10) ? raw as ServerMessage : null
+    case 'startBattle': return pieces.includes(raw.piece as PieceType) && strings(raw.deckA, 10) && raw.deckA.length === 10 && strings(raw.deckB, 10) && raw.deckB.length === 10 ? raw as ServerMessage : null
     case 'stateSync': return text(raw.stateJson, 1_000_000) ? raw as ServerMessage : null
     case 'action': return isRemoteAction(raw.action) ? raw as ServerMessage : null
     case 'error': return text(raw.msg, 300) ? raw as ServerMessage : null

@@ -128,6 +128,11 @@ export function initBattleState(
   const [handA, deckAfterA] = drawN(pubDeck, HAND_LIMIT)
   const [handB, finalDeck]  = drawN(deckAfterA, HAND_LIMIT)
 
+  const customDeckOrder = buildCustomDeckOrder(deckAIds)
+  const customDeckOrderB = buildCustomDeckOrder(deckBIds)
+  const handCustomA = customDeckOrder.length ? [customDeckOrder.shift()!] : []
+  const handCustomB = customDeckOrderB.length ? [customDeckOrderB.shift()!] : []
+
   return {
     phase: 'act',
     selectedIds: [],
@@ -141,8 +146,8 @@ export function initBattleState(
     discardPublic: [],
     handA,
     handB,
-    handCustomA: [],
-    handCustomB: [],
+    handCustomA,
+    handCustomB,
     lastDiscardedA: null,
     lastDiscardedB: null,
     clock: 0,
@@ -157,8 +162,8 @@ export function initBattleState(
     winnerReason: null,
     autoBattleA: false,
     autoBattleB: false,
-    customDeckOrder:  buildCustomDeckOrder(deckAIds),
-    customDeckOrderB: buildCustomDeckOrder(deckBIds),
+    customDeckOrder,
+    customDeckOrderB,
   }
 }
 
@@ -184,8 +189,8 @@ function dealRoundCards(s: GameState) {
     if (!c) break
     s.handB.push(c)
   }
-  if (s.customDeckOrder.length > 0)  s.handA.push(s.customDeckOrder.shift()!)
-  if (s.customDeckOrderB.length > 0) s.handB.push(s.customDeckOrderB.shift()!)
+  if (s.customDeckOrder.length > 0)  s.handCustomA.push(s.customDeckOrder.shift()!)
+  if (s.customDeckOrderB.length > 0) s.handCustomB.push(s.customDeckOrderB.shift()!)
 }
 
 // ─── ATB tick ────────────────────────────────────────────────────────────────────
@@ -268,8 +273,16 @@ function checkWinner(s: GameState): { winner: 'A' | 'B' | 'draw'; reason: string
 
 export function doPlayCard(gs: GameState, side: 'A' | 'B', cardId: string): GameState {
   const s = deepClone(gs)
-  const hand = side === 'A' ? s.handA : s.handB
-  const idx  = hand.findIndex(c => c.id === cardId)
+  const publicHand = side === 'A' ? s.handA : s.handB
+  const customHand = side === 'A' ? s.handCustomA : s.handCustomB
+  let hand = publicHand
+  let idx = hand.findIndex(c => c.id === cardId)
+  let isCustom = false
+  if (idx === -1) {
+    hand = customHand
+    idx = hand.findIndex(c => c.id === cardId)
+    isCustom = idx !== -1
+  }
   if (idx === -1) return gs
 
   const card = hand[idx]
@@ -280,15 +293,16 @@ export function doPlayCard(gs: GameState, side: 'A' | 'B', cardId: string): Game
   if (!card.isSuitCard && s.flowerActionUsed[side] === actionKey) return gs
 
   hand.splice(idx, 1)
-  s.discardPublic.push(card)
-  if (!card.isSuitCard) s.flowerActionUsed[side] = actionKey
+  if (!isCustom) s.discardPublic.push(card)
+  if (!card.isSuitCard) {
+    s.flowerActionUsed[side] = actionKey
+    actingUnit.assignedCardName = card.name
+  }
 
   const log: LogLine[] = []
   // For flower cards, run effects; for suit cards, add to condition pool
   if (!card.isSuitCard && card.effectOps.length) {
-    // pick first alive unit of that side as actor
-    const actor = (side === 'A' ? s.teamA : s.teamB).find(u => u.alive)
-    if (actor) runCardEffects(card, actor, s, s.clock, log)
+    runCardEffects(card, actingUnit, s, s.clock, log)
   }
   for (const l of log) s.log.push(l)
   s.log.push({ html: `${side} 打出 <b>${card.name}</b>` })
@@ -354,7 +368,8 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
   const targets = resolveTargetUnits(move, u, action.targetId, s)
 
   // Check condition: consume suit cards from hand
-  const hand  = u.side === 'A' ? s.handA : s.handB
+  const publicHand = u.side === 'A' ? s.handA : s.handB
+  const customHand = u.side === 'A' ? s.handCustomA : s.handCustomB
   const condN = move.condition ?? 1
   const suitColor = { '劍': 'red', '槍': 'green', '法': 'blue', '願': 'yellow', '被': null }[action.moveSlot] as string | null
 
@@ -363,17 +378,18 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
 
   if (suitColor) {
     let found = 0
-    const toRemove: number[] = []
-    for (let i = 0; i < hand.length && found < needed; i++) {
-      if (hand[i].color === suitColor) { toRemove.push(i); found++ }
-    }
+    const publicRemove: number[] = []
+    const customRemove: number[] = []
+    for (let i = 0; i < publicHand.length && found < needed; i++)
+      if (publicHand[i].color === suitColor) { publicRemove.push(i); found++ }
+    for (let i = 0; i < customHand.length && found < needed; i++)
+      if (customHand[i].color === suitColor) { customRemove.push(i); found++ }
     if (found < needed) {
       s.log.push({ html: `${u.side} 手牌不足，無法出招` })
       return gs
     }
-    for (const i of toRemove.reverse()) {
-      s.discardPublic.push(hand.splice(i, 1)[0])
-    }
+    for (const i of publicRemove.reverse()) s.discardPublic.push(publicHand.splice(i, 1)[0])
+    for (const i of customRemove.reverse()) customHand.splice(i, 1)
   }
 
   // Announce move: show attacker → target (or group label)
@@ -521,6 +537,7 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
   const linked = u.statuses.some(st => st.key === 'linked')
   u.nextActionAt = s.clock + (linked ? Math.floor(effBat / 2) : effBat)
   u._didNotMoveThisTurn = true  // reset move allowance for next turn
+  u.assignedCardName = undefined
 
   // Check winner
   const winCheck = checkWinner(s)
@@ -560,6 +577,7 @@ export function doPass(gs: GameState, unitId: string): GameState {
   if (batMinusSt) effBat = Math.max(10, effBat - batMinusSt.value)
   if (batPlusSt)  effBat += batPlusSt.value
   u.nextActionAt = s.clock + effBat
+  u.assignedCardName = undefined
 
   return s
 }
@@ -643,8 +661,16 @@ function resolveTargetUnits(move: Move, actor: Unit, targetId: string | null, s:
 
 export function doDiscardCard(gs: GameState, side: 'A' | 'B', cardId: string): GameState {
   const s = deepClone(gs)
-  const hand = side === 'A' ? s.handA : s.handB
-  const idx = hand.findIndex(c => c.id === cardId)
+  const publicHand = side === 'A' ? s.handA : s.handB
+  const customHand = side === 'A' ? s.handCustomA : s.handCustomB
+  let hand = publicHand
+  let idx = hand.findIndex(c => c.id === cardId)
+  let isCustom = false
+  if (idx === -1) {
+    hand = customHand
+    idx = hand.findIndex(c => c.id === cardId)
+    isCustom = idx !== -1
+  }
   if (idx === -1) return gs
   const actingUnit = getReadyUnits(s).find(u => u.side === side)
   if (!actingUnit) return gs
@@ -652,7 +678,7 @@ export function doDiscardCard(gs: GameState, side: 'A' | 'B', cardId: string): G
   s.discardActionUsed ??= {}
   if (s.discardActionUsed[side] === actionKey) return gs
   const [card] = hand.splice(idx, 1)
-  s.discardPublic.push(card)
+  if (!isCustom) s.discardPublic.push(card)
   s.discardActionUsed[side] = actionKey
   s.log.push({ html: `${side} 棄牌 <b>${card.name}</b>（下回合補牌）` })
   return s
@@ -821,7 +847,9 @@ export function autoPlayUnit(gs: GameState, unit: Unit): GameState {
   if (enemies.length === 0) return doPass(gs, unit.id)
 
   const isRooted = unit.statuses.some(s => s.key === 'rooted') && !unit.flags.immuneToRooted
-  const hand     = side === 'A' ? gs.handA : gs.handB
+  const hand = side === 'A'
+    ? [...gs.handA, ...gs.handCustomA]
+    : [...gs.handB, ...gs.handCustomB]
 
   // Auto "出手" with no selection is PASS. Do it immediately when the hand
   // cannot pay for any off-cooldown move instead of entering target/reposition
