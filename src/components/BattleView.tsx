@@ -158,7 +158,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
         color: SLOT_COLOR[moveSlot as MoveSlot] ?? '#aaa',
       })
       setAnimKey(k => k + 1)
-      animTimer.current = setTimeout(() => setMoveAnim(null), 1900)
+      animTimer.current = setTimeout(() => setMoveAnim(null), 2400)
       break // show only the first new moveAnim per batch
     }
   }, [game?.log.length])

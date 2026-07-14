@@ -1986,7 +1986,7 @@ h2 {
   display: flex; align-items: flex-end; justify-content: center;
   padding-bottom: 13vh;
   background: rgba(0,0,0,0);
-  animation: moveOverlayFade 1.9s ease-in-out forwards;
+  animation: moveOverlayFade 2.4s ease-in-out forwards;
 }
 
 /* Three-zone horizontal row: left | skill | right */
@@ -1998,13 +1998,14 @@ h2 {
 /* Attacker zone — character fades in on their side */
 .ma-zone-attacker {
   flex: 2; display: flex; flex-direction: column; align-items: center; gap: 7px;
-  animation: maCharIn 1.9s ease-in-out forwards;
+  animation: maCharIn 2.4s ease-in-out forwards;
 }
 
 /* Target zone — fades in, then shakes when skill arrives */
 .ma-zone-target {
   flex: 2; display: flex; flex-direction: column; align-items: center; gap: 7px;
-  animation: maCharIn 1.9s ease-in-out forwards, maShake .52s .5s ease-in-out;
+  opacity: 0;
+  animation: maTargetIn 1.6s .72s ease-in-out both, maShake .52s 1.12s ease-in-out;
 }
 
 /* Group targets row inside target zone */
@@ -2040,11 +2041,11 @@ h2 {
 }
 /* A attacks B → skill flies right */
 .ma-skill-wrap.ma-slide-ab {
-  animation: maSlideAB 1.7s cubic-bezier(.22,.6,.38,1) forwards;
+  animation: maSlideAB 1.25s cubic-bezier(.22,.6,.38,1) forwards;
 }
 /* B attacks A → skill flies left */
 .ma-skill-wrap.ma-slide-ba {
-  animation: maSlideBA 1.7s cubic-bezier(.22,.6,.38,1) forwards;
+  animation: maSlideBA 1.25s cubic-bezier(.22,.6,.38,1) forwards;
 }
 @keyframes maSlideAB {
   0%   { opacity: 0; transform: translateX(-28vw) scale(.55) rotate(-8deg); }
@@ -2073,13 +2074,19 @@ h2 {
   font-family: 'Cinzel', 'Microsoft YaHei', serif;
   font-size: clamp(.85rem, 2vw, 1.25rem); font-weight: 700; letter-spacing: 3px;
   text-shadow: 0 0 40px currentColor, 0 0 12px currentColor, 0 2px 8px rgba(0,0,0,.95);
-  text-align: center; animation: maCharIn 1.9s forwards;
+  text-align: center; animation: maCharIn 1.35s forwards;
 }
 
 /* Shared keyframes */
 @keyframes maCharIn {
   0%   { opacity: 0; transform: translateY(8px) scale(.92); }
   14%  { opacity: 1; transform: translateY(0) scale(1); }
+  78%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes maTargetIn {
+  0%   { opacity: 0; transform: translateY(8px) scale(.92); }
+  18%  { opacity: 1; transform: translateY(0) scale(1); }
   78%  { opacity: 1; }
   100% { opacity: 0; }
 }
