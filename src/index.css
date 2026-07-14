@@ -464,10 +464,13 @@ body { margin: 0; }
   width: 100%;
   flex: 1;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible; /* 改為 visible 讓中間角色不被裁剪 */
   cursor: grab;
   touch-action: pan-y;
   user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .cs-carousel:active { cursor: grabbing; }
 
