@@ -1092,39 +1092,35 @@ h2 {
   pointer-events: none;
 }
 .slot-cards-stack > .unit-card {
-  position: absolute; top: 0; left: 0; right: 0; bottom: 0; width: 100%;
+  position: absolute; top: 0; left: 0; bottom: 0; width: 100%;
   transition: transform .25s ease, box-shadow .2s, opacity .25s ease;
 }
-/* 照抄參考版疊卡：最前張完全不透明，後面的卡側探出、微降透明度 */
-.slot-cards-stack > .unit-card:nth-child(1) { z-index: 3; }
+/* 單獨一隻：滿版，hover 不移動（沒有任何 transform 規則會命中） */
 
-/* fan: back cards peek toward 後, slightly dimmed */
-.slot-stack-left-far  > .unit-card:nth-child(2),
-.slot-stack-left-near > .unit-card:nth-child(2) { z-index: 2; transform: translateX(-15%); opacity: .75; }
-.slot-stack-left-far  > .unit-card:nth-child(3),
-.slot-stack-left-near > .unit-card:nth-child(3) { z-index: 1; transform: translateX(-25%); opacity: .55; }
+/* 兩、三隻同格：卡寬縮到約 2/3 格，撲克牌式重疊。
+   前排卡貼在「面向敵方」那側，後面的卡往展開方向探出、微降透明度。
+   .uc-i0/.uc-i1/.uc-i2 由 JSX 依疊序標上（slotlabel 也是子元素，
+   nth-child 會錯位，所以用明確 class）。 */
+.stack-multi > .unit-card { width: 66.6%; }
+.stack-expand-left  > .unit-card { left: auto; right: 0; }
+.stack-expand-right > .unit-card { left: 0; }
 
-.slot-stack-right-far  > .unit-card:nth-child(2),
-.slot-stack-right-near > .unit-card:nth-child(2) { z-index: 2; transform: translateX(15%);  opacity: .75; }
-.slot-stack-right-far  > .unit-card:nth-child(3),
-.slot-stack-right-near > .unit-card:nth-child(3) { z-index: 1; transform: translateX(25%);  opacity: .55; }
+.slot-cards-stack > .uc-i0 { z-index: 3; }
+.stack-expand-left  > .uc-i1 { z-index: 2; transform: translateX(-14%); opacity: .75; }
+.stack-expand-left  > .uc-i2 { z-index: 1; transform: translateX(-28%); opacity: .55; }
+.stack-expand-right > .uc-i1 { z-index: 2; transform: translateX(14%);  opacity: .75; }
+.stack-expand-right > .uc-i2 { z-index: 1; transform: translateX(28%);  opacity: .55; }
 
-/* Hover: spread stacked cards, all opaque — no size change */
+/* Hover 展開（只有疊 2+ 張的 .stack-multi 會動）：
+   前/中格往後展開、後格往前展開；步距 75% 卡寬（≈ 半格寬），
+   第三張最遠 150% 卡寬 ≈ 一格 — 不會超出畫面。展開後每張都可點選。 */
 .slot-col { position: relative; }
 .slot-col:hover { z-index: 50; }
-.slot-col:hover .slot-cards-stack > .unit-card { opacity: 1; }
-
-/* 前/後 slots: 2 columns of space, spread fully */
-.slot-col:hover .slot-stack-left-far  > .unit-card:nth-child(2) { transform: translateX(-107%); }
-.slot-col:hover .slot-stack-left-far  > .unit-card:nth-child(3) { transform: translateX(-214%); }
-.slot-col:hover .slot-stack-right-far > .unit-card:nth-child(2) { transform: translateX(107%);  }
-.slot-col:hover .slot-stack-right-far > .unit-card:nth-child(3) { transform: translateX(214%);  }
-
-/* 中 slot: same horizontal spread, overflow visible handles out-of-bounds */
-.slot-col:hover .slot-stack-left-near  > .unit-card:nth-child(2) { transform: translateX(-107%); }
-.slot-col:hover .slot-stack-left-near  > .unit-card:nth-child(3) { transform: translateX(-214%); }
-.slot-col:hover .slot-stack-right-near > .unit-card:nth-child(2) { transform: translateX(107%);  }
-.slot-col:hover .slot-stack-right-near > .unit-card:nth-child(3) { transform: translateX(214%);  }
+.slot-col:hover .stack-multi > .unit-card { opacity: 1; }
+.slot-col:hover .stack-expand-left  > .uc-i1 { transform: translateX(-75%); }
+.slot-col:hover .stack-expand-left  > .uc-i2 { transform: translateX(-150%); }
+.slot-col:hover .stack-expand-right > .uc-i1 { transform: translateX(75%);  }
+.slot-col:hover .stack-expand-right > .uc-i2 { transform: translateX(150%); }
 
 .unit-card {
   background: linear-gradient(155deg, var(--bg3) 0%, var(--bg2) 100%);

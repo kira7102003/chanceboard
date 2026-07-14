@@ -163,7 +163,9 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
 
   const myTeam    = mySide === 'A' ? game.teamA : game.teamB
   const enemyTeam = mySide === 'A' ? game.teamB : game.teamA
-  const previewUnit = previewUnitId ? myTeam.find(u => u.id === previewUnitId && u.alive) ?? null : null
+  const previewUnit = previewUnitId
+    ? [...myTeam, ...enemyTeam].find(u => u.id === previewUnitId && u.alive) ?? null
+    : null
   const myHand    = mySide === 'A' ? game.handA : game.handB
   const oppHand   = mySide === 'A' ? game.handB : game.handA
   const myCustomLeft = mySide === 'A' ? game.customDeckOrder.length : game.customDeckOrderB.length
@@ -371,18 +373,19 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
           <div className="slots-row">
             {/* 我方: 後→中→前 (facing enemy on the right) */}
             {([3,2,1] as const).map(slot => {
-              const fanClass = slot === 3 ? 'slot-stack-right-far' : slot === 2 ? 'slot-stack-left-near' : 'slot-stack-left-far'
+              // 前/中 往後（左）展開，後 往前（右）展開
+              const fanClass = slot === 3 ? 'stack-expand-right' : 'stack-expand-left'
               const label = getSlotLabel(mySide ?? 'A', slot)
+              const units = myTeam.filter(u => getPendingSlot(u) === slot).sort((a, b) => b.hp - a.hp)
               return (
                 <div key={`my-${slot}`} className="slot-col slot-col-my" ref={slot === 3 ? slotColRef : undefined}>
-                  <div className={`slot-cards-stack ${fanClass}`}>
+                  <div className={`slot-cards-stack ${fanClass} ${units.length > 1 ? 'stack-multi' : ''}`}>
                     <div className="stack-slotlabel" style={{ color: DIST_COLOR[label] }}>{label}</div>
-                    {myTeam.filter(u => getPendingSlot(u) === slot)
-                      .sort((a, b) => b.hp - a.hp)
-                      .map(u => {
+                    {units.map((u, i) => {
                         const isActive = !isAIBattle && readyUnits[0]?.id === u.id
                         return (
                           <UnitCard key={u.id} unit={u} clock={game.clock}
+                            stackClass={`uc-i${i}`}
                             selectable={isActive}
                             highlighted={previewUnitId === u.id && !isActive}
                             isPreview={!isActive}
@@ -406,16 +409,23 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
 
             {/* 敵方: 前→中→後 */}
             {([1,2,3] as const).map(slot => {
-              const fanClass = slot === 3 ? 'slot-stack-left-far' : slot === 2 ? 'slot-stack-right-near' : 'slot-stack-right-far'
+              // 前/中 往後（右）展開，後 往前（左）展開
+              const fanClass = slot === 3 ? 'stack-expand-left' : 'stack-expand-right'
               const label = getSlotLabel(oppSide, slot)
+              const units = enemyTeam.filter(u => u.slot === slot).sort((a, b) => b.hp - a.hp)
               return (
                 <div key={`enemy-${slot}`} className="slot-col slot-col-enemy">
-                  <div className={`slot-cards-stack ${fanClass}`}>
+                  <div className={`slot-cards-stack ${fanClass} ${units.length > 1 ? 'stack-multi' : ''}`}>
                     <div className="stack-slotlabel" style={{ color: DIST_COLOR[label] }}>{label}</div>
-                    {enemyTeam.filter(u => u.slot === slot)
-                      .sort((a, b) => b.hp - a.hp)
-                      .map(u => (
-                        <UnitCard key={u.id} unit={u} clock={game.clock} isCurrentTurn={u.id === globalActiveId} />
+                    {units.map((u, i) => (
+                        <UnitCard key={u.id} unit={u} clock={game.clock} isCurrentTurn={u.id === globalActiveId}
+                          stackClass={`uc-i${i}`}
+                          isPreview
+                          highlighted={previewUnitId === u.id}
+                          onClick={u.alive && !isAIBattle
+                            ? () => setPreviewUnitId(prev => prev === u.id ? null : u.id)
+                            : undefined}
+                        />
                       ))}
                   </div>
                 </div>
@@ -540,8 +550,8 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
 // ─── UnitCard — 照抄參考版 renderUnitBlock()：立繪鋪滿背景、名字列疊頂端、
 //     血條(數字疊在條內)+ATK/DEF/SPD+狀態標籤合併疊底端 ────────────────────
 
-function UnitCard({ unit, clock, onClick, selectable, highlighted, isPreview, isCurrentTurn }: {
-  unit: Unit; clock: number; onClick?: () => void; selectable?: boolean; highlighted?: boolean; isPreview?: boolean; isCurrentTurn?: boolean
+function UnitCard({ unit, clock, onClick, selectable, highlighted, isPreview, isCurrentTurn, stackClass }: {
+  unit: Unit; clock: number; onClick?: () => void; selectable?: boolean; highlighted?: boolean; isPreview?: boolean; isCurrentTurn?: boolean; stackClass?: string
 }) {
   const pct     = unit.alive ? Math.max(0, (unit.hp / unit.maxHp) * 100) : 0
   const ticks   = Math.max(0, unit.nextActionAt - clock)
@@ -552,7 +562,7 @@ function UnitCard({ unit, clock, onClick, selectable, highlighted, isPreview, is
 
   return (
     <div
-      className={`unit-card ${!unit.alive ? 'dead' : ''} ${isCurrentTurn ? 'uc-ready' : ''} ${stateClass} ${highlighted ? 'uc-preview-active' : ''}`}
+      className={`unit-card ${stackClass ?? ''} ${!unit.alive ? 'dead' : ''} ${isCurrentTurn ? 'uc-ready' : ''} ${stateClass} ${highlighted ? 'uc-preview-active' : ''}`}
       onClick={onClick}
       title={onClick && isPreview
         ? `${unit.name}（${unit.element}系 / ${getSlotLabel(unit.side, unit.slot)}）點擊查看完整招式`
