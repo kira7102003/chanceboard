@@ -279,8 +279,12 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
     } else if (pickedCard) {
       const id = pickedCard.id
       setPickedCard(null)
-      // 卡已不在手上（被棄/被偷）就只清掉選取，不誤觸跳過
-      if (myHand.some(c => c.id === id)) onPlayCard(id)
+      // 花牌本身就是本次行動：使用成功後立即結束角色行動，
+      // 不再停留於同一角色讓玩家追加招式。
+      if (myHand.some(c => c.id === id)) {
+        onPlayCard(id)
+        onPass(unit.id)
+      }
     } else {
       // 沒選招式/卡片：純移動（或什麼都不做＝跳過）也統一按出手執行
       applyPendingMove(unit)
