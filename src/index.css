@@ -1919,6 +1919,13 @@ h2 {
 }
 .end-log-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0; }
 .end-log-header .end-detail-title { margin: 0; font-size: 14px; }
+.end-log-close {
+  color: var(--gold2); border-color: rgba(200,161,90,.55);
+  background: rgba(200,161,90,.08); font-weight: 700;
+}
+.end-log-close:hover {
+  color: #fff0bd; border-color: var(--gold2); background: rgba(200,161,90,.2);
+}
 .end-log { flex: 1; min-height: 0; overflow-y: auto; margin-top: 10px; padding: 6px; }
 @media (max-width: 700px), (max-height: 560px) {
   .battle-end { justify-content: flex-start; }

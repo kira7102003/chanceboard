@@ -612,7 +612,7 @@ function BattleEndDetails({ game, showLog, onOpenLog, onCloseLog }: {
           <div className="end-log-dialog" onClick={e => e.stopPropagation()}>
             <div className="end-log-header">
               <div className="end-detail-title">戰鬥 LOG</div>
-              <button className="panel-back" onClick={onCloseLog}>✕ 關閉</button>
+              <button className="panel-back end-log-close" onClick={onCloseLog}>✕ 關閉</button>
             </div>
             <div className="end-log">
               {game.log.map((line, i) => (
