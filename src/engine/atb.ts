@@ -80,6 +80,23 @@ function shuffleArr<T>(arr: T[]): T[] {
   return a
 }
 
+function frontSlot(side: 'A' | 'B'): 1 | 3 { return side === 'A' ? 3 : 1 }
+function backSlot(side: 'A' | 'B'): 1 | 3 { return side === 'A' ? 1 : 3 }
+function slotDistanceLabel(side: 'A' | 'B', slot: 1 | 2 | 3): string {
+  if (slot === 2) return '中'
+  return slot === frontSlot(side) ? '近' : '遠'
+}
+function mirrorOf(slot: 1 | 2 | 3): 1 | 2 | 3 { return (4 - slot) as 1 | 2 | 3 }
+function globalIndex(side: 'A' | 'B', slot: 1 | 2 | 3): number {
+  return side === 'A' ? slot - 1 : 3 + slot - 1
+}
+function nearestGunTargets(actorSide: 'A' | 'B', actorSlot: 1 | 2 | 3, enemies: Unit[]): Unit[] {
+  if (enemies.length === 0) return []
+  const origin = globalIndex(actorSide, actorSlot)
+  const minDistance = Math.min(...enemies.map(enemy => Math.abs(globalIndex(enemy.side, enemy.slot) - origin)))
+  return enemies.filter(enemy => Math.abs(globalIndex(enemy.side, enemy.slot) - origin) === minDistance)
+}
+
 // ─── Public deck builder ────────────────────────────────────────────────────────
 
 export function buildPublicDeck(piece: PieceType): Card[] {
@@ -119,8 +136,8 @@ export function initBattleState(
   deckBIds: string[] = [],
 ): GameState {
   const startClock = 0
-  // Both sides: slot1=近(front), slot2=中, slot3=遠(back)
-  const slotOrderA: (1|2|3)[] = [1, 2, 3]
+  // SA: A front/mid/back = 3/2/1; B front/mid/back = 1/2/3.
+  const slotOrderA: (1|2|3)[] = [3, 2, 1]
   const teamA = charIdsA.map((id, i) => makeUnit(id, 'A', slotOrderA[i], startClock))
   const teamB = charIdsB.map((id, i) => makeUnit(id, 'B', (i + 1) as 1 | 2 | 3, startClock))
 
@@ -326,7 +343,7 @@ export function doMoveUnit(gs: GameState, unitId: string, toSlot: 1 | 2 | 3): Ga
   if (!u._didNotMoveThisTurn) return gs
   u.slot = toSlot
   u._didNotMoveThisTurn = false
-  const moveLabel = ['近', '中', '遠'][toSlot - 1]
+  const moveLabel = slotDistanceLabel(u.side, toSlot)
   s.log.push({ html: `<b>${u.name}</b> 移至 ${moveLabel}距離` })
   return s
 }
@@ -355,7 +372,7 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
   }
 
   // Sword requires attacker at 近(slot1) — same for both sides
-  if (move.rangeType === '劍' && u.slot !== 1) {
+  if (move.rangeType === '劍' && u.slot !== frontSlot(u.side)) {
     s.log.push({ html: `<b>${u.name}</b> 劍技需在近距才能使用` })
     return gs
   }
@@ -632,37 +649,34 @@ function resolveTargetUnits(move: Move, actor: Unit, targetId: string | null, s:
     return cands.reduce((b, u) => isAwakened ? (u.hp < b.hp ? u : b) : (u.hp > b.hp ? u : b))
   }
 
-  // Sword targets enemy 近(slot1) — same for both sides
+  // Sword: actor must be at own front and hits the mirrored enemy slot.
   if (move.rangeType === '劍') {
-    const swordTargetSlot = 1
-    const front = enemies.filter(e => e.slot === swordTargetSlot)
-    if (move.scope === '群') return front
+    const swordTargetSlot = mirrorOf(actor.slot)
+    const mirrored = enemies.filter(e => e.slot === swordTargetSlot)
+    if (move.scope === '群') return mirrored
     if (targetId) {
       const t = findUnit(s, targetId)
-      if (t && t.alive && t.slot === swordTargetSlot && !isHidden(t)) {
+      if (t && t.side !== actor.side && t.alive && t.slot === swordTargetSlot && !isHidden(t)) {
         // SA 7.2: redirect to taunter if player did not pick the taunter
-        const taunterAtFront = front.find(u => u.flags.taunt)
+        const taunterAtFront = mirrored.find(u => u.flags.taunt)
         return [taunterAtFront && taunterAtFront.id !== t.id ? taunterAtFront : t]
       }
     }
-    const best = pickBest(front)
+    const best = pickBest(mirrored)
     return best ? [best] : []
   }
 
-  // Magic crossOf = 4-slot: 近打遠, 中打中, 遠打近 (交錯)
+  // Magic crossOf(slot)=slot: physical near→far, mid→mid, far→near.
   if (move.rangeType === '法') {
-    const mirrorSlot = (4 - actor.slot) as 1 | 2 | 3
-    const mirror = enemies.filter(e => e.slot === mirrorSlot)
-    if (move.scope === '群') return mirror
-    const best = pickBest(mirror)
+    const crossed = enemies.filter(e => e.slot === actor.slot)
+    if (move.scope === '群') return crossed
+    const best = pickBest(crossed)
     return best ? [best] : []
   }
 
-  // Gun — nearest slot = min slot (slot1=近 is always nearest) for both sides
+  // Gun: globally nearest occupied enemy slot; AoE hits everyone in that slot.
   if (move.rangeType === '槍') {
-    if (enemies.length === 0) return []
-    const nearestSlot = Math.min(...enemies.map(e => e.slot))
-    const near = enemies.filter(e => e.slot === nearestSlot)
+    const near = nearestGunTargets(actor.side, actor.slot, enemies)
     if (move.scope === '群') return near
     const best = pickBest(near)
     return best ? [best] : []
@@ -673,7 +687,7 @@ function resolveTargetUnits(move: Move, actor: Unit, targetId: string | null, s:
   // Default single-target: explicit targetId (taunt-redirect) or HP tie-break
   if (targetId) {
     const t = findUnit(s, targetId)
-    if (t && t.alive && !isHidden(t)) {
+    if (t && t.side !== actor.side && t.alive && !isHidden(t)) {
       // SA 7.2: redirect to taunter if target is not the taunter
       const taunting = enemies.filter(u => u.flags.taunt)
       if (taunting.length > 0 && !t.flags.taunt) {
@@ -754,18 +768,18 @@ function kitPreferredSlot(unit: Unit, enemies: Unit[], hand: Card[], clock: numb
   }
 
   const total = swordPwr + gunPwr + magicPwr
-  if (total === 0) return 3  // pure support — retreat to back row
+  if (total === 0) return backSlot(unit.side)  // pure support — retreat to back row
 
-  // Magic-dominant: crossOf=4-slot → position at mirror of most-populated enemy slot
+  // Magic-dominant: crossOf(slot)=slot → align to the enemy slot.
   if (magicPwr >= swordPwr && magicPwr >= gunPwr) {
     const count: Record<number, number> = { 1: 0, 2: 0, 3: 0 }
     for (const e of enemies) count[e.slot] = (count[e.slot] ?? 0) + 1
     const enemySlot = ([1, 2, 3] as const).reduce((a, b) => (count[b] ?? 0) > (count[a] ?? 0) ? b : a)
-    return (4 - enemySlot) as 1 | 2 | 3
+    return enemySlot
   }
 
-  // Sword dominant → 近(slot1) for both sides
-  if (swordPwr >= gunPwr) return 1
+  // Sword dominant → own front slot.
+  if (swordPwr >= gunPwr) return frontSlot(unit.side)
 
   // Gun dominant → mid row (can hit anyone from slot 2, safer than front)
   return 2
@@ -814,20 +828,19 @@ function scoreMoves(
     let reachable = enemies.filter(e => !e.statuses.some(s => s.key === 'hidden'))
 
     if (move.rangeType === '劍') {
-      if (fromSlot !== 1) continue  // sword attacker must be at 近(slot1)
-      reachable = reachable.filter(e => e.slot === 1)  // hits enemy 近(slot1)
+      if (fromSlot !== frontSlot(unit.side)) continue
+      const targetSlot = mirrorOf(fromSlot)
+      reachable = reachable.filter(e => e.slot === targetSlot)
     }
 
-    // Magic crossOf = 4-slot: 近打遠, 中打中, 遠打近
+    // Magic crossOf(slot)=slot.
     if (move.rangeType === '法') {
-      const crossSlot = (4 - fromSlot) as 1 | 2 | 3
-      reachable = reachable.filter(e => e.slot === crossSlot)
+      reachable = reachable.filter(e => e.slot === fromSlot)
     }
 
-    // Gun hits nearest slot = min slot for both sides
+    // Gun hits the globally nearest occupied enemy slot.
     if (move.rangeType === '槍' && reachable.length > 0) {
-      const nearestSlot = Math.min(...reachable.map(e => e.slot))
-      reachable = reachable.filter(e => e.slot === nearestSlot)
+      reachable = nearestGunTargets(unit.side, fromSlot, reachable)
     }
 
     if (reachable.length === 0) continue     // no valid targets → skip
@@ -841,12 +854,9 @@ function scoreMoves(
         s + elementMult(moveElement, e.element), 0) / reachable.length
       score = move.powerRatio * reachable.length * avgEl
     } else {
-      // SA A6: Gun single-target hits nearest enemy (lowest slot)
       let best: Unit
       if (move.rangeType === '槍') {
-        const nearestSlot = Math.min(...reachable.map(e => e.slot))
-        const nearEnemies = reachable.filter(e => e.slot === nearestSlot)
-        best = nearEnemies.reduce((a, b) => (a.hp / a.maxHp) <= (b.hp / b.maxHp) ? a : b)
+        best = reachable.reduce((a, b) => (a.hp / a.maxHp) <= (b.hp / b.maxHp) ? a : b)
       } else {
         // Other single-target: prefer lowest HP% (finish kills first)
         best = reachable.reduce((a, b) => (a.hp / a.maxHp) <= (b.hp / b.maxHp) ? a : b)

@@ -14,11 +14,10 @@ import { useFitBattleLayout } from '../hooks/useFitBattleLayout'
 
 const DIST_COLOR: Record<string, string> = { '前': '#e85533', '中': '#ddaa22', '後': '#33aacc' }
 
-// Both sides: slot1=前(front), slot2=中, slot3=後(back)
-function getSlotLabel(_side: 'A' | 'B', slot: number): string {
-  if (slot === 1) return '前'
+// SA board coordinates: A front=3/back=1; B front=1/back=3.
+function getSlotLabel(side: 'A' | 'B', slot: number): string {
   if (slot === 2) return '中'
-  return '後'
+  return slot === (side === 'A' ? 3 : 1) ? '前' : '後'
 }
 const EL_COLOR: Record<string, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee' }
 const EL_ICON:  Record<string, string> = { '劍': '⚔', '槍': '🔫', '法': '✨' }
@@ -199,6 +198,8 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
   const oppHand   = mySide === 'A' ? [...game.handB, ...(game.handCustomB ?? [])] : [...game.handA, ...(game.handCustomA ?? [])]
   const myCustomLeft = mySide === 'A' ? game.customDeckOrder.length : game.customDeckOrderB.length
   const oppSide = mySide === 'A' ? 'B' : 'A'
+  const mySlotOrder = (mySide === 'A' ? [1, 2, 3] : [3, 2, 1]) as Array<1 | 2 | 3>
+  const enemySlotOrder = (oppSide === 'A' ? [3, 2, 1] : [1, 2, 3]) as Array<1 | 2 | 3>
 
   const readyUnits = getReadyUnits(game).filter(u => u.side === mySide)
   const isAutoMe  = mySide === 'A' ? game.autoBattleA : game.autoBattleB
@@ -413,7 +414,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
         <div className="battle-arena" ref={arenaRef}>
           <div className="slots-row">
             {/* 我方: 後→中→前 (facing enemy on the right) */}
-            {([3,2,1] as const).map(slot => {
+            {mySlotOrder.map(slot => {
               // 前/中 往後（左）展開，後 往前（右）展開
               const fanClass = slot === 3 ? 'stack-expand-right' : 'stack-expand-left'
               const label = getSlotLabel(mySide ?? 'A', slot)
@@ -449,7 +450,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
             <div className="arena-divider" />
 
             {/* 敵方: 前→中→後 */}
-            {([1,2,3] as const).map(slot => {
+            {enemySlotOrder.map(slot => {
               // 前/中 往後（右）展開，後 往前（左）展開
               const fanClass = slot === 3 ? 'stack-expand-left' : 'stack-expand-right'
               const label = getSlotLabel(oppSide, slot)

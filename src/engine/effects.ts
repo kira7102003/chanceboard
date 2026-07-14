@@ -75,13 +75,16 @@ function healUnit(unit: Unit, amount: number) {
   unit.hp = Math.min(unit.maxHp, unit.hp + Math.max(0, amount))
 }
 
-// Both sides: slot1=近(front), slot2=中, slot3=遠(back) — direct 1:1 mapping
-function distToSlot(dist: 1 | 2 | 3, _side: 'A' | 'B'): 1 | 2 | 3 {
-  return dist
+// Data uses distance 1/2/3 = front/mid/back; numeric board slots are mirrored by side.
+function distToSlot(dist: 1 | 2 | 3, side: 'A' | 'B'): 1 | 2 | 3 {
+  if (dist === 2) return 2
+  if (dist === 1) return side === 'A' ? 3 : 1
+  return side === 'A' ? 1 : 3
 }
 
-function slotLabel(_side: 'A' | 'B', slot: 1 | 2 | 3): string {
-  return ['近', '中', '遠'][slot - 1]
+function slotLabel(side: 'A' | 'B', slot: 1 | 2 | 3): string {
+  if (slot === 2) return '中'
+  return slot === (side === 'A' ? 3 : 1) ? '近' : '遠'
 }
 
 const CHARGE_STACK_CAP = 3
@@ -305,7 +308,7 @@ export function runEffectOps(
       case 'knockback': {
         const dist = (op.to as 1 | 2 | 3)
         for (const t of targets) {
-          if (t.statuses.some(s => s.key === 'rooted') && !actor.flags.immuneToRooted) continue
+          if (t.statuses.some(s => s.key === 'rooted') && !t.flags.immuneToRooted) continue
           const toSlot = distToSlot(dist, t.side)
           t.slot = toSlot
           log.push({ html: `<b>${t.name}</b> 被擊至 ${slotLabel(t.side, toSlot)}距離` })
