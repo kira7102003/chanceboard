@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { cards as allCards } from '../data/db'
-import { fillDeck } from '../engine/randomDeck'
+import { randomDeck } from '../engine/randomDeck'
 import { CARD_ICON } from '../data/cardIcons'
 import { getCardImg } from '../utils/charStore'
 import type { Card } from '../types/card'
@@ -79,18 +79,11 @@ export default function DeckBuild({ onConfirm }: Props) {
   }
   const randomize = () => {
     if (randomPhase) return
-    const base = [...selected]
-    const target = fillDeck(base)
-    const remaining = [...base]
-    const additions = target.filter(id => {
-      const idx = remaining.indexOf(id)
-      if (idx >= 0) { remaining.splice(idx, 1); return false }
-      return true
-    })
-    if (additions.length === 0) return
+    const additions = randomDeck()
 
     setDealTotal(additions.length)
     setRandomPhase('gather')
+    setSelected([])
     const gatherTimer = setTimeout(() => {
       setRandomPhase('deal')
       additions.forEach((id, i) => {
@@ -137,7 +130,7 @@ export default function DeckBuild({ onConfirm }: Props) {
           </h2>
         </div>
         <button className="btn dk-random-btn" disabled={!!randomPhase} onClick={randomize}>
-          🎲 {selected.length === 0 ? '隨機配置' : `補齊（+${DECK_SIZE - selected.length}）`}
+          🎲 隨機配置
         </button>
       </div>
 
