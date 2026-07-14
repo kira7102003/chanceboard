@@ -524,6 +524,7 @@ body { margin: 0; }
 .cs-nav-hint {
   display: flex; align-items: center; justify-content: space-between;
   flex-shrink: 0; padding: 2px 0;
+  width: min(100%, 520px); gap: 12px;
 }
 .cs-nav-btn {
   background: none;
@@ -532,7 +533,8 @@ body { margin: 0; }
   border-radius: 7px; padding: 4px 8px;
   cursor: pointer; line-height: 1.2;
   transition: background .15s, color .15s;
-  width: 96px; display: flex; align-items: center; gap: 4px;
+  width: clamp(128px, 18vw, 180px); max-width: 38%;
+  flex-shrink: 0; display: flex; align-items: center; gap: 6px;
   overflow: hidden; white-space: nowrap;
 }
 .cs-nav-btn.prev { flex-direction: row; justify-content: flex-start; }

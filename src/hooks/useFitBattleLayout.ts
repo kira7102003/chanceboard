@@ -43,6 +43,7 @@ export function useFitBattleLayout(refs: FitBattleLayoutRefs) {
       // Reset any previous scale before measuring natural content height.
       if (actionAreaEl) {
         actionAreaEl.style.transform = 'none'
+        actionAreaEl.style.width = '100%'
         actionAreaEl.style.overflowY = 'auto'
       }
 
@@ -78,6 +79,9 @@ export function useFitBattleLayout(refs: FitBattleLayoutRefs) {
           const scaleFloor = 0.4 + t * 0.2
           const scale = Math.max(scaleFloor, topH / actionAreaScrollH)
           actionAreaEl.style.transform = `scale(${scale})`
+          // Scaling also shrinks the panel horizontally. Compensate its layout
+          // width so the rendered panel still fills all available screen space.
+          actionAreaEl.style.width = `${100 / scale}%`
           // At the scale floor the content may still be taller than the row —
           // keep it scrollable then, or the bottom rows get clipped away.
           actionAreaEl.style.overflowY =

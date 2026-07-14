@@ -245,10 +245,10 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
   const nextChar    = filtered[nextIdx]
 
   function adjNameSize(name: string): number {
-    // shrink font so name fits inside ~60px (Chinese char ~1em)
-    if (name.length <= 3) return 13
-    if (name.length <= 5) return 11
-    return 9
+    // The wider navigation buttons can keep most names comfortably readable.
+    if (name.length <= 8) return 13
+    if (name.length <= 12) return 11
+    return 10
   }
 
   const charsWithOff = filtered.map((c, i) => ({ c, i, off: getOff(i) }))
