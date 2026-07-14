@@ -108,7 +108,6 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
 
   const readyUnits = getReadyUnits(game).filter(u => u.side === mySide)
   const isAutoMe  = mySide === 'A' ? game.autoBattleA : game.autoBattleB
-  const isAutoOpp = mySide === 'A' ? game.autoBattleB : game.autoBattleA
 
 
   const suitInHand: Record<string, number> = { red: 0, green: 0, blue: 0, yellow: 0 }
