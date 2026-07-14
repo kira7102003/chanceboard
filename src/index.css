@@ -1065,19 +1065,28 @@ h2 {
 /* ── Unit card ─────────────────────────────────────────────── */
 /* Poker-card stacking container */
 .slot-cards-stack {
-  position: relative; aspect-ratio: 307 / 458; width: 100%; overflow: hidden;
+  position: relative; aspect-ratio: 307 / 458; width: 100%; overflow: visible;
 }
 .slot-cards-stack > .unit-card {
   position: absolute; top: 0; left: 0; right: 0; bottom: 0; width: 100%;
-  transition: transform .2s, box-shadow .2s, z-index 0s;
+  transition: transform .25s ease, box-shadow .2s, opacity .25s ease;
 }
 .slot-cards-stack > .unit-card:nth-child(1) { z-index: 3; }
-/* fan LEFT (toward 後): cards peek left */
-.slot-stack-left  > .unit-card:nth-child(2) { z-index: 2; transform: translateX(-32px); opacity: .88; }
-.slot-stack-left  > .unit-card:nth-child(3) { z-index: 1; transform: translateX(-58px); opacity: .70; }
-/* fan RIGHT (後 slot toward 前): cards peek right */
-.slot-stack-right > .unit-card:nth-child(2) { z-index: 2; transform: translateX(32px);  opacity: .88; }
-.slot-stack-right > .unit-card:nth-child(3) { z-index: 1; transform: translateX(58px);  opacity: .70; }
+/* fan LEFT: back cards peek left, semi-transparent */
+.slot-stack-left  > .unit-card:nth-child(2) { z-index: 2; transform: translateX(-15%); opacity: .55; }
+.slot-stack-left  > .unit-card:nth-child(3) { z-index: 1; transform: translateX(-25%); opacity: .35; }
+/* fan RIGHT: back cards peek right, semi-transparent */
+.slot-stack-right > .unit-card:nth-child(2) { z-index: 2; transform: translateX(15%);  opacity: .55; }
+.slot-stack-right > .unit-card:nth-child(3) { z-index: 1; transform: translateX(25%);  opacity: .35; }
+
+/* Hover: spread cards fully, all opaque */
+.slot-col { position: relative; }
+.slot-col:hover { z-index: 20; }
+.slot-col:hover .slot-cards-stack > .unit-card { opacity: 1; }
+.slot-col:hover .slot-stack-left  > .unit-card:nth-child(2) { transform: translateX(-107%); }
+.slot-col:hover .slot-stack-left  > .unit-card:nth-child(3) { transform: translateX(-214%); }
+.slot-col:hover .slot-stack-right > .unit-card:nth-child(2) { transform: translateX(107%);  }
+.slot-col:hover .slot-stack-right > .unit-card:nth-child(3) { transform: translateX(214%);  }
 
 .unit-card {
   background: linear-gradient(155deg, var(--bg3) 0%, var(--bg2) 100%);
