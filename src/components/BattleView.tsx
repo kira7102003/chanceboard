@@ -270,7 +270,8 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
       {/* ── Move animation overlay — directional ── */}
       {moveAnim && (() => {
         const attackFromLeft = moveAnim.attackerSide === 'A'
-        const mirrorImages = !attackFromLeft
+        const mirrorSkill = !attackFromLeft
+        const mirrorTarget = attackFromLeft
 
         const Portrait = ({ img, name, flip }: { img: string|null; name: string; flip: boolean }) => (
           <>
@@ -290,13 +291,13 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                 <div className="ma-group-row">
                   {moveAnim.groupTargets.map((t, i) => (
                     <div key={i}>
-                      <Portrait img={t.charImg} name={t.name} flip={mirrorImages} />
+                      <Portrait img={t.charImg} name={t.name} flip={mirrorTarget} />
                     </div>
                   ))}
                 </div>
               )
               : moveAnim.targetName
-                ? <Portrait img={moveAnim.targetCharImg} name={moveAnim.targetName} flip={mirrorImages} />
+                ? <Portrait img={moveAnim.targetCharImg} name={moveAnim.targetName} flip={mirrorTarget} />
                 : <div className="ma-no-img" style={{ opacity: .15 }}>⚔</div>
             }
           </div>
@@ -311,7 +312,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                     ? <img src={moveAnim.img} className="ma-skill-img" alt=""
                         style={{
                           filter: `drop-shadow(0 0 18px ${moveAnim.color}cc)`,
-                          transform: mirrorImages ? 'scaleX(-1)' : undefined,
+                          transform: mirrorSkill ? 'scaleX(-1)' : undefined,
                         }} />
                     : <div className="ma-skill-empty" style={{ color: moveAnim.color }}>⚡</div>
                   }
