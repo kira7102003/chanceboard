@@ -108,6 +108,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
   useFitBattleLayout({ battleMainRef, arenaRef, actRowRef, actionAreaRef, slotColRef, cardsRowRef })
   const [moveAnim,  setMoveAnim]  = useState<MoveAnim | null>(null)
   const [animKey,   setAnimKey]   = useState(0)
+  const [showEndLog, setShowEndLog] = useState(false)
   // pending destination slot per unit (preview before confirming with a skill/pass)
   const [pendingSlots, setPendingSlots] = useState<Record<string, 1|2|3>>({})
   // preview: clicking a non-active own unit shows their moves read-only
@@ -203,7 +204,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
         <div className="battle-end">
           <h2 style={{ fontSize: '2rem' }}>{label}</h2>
           <p>{game.winnerReason}</p>
-          <BattleEndDetails game={game} />
+          <BattleEndDetails game={game} showLog={showEndLog} onOpenLog={() => setShowEndLog(true)} onCloseLog={() => setShowEndLog(false)} />
           <div style={{ display: 'flex', gap: 12 }}>
             <button className="btn primary" onClick={onSoloReplay ?? onEnd}>再看一局</button>
             <button className="btn"         onClick={onEnd}>返回大廳</button>
@@ -219,7 +220,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
           onReplay={onSoloReplay ?? onEnd}
           onBack={onEnd}
         >
-          <BattleEndDetails game={game} />
+          <BattleEndDetails game={game} showLog={showEndLog} onOpenLog={() => setShowEndLog(true)} onCloseLog={() => setShowEndLog(false)} />
         </ScorePanel>
       )
     }
@@ -228,7 +229,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
       <div className="battle-end">
         <h2>{result}</h2>
         <p>{game.winnerReason}</p>
-        <BattleEndDetails game={game} />
+        <BattleEndDetails game={game} showLog={showEndLog} onOpenLog={() => setShowEndLog(true)} onCloseLog={() => setShowEndLog(false)} />
         <button className="btn primary" onClick={onEnd}>再玩一局</button>
       </div>
     )
@@ -571,7 +572,12 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
 // ─── UnitCard — 照抄參考版 renderUnitBlock()：立繪鋪滿背景、名字列疊頂端、
 //     血條(數字疊在條內)+ATK/DEF/SPD+狀態標籤合併疊底端 ────────────────────
 
-function BattleEndDetails({ game }: { game: GameState }) {
+function BattleEndDetails({ game, showLog, onOpenLog, onCloseLog }: {
+  game: GameState
+  showLog: boolean
+  onOpenLog: () => void
+  onCloseLog: () => void
+}) {
   const Team = ({ side, units }: { side: 'A' | 'B'; units: Unit[] }) => {
     const survivors = units.filter(u => u.alive)
     return (
@@ -593,20 +599,30 @@ function BattleEndDetails({ game }: { game: GameState }) {
   }
 
   return (
-    <div className="battle-end-details">
-      <div className="end-survivors">
-        <Team side="A" units={game.teamA} />
-        <Team side="B" units={game.teamB} />
-      </div>
-      <div className="end-log-wrap">
-        <div className="end-detail-title">戰鬥 LOG</div>
-        <div className="end-log">
-          {game.log.map((line, i) => (
-            <div className="log-line" key={i} dangerouslySetInnerHTML={{ __html: line.html }} />
-          ))}
+    <>
+      <div className="battle-end-details">
+        <div className="end-survivors">
+          <Team side="A" units={game.teamA} />
+          <Team side="B" units={game.teamB} />
         </div>
+        <button className="btn end-log-button" onClick={onOpenLog}>📜 LOG</button>
       </div>
-    </div>
+      {showLog && (
+        <div className="end-log-overlay" onClick={onCloseLog}>
+          <div className="end-log-dialog" onClick={e => e.stopPropagation()}>
+            <div className="end-log-header">
+              <div className="end-detail-title">戰鬥 LOG</div>
+              <button className="panel-back" onClick={onCloseLog}>✕ 關閉</button>
+            </div>
+            <div className="end-log">
+              {game.log.map((line, i) => (
+                <div className="log-line" key={i} dangerouslySetInnerHTML={{ __html: line.html }} />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
