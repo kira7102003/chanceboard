@@ -329,7 +329,9 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
                 id={c.id} size={CW} height={CH}
                 style={{
                   width: '100%', height: '100%',
-                  objectFit: 'cover', objectPosition: 'top center',
+                  // Character art has varying aspect ratios. `cover` cropped the
+                  // bottom of taller portraits, which cut off their feet.
+                  objectFit: 'contain', objectPosition: 'bottom center',
                   borderRadius: 0, background: 'transparent',
                   display: 'block', pointerEvents: 'none',
                 }}
