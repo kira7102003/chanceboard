@@ -34,6 +34,7 @@ interface Store {
   game: GameState | null
   pendingUnitId: string | null    // unit the local player is currently deciding for
   intervalId: ReturnType<typeof setTimeout> | null
+  _animationPauseUntilMs: number
 
   // Actions
   setRoom: (roomId: string, side: 'A' | 'B', isHost: boolean) => void
@@ -98,6 +99,7 @@ export const useGameStore = create<Store>((set, get) => ({
   game: null,
   pendingUnitId: null,
   intervalId: null,
+  _animationPauseUntilMs: 0,
   _syncCb: null,
   autoSpeed: 1,
 
@@ -163,8 +165,9 @@ export const useGameStore = create<Store>((set, get) => ({
   },
 
   tick: () => {
-    const { game, isHost, isSolo, isAIBattle } = get()
+    const { game, isHost, isSolo, isAIBattle, _animationPauseUntilMs } = get()
     if (!game || !isHost || game.phase === 'end') return
+    if (Date.now() < _animationPauseUntilMs) return
     // Solo B is always AI-controlled even if a stale/synced game snapshot loses
     // its autoBattleB flag. Spectator AI battles likewise never wait for input.
     const sideIsAuto = (side: 'A' | 'B', state: GameState) =>
@@ -182,7 +185,12 @@ export const useGameStore = create<Store>((set, get) => ({
     // SA doc 7.10: one AI action per tick so every move is visible (not batched)
     const ready = getReadyUnits(next)
     const toPlay = ready.find(u => sideIsAuto(u.side, next))
-    if (toPlay) next = autoPlayUnit(next, toPlay)
+    if (toPlay) {
+      const beforeAnimCount = next.log.filter(entry => entry.moveAnim).length
+      next = autoPlayUnit(next, toPlay)
+      const afterAnimCount = next.log.filter(entry => entry.moveAnim).length
+      if (afterAnimCount > beforeAnimCount) set({ _animationPauseUntilMs: Date.now() + 2400 })
+    }
     get()._applyGame(next)
   },
 
@@ -244,6 +252,9 @@ export const useGameStore = create<Store>((set, get) => ({
     const { game } = get()
     if (!game) return
     const next = doExecuteMove(game, { unitId, moveSlot, targetId, cardId: null })
+    if (next !== game && next.log.some((entry, index) => index >= game.log.length && entry.moveAnim)) {
+      set({ _animationPauseUntilMs: Date.now() + 3500 })
+    }
     get()._applyGame(next)
   },
 
@@ -268,6 +279,7 @@ export const useGameStore = create<Store>((set, get) => ({
       selectedCharIds: [], opponentCharIds: [],
       myDeckIds: [], opponentDeckIds: [],
       soloScore: null, pendingUnitId: null,
+      _animationPauseUntilMs: 0,
     })
   },
 
@@ -279,6 +291,7 @@ export const useGameStore = create<Store>((set, get) => ({
       myDeckIds: [], opponentDeckIds: [],
       soloScore: null, pendingUnitId: null,
       isAIBattle: false, isSolo: false,
+      _animationPauseUntilMs: 0,
     })
   },
 
@@ -289,6 +302,7 @@ export const useGameStore = create<Store>((set, get) => ({
       isSolo: false, isAIBattle: false, soloScore: null, game: null,
       selectedCharIds: [], opponentCharIds: [], selectedPiece: null, opponentPiece: null,
       myDeckIds: [], opponentDeckIds: [], pendingUnitId: null, _syncCb: null,
+      _animationPauseUntilMs: 0,
     })
   },
 }))

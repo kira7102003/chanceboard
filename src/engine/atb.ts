@@ -468,8 +468,8 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
       const critTag = crit ? ' <span class="dmg-crit">💥爆擊</span>' : ''
       // Group: show target name per line; single: attacker→target already in announcement
       log.push({ html: isGroup
-        ? `<b>${t.name}</b> <span class="dmg-num">-${hpLost}</span>${critTag}`
-        : `<span class="dmg-num">-${hpLost}</span>${critTag}`
+        ? `<b>${t.name}</b> 受到 ${hpLost} 傷害（HP <span class="dmg-num">-${hpLost}</span>）${critTag}`
+        : `<b>${t.name}</b> 受到 ${hpLost} 傷害（HP <span class="dmg-num">-${hpLost}</span>）${critTag}`
       })
 
       if (hasReflect) {

@@ -2315,7 +2315,7 @@ h2 {
 
 /* ── Move animation overlay — directional attack ──────────── */
 .move-anim-overlay {
-  position: fixed; inset: 0; z-index: 9999; pointer-events: none;
+  position: fixed; inset: 0; z-index: 9999; pointer-events: auto;
   display: flex; align-items: flex-end; justify-content: center;
   background: rgba(0,0,0,.42);
   animation: moveOverlayFade var(--ma-duration, 2.3s) ease-in-out forwards;
