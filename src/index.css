@@ -1587,7 +1587,11 @@ h2 {
   font-size: 9px; font-weight: 800; letter-spacing: 2px;
   color: rgba(200,161,90,.45);
   border-bottom: 1px solid rgba(200,161,90,.1);
+  border-top: 0; border-left: 0; border-right: 0; cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: inherit; text-align: left;
 }
+.log-panel-label b { color: var(--gold2); font-size: 15px; line-height: 1; }
 .log-panel {
   flex: 1; min-height: 0;
   overflow-y: auto; padding: 6px 14px;
@@ -1616,7 +1620,7 @@ h2 {
 .act-flow-close { margin-left: auto; }
 .act-who { min-width: 0; font-size: 13px; color: #aab; }
 .act-who b { color: #f0f0ff; font-size: 14px; }
-.act-who-sub { font-size: 10px; color: #556; margin-left: 6px; }
+.act-who-sub { font-size: 10px; color: #aeb5d0; margin-left: 6px; font-weight: 600; }
 /* 移動到行：flex-basis 設為內容寬度，確保有足夠空間時不換行 */
 .act-slotrow { 
   display: flex; align-items: center; gap: 4px; 
@@ -1624,7 +1628,7 @@ h2 {
   flex-basis: auto;
   min-width: 180px; /* 最小寬度確保三個按鈕+標籤能放在一行 */
 }
-.slotrow-label { font-size: 11px; color: #667; white-space: nowrap; flex-shrink: 0; }
+.slotrow-label { font-size: 11px; color: #c4cae0; white-space: nowrap; flex-shrink: 0; font-weight: 700; }
 .slotbtn { 
   min-width: 36px; /* 縮小一點讓位 */
   font-weight: 800; 
@@ -1780,6 +1784,26 @@ h2 {
 }
 .log-panel .log-line { color: #858dab; }
 .log-panel .log-line b { color: #c2c9e0; }
+.log-panel .log-line {
+  margin-bottom: 3px; padding: 4px 7px;
+  background: rgba(28,34,60,.72);
+  border: 1px solid rgba(130,145,195,.1);
+  box-shadow: inset 2px 0 0 rgba(200,161,90,.18);
+}
+.log-panel .log-line:nth-child(odd) { background: rgba(34,40,70,.8); }
+.battle-act-row .log-panel-wrap.collapsed {
+  flex: 0 0 38px; width: 38px; min-width: 38px; max-width: 38px;
+}
+.log-panel-wrap.collapsed .log-panel { display: none; }
+.log-panel-wrap.collapsed .log-panel-label {
+  flex: 1; padding: 8px 5px; border-bottom: 0;
+  flex-direction: column; justify-content: flex-start; gap: 8px;
+  writing-mode: vertical-rl; text-orientation: upright;
+  letter-spacing: 3px; color: var(--gold2);
+}
+.log-panel-wrap.collapsed .log-panel-label b {
+  writing-mode: horizontal-tb; font-size: 18px;
+}
 .act-panel {
   padding: 7px 12px;
   background: linear-gradient(180deg, rgba(9,13,30,.94), rgba(5,8,20,.96));

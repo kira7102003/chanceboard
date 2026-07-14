@@ -109,6 +109,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
   const [moveAnim,  setMoveAnim]  = useState<MoveAnim | null>(null)
   const [animKey,   setAnimKey]   = useState(0)
   const [showEndLog, setShowEndLog] = useState(false)
+  const [logCollapsed, setLogCollapsed] = useState(() => localStorage.getItem('cb_battle_log_collapsed') === '1')
   // pending destination slot per unit (preview before confirming with a skill/pass)
   const [pendingSlots, setPendingSlots] = useState<Record<string, 1|2|3>>({})
   // preview: clicking a non-active own unit shows their moves read-only
@@ -122,6 +123,10 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight
   }, [game?.log.length])
+
+  useEffect(() => {
+    localStorage.setItem('cb_battle_log_collapsed', logCollapsed ? '1' : '0')
+  }, [logCollapsed])
 
   // Clear picks whenever the acting unit changes (same as the reference's
   // per-turn actMovePicked/actPending reset in nextTurn()).
@@ -463,8 +468,11 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
           return (
             <div className="battle-act-row" ref={actRowRef}>
               {/* 戰鬥紀錄：整欄到底，手牌列不會蓋到它 */}
-              <div className="log-panel-wrap">
-                <div className="log-panel-label">戰鬥紀錄</div>
+              <div className={`log-panel-wrap${logCollapsed ? ' collapsed' : ''}`}>
+                <button className="log-panel-label" onClick={() => setLogCollapsed(v => !v)}
+                  title={logCollapsed ? '展開戰鬥紀錄' : '收合戰鬥紀錄'}>
+                  <span>戰鬥紀錄</span><b>{logCollapsed ? '›' : '‹'}</b>
+                </button>
                 <div className="log-panel" ref={logRef}>
                   {game.log.slice(-80).map((l, i) => (
                     <div key={i} className="log-line" dangerouslySetInnerHTML={{ __html: l.html }} />
