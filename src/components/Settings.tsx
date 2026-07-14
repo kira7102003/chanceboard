@@ -4,10 +4,9 @@ import { usePlayerStore } from '../store/playerStore'
 
 interface Props {
   onClose: () => void
-  onOpenAdmin: () => void
 }
 
-export default function Settings({ onClose, onOpenAdmin }: Props) {
+export default function Settings({ onClose }: Props) {
   const {
     coins, gems, ownedCharIds,
     setCoins, setGems, removeOwnedChar, clearCollection,
@@ -73,10 +72,6 @@ export default function Settings({ onClose, onOpenAdmin }: Props) {
           }
         </section>
 
-        <section className="settings-section">
-          <h3>進階管理</h3>
-          <button className="btn" onClick={onOpenAdmin}>開啟角色與圖片設定</button>
-        </section>
       </div>
     </div>
   )

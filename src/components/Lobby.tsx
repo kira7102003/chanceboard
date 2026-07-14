@@ -98,7 +98,7 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
     { icon: '🛒', label: '商店',     panelKey: 'shop' },
     { icon: '🤝', label: '雙人對戰', action: () => setShowOnline(v => !v) },
     { icon: '🛡', label: '隊伍',     panelKey: 'teams' },
-    { icon: '📖', label: '遊戲規則', action: undefined },
+    { icon: '🗂', label: '資料管理', action: onAdmin },
   ]
 
   return (
@@ -107,10 +107,7 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
       {panel === 'summon'     && <Summon     onClose={() => setPanel(null)} />}
       {panel === 'collection' && <Collection onClose={() => setPanel(null)} />}
       {panel === 'shop'       && <Shop       onClose={() => setPanel(null)} />}
-      {panel === 'settings'   && <Settings
-        onClose={() => setPanel(null)}
-        onOpenAdmin={() => { setPanel(null); onAdmin() }}
-      />}
+      {panel === 'settings'   && <Settings onClose={() => setPanel(null)} />}
       {panel === 'teams'      && (
         <Teams
           onClose={() => setPanel(null)}
