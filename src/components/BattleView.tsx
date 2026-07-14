@@ -464,7 +464,6 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
         {(() => {
           const au = readyUnits[0]
           const previewing = !!previewUnit && previewUnit.id !== au?.id
-          const waitingUnits = readyUnits.slice(1)
           return (
             <div className="battle-act-row" ref={actRowRef}>
               {/* 戰鬥紀錄：整欄到底，手牌列不會蓋到它 */}
@@ -503,11 +502,6 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                           <div className="act-flow">
                             <div className="act-who">
                               輪到【我方】<b style={{ color: EL_COLOR[au.element] }}>{EL_ICON[au.element]} {au.name}</b>
-                              {waitingUnits.length > 0 && (
-                                <span className="act-who-sub">
-                                  （待機：{waitingUnits.map(u => u.name).join('、')}）
-                                </span>
-                              )}
                             </div>
                             <MoveGrid
                               unit={au}
