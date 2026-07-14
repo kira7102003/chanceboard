@@ -2838,7 +2838,7 @@ h2 {
 /* Tab bar hidden on desktop */
 .dk-tabs       { display: none; }
 .dk-tab-hidden { /* visible on desktop */ }
-.dk-random-mobile { /* visible only on mobile */ }
+.dk-random-mobile { display: none; }
 .dk-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .dk-strip  { /* flows normally on desktop */ }
 .dk-cards  { /* flows normally on desktop */ }
@@ -2846,6 +2846,6 @@ h2 {
   display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding-bottom: 8px;
 }
 .dk-hint { /* visible on desktop */ }
-/* on desktop keep random btn in header hidden, show in footer */
-.dk-random-btn { display: none; }
+/* Keep random action in the header on every screen size. */
+.dk-random-btn { display: flex; }
 

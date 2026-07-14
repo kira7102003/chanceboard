@@ -81,9 +81,6 @@ export default function DeckBuild({ onConfirm }: Props) {
           <h2 style={{ margin: 0, whiteSpace: 'nowrap', fontSize: 'clamp(14px,4vw,20px)' }}>
             自訂牌組 — <span className={`side side-${mySide}`}>{mySide} 方</span>
           </h2>
-          <span className="hint" style={{ whiteSpace: 'nowrap' }}>
-            {selected.length}/{DECK_SIZE}
-          </span>
         </div>
         <button className="btn dk-random-btn" onClick={randomize}>
           🎲 {selected.length === 0 ? '隨機配置' : `補齊（+${DECK_SIZE - selected.length}）`}
@@ -152,9 +149,6 @@ export default function DeckBuild({ onConfirm }: Props) {
       <div className="dk-footer">
         <button className="btn primary" disabled={selected.length === 0} onClick={() => onConfirm(selected)}>
           {isSolo ? '確認牌組 — 開始挑戰' : '確認牌組 — 等待對手'}
-        </button>
-        <button className="btn dk-random-mobile" onClick={randomize}>
-          🎲 {selected.length === 0 ? '隨機配置' : `補齊（+${DECK_SIZE - selected.length}）`}
         </button>
         {selected.length < DECK_SIZE && (
           <span className="hint dk-hint">建議選滿 {DECK_SIZE} 張</span>
