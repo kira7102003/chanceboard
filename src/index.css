@@ -1001,7 +1001,7 @@ h2 {
 }
 .arena-divider {
   width: 1px; background: rgba(200,161,90,.18); align-self: stretch;
-  flex-shrink: 0; margin: 0 4px;
+  flex-shrink: 0; margin: 0 auto; /* auto：吃掉兩隊收攏後多出的寬度 */
 }
 
 /* ── Spotlight card ─────────────────────────────────────────── */
@@ -1055,7 +1055,9 @@ h2 {
 
 /* ── Slot layout — 階梯式：前=底 中=中 後=高 ────────────────── */
 .slots-row { display: flex; gap: 6px; align-items: stretch; padding-top: 0; overflow: visible; flex: 1; min-height: 0; }
-.slot-col  { flex: 1 1 0; display: flex; flex-direction: column; gap: 5px; max-width: 307px; min-width: 0; min-height: 0; transition: transform .25s ease; }
+/* max-width 綁卡片實際寬（高×24/43）：格子高度被壓矮時（如手機橫向）
+   欄寬跟著縮，人物之間不會留大空隙；多出的空間由中線 margin:auto 吸收 */
+.slot-col  { flex: 1 1 0; display: flex; flex-direction: column; gap: 5px; max-width: calc(var(--board-cell-h, 300px) * 24 / 43); min-width: 0; min-height: 0; transition: transform .25s ease; }
 .slot-name {
   font-size: 11px; font-weight: 900; letter-spacing: 3px;
   text-align: center; padding: 3px 0;
@@ -1623,7 +1625,6 @@ h2 {
   font-size: 16px; font-weight: 800; letter-spacing: 1px;
 }
 .act-confirm:disabled { opacity: .3; cursor: not-allowed; }
-.act-pass { padding: 3px 10px; font-size: 11px; }
 
 /* 卡面（照抄 .cardface 戰鬥尺寸 122×172：花色計數卡與花牌卡） */
 .cardface {
@@ -2424,7 +2425,9 @@ h2 {
   .dk-cards         { flex: 1; min-height: 0; overflow-y: auto; padding: 6px 8px; }
   .dk-footer        { padding: 6px 10px; flex-shrink: 0; flex-wrap: nowrap; border-top: 1px solid var(--border); }
   .dk-footer .btn   { font-size: 12px; }
-  .dk-random-btn    { display: flex; }
+  /* 加上 .dk-header 提高權重：下方 base 區的 .dk-random-btn{display:none}
+     寫在檔案較後面，同權重會蓋掉這條，手機上兩顆隨機鈕就都消失了 */
+  .dk-header .dk-random-btn { display: flex; }
   .dk-random-mobile { display: none; }
   .dk-hint          { display: none; }
   .deck-section-label { display: block; font-size: 8px; letter-spacing: 1.5px; padding: 6px 2px 2px; opacity: .6; }
@@ -2463,46 +2466,35 @@ h2 {
   .unit-spotlight-panel { display: none; }
 
   /* ── Character slots: compact sizes for short screens, same fan layout as web ── */
-  .battle-arena   { padding: 2px 6px; }
-  .slots-row      { gap: 3px; }
-  .slot-name      { font-size: 9px; letter-spacing: 1px; padding: 1px 0; }
-  .unit-card      { padding: 3px 5px; }
-  .unit-card-name { font-size: 10px; margin-bottom: 2px; }
-  .status-chips   { margin-top: 2px; }
-  .uc-hp          { font-size: 8px; }
-  .uc-timer       { font-size: 8px; }
+  .battle-arena    { padding: 2px 6px; }
+  .slots-row       { gap: 3px; }
+  .stack-slotlabel { font-size: 8px; letter-spacing: 1px; top: 2px; right: 5px; }
+  .uc-head         { padding: 3px 5px 8px; gap: 3px; }
+  .uc-el-icon      { width: 13px; height: 13px; font-size: 8px; }
+  .uc-name         { font-size: 9px; }
+  .uc-footer       { padding: 8px 5px 4px; gap: 2px; }
+  .uc-hpwrap       { height: 10px; }
+  .uc-hptext       { font-size: 7px; }
+  .uc-mini-stats   { font-size: 7px; }
+  .uc-tag          { font-size: 7px; }
 
-  /* ── Act row: compact on short screens ── */
-  .log-panel      { min-width: 70px; max-width: 120px; overflow-y: auto; font-size: 9px; }
-
-  /* ── Action area (RUP): no scroll, single-row skills ── */
-  .action-area    { overflow: hidden; }
-  .rup-hdr        { padding: 4px 10px; font-size: 11px; }
-  .rup-body       { padding: 5px 10px; gap: 4px; }
-  .rup-queue      { padding: 2px 10px; }
-  /* Hide skill images to save height */
-  .skill-img-wrap { display: none; }
-  /* Single row of 4 skill buttons — use remaining width */
-  .rup-skills-grid { flex-wrap: nowrap; gap: 4px; }
-  .skill-btn      { flex: 1; min-width: 0; max-width: none; padding: 3px 5px; gap: 2px; font-size: 11px; }
-  .skill-top      { gap: 3px; }
-  .skill-name     { font-size: 9px; }
-  .section-label  { display: none; }
-  /* Tap-friendly detail popup replaces the hover box on short/touch screens */
-  .act-infobtn        { display: flex; align-items: center; justify-content: center; }
-  .act-detail-backdrop { display: flex; }
-  .move-info-box      { display: none; }
-
-  /* ── Hand panel: compact ── */
-  .hand-panel     { height: 90px; overflow: hidden; padding: 4px 6px 4px 8px; gap: 3px; }
-  .hp-chips       { overflow: hidden; }
-  .hp-chip        { width: 46px; height: 54px; }
-  /* mobile: hide card images, show text icons */
-  .hp-chip-img    { display: none; }
-  .hp-chip:has(.hp-chip-img) .hp-icon { display: flex; }
-  .hp-icon        { font-size: 13px; }
-  .hp-pos-col     { min-width: 38px; }
-  .hp-pos-col .btn.sm { padding: 2px 4px; font-size: 10px; }
+  /* ── Act row: compact — new act-panel layout (log | 招式 | 手牌+出手) ── */
+  .log-panel-wrap  { flex-basis: 90px; min-width: 70px; max-width: 120px; }
+  .log-panel       { font-size: 9px; }
+  .act-panel       { gap: 4px; }
+  .act-who         { font-size: 11px; }
+  .act-who b       { font-size: 12px; }
+  .act-movegrid    { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 4px; }
+  .movebtn         { padding: 4px 7px; }
+  .movebtn-line1 b { font-size: 11px; }
+  /* 卡面縮小；描述在手機上藏起來（詳情走 hover/長按浮窗） */
+  .cardface        { width: 74px; height: 104px; padding: 8px 4px 12px; gap: 2px; }
+  .cf-name         { font-size: 8px; }
+  .cf-desc         { display: none; }
+  .cf-bigicon      { font-size: 20px; }
+  .cf-corner       { font-size: 9px; top: 2px; left: 5px; }
+  .cf-badge        { font-size: 9px; }
+  .act-confirm     { min-width: 84px; padding: 8px 12px; font-size: 13px; }
 }
 
 /* ══════════════════════════════════════════════════════════════

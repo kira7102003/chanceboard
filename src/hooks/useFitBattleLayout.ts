@@ -26,6 +26,10 @@ const SAFETY = 3
 
 export function useFitBattleLayout(refs: FitBattleLayoutRefs) {
   const rafRef = useRef<number | null>(null)
+  // Largest act-panel content seen so far: the row keeps that height even
+  // while showing shorter content (等待行動/查看), so the log panel and the
+  // 輪到… row stay put instead of jumping every turn.
+  const maxDesiredRef = useRef(0)
 
   useLayoutEffect(() => {
     const { battleMainRef, arenaRef, actRowRef, actionAreaRef, slotColRef } = refs
@@ -45,7 +49,8 @@ export function useFitBattleLayout(refs: FitBattleLayoutRefs) {
       if (mainH <= 0) return
 
       const actionAreaScrollH = actionAreaEl.scrollHeight
-      const desiredActRowH = actionAreaScrollH
+      maxDesiredRef.current = Math.max(maxDesiredRef.current, actionAreaScrollH)
+      const desiredActRowH = maxDesiredRef.current
 
       const minBoardH = mainH * BOARD_RATIO_MIN
       const maxActRowH = mainH - minBoardH
@@ -59,6 +64,9 @@ export function useFitBattleLayout(refs: FitBattleLayoutRefs) {
       // can't blow the card's aspect-ratio-derived width past its column
       // (mirrors the reference's max-height/max-width formulas, which were
       // both derived from the same viewport value and so stayed in sync).
+      // .slot-col's max-width is itself derived from --board-cell-h, so uncap
+      // it first — measuring under the previous value would lock cellH there.
+      arenaEl.style.setProperty('--board-cell-h', '9999px')
       const slotColW = slotColRef.current?.clientWidth
       if (slotColW && slotColW > 0) {
         const maxCellHByWidth = Math.floor(slotColW / CARD_ASPECT)
@@ -73,7 +81,10 @@ export function useFitBattleLayout(refs: FitBattleLayoutRefs) {
         const scaleFloor = 0.4 + boardRatioT * 0.2
         const scale = Math.max(scaleFloor, availableForActionArea / actionAreaScrollH)
         actionAreaEl.style.transform = `scale(${scale})`
-        actionAreaEl.style.overflowY = 'hidden'
+        // At the scale floor the content may still be taller than the row —
+        // keep it scrollable then, or the confirm row gets clipped away.
+        actionAreaEl.style.overflowY =
+          scale * actionAreaScrollH > availableForActionArea + 1 ? 'auto' : 'hidden'
       }
     }
 
