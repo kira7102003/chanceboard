@@ -438,7 +438,8 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
   const animationIsGroup = move.scope === '群' || visualTargets.length > 1
   const firstTarget = animationIsGroup ? undefined : visualTargets[0]
   const groupTargets = animationIsGroup ? visualTargets.map(t => ({ name: t.name, charId: t.characterId })) : undefined
-  const moveAnim  = { moveId: move.id, moveName: move.name, moveSlot: action.moveSlot, charName: u.name, charId: u.characterId, attackerSide: u.side as 'A' | 'B', targetSide: visualTargets[0]?.side ?? u.side, targetName: firstTarget?.name, targetCharId: firstTarget?.characterId, targetUnitId: firstTarget?.id, groupTargets, dealsDamage, hasTarget: visualTargets.length > 0, missed: false }
+  const selfTargetOnly = !dealsDamage && visualTargets.length === 1 && visualTargets[0].id === u.id
+  const moveAnim  = { moveId: move.id, moveName: move.name, moveSlot: action.moveSlot, charName: u.name, charId: u.characterId, attackerSide: u.side as 'A' | 'B', targetSide: visualTargets[0]?.side ?? u.side, targetName: firstTarget?.name, targetCharId: firstTarget?.characterId, targetUnitId: firstTarget?.id, groupTargets, dealsDamage, hasTarget: visualTargets.length > 0, selfTargetOnly, missed: false }
   const targetDesc = move.scope === '群'
     ? '⚔ 群體'
     : targets.length > 0

@@ -104,6 +104,7 @@ interface MoveAnim {
   color: string
   dealsDamage: boolean
   hasTarget: boolean
+  selfTargetOnly: boolean
   missed: boolean
 }
 
@@ -156,7 +157,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
       const entry = game.log[i]
       if (!entry.moveAnim) continue
       lastAnimIdx.current = i
-      const { moveId, moveName, moveSlot, charName, charId, attackerSide, targetSide, targetName, targetCharId, targetUnitId, groupTargets, dealsDamage, hasTarget, missed } = entry.moveAnim
+      const { moveId, moveName, moveSlot, charName, charId, attackerSide, targetSide, targetName, targetCharId, targetUnitId, groupTargets, dealsDamage, hasTarget, selfTargetOnly, missed } = entry.moveAnim
       const img = getMoveImg(moveId)
       const charImg = charId ? (getCharWideImg(charId) ?? getCharImg(charId)) : null
       const targetCharImg = targetCharId ? (getCharWideImg(targetCharId) ?? getCharImg(targetCharId)) : null
@@ -177,6 +178,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
         color: SLOT_COLOR[moveSlot as MoveSlot] ?? '#aaa',
         dealsDamage: dealsDamage ?? true,
         hasTarget: hasTarget ?? (!!targetName || !!groupTargets?.length),
+        selfTargetOnly: selfTargetOnly ?? false,
         missed: missed ?? false,
       })
       setAnimKey(k => k + 1)
@@ -346,7 +348,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                 </div>
                 <div className="ma-skill-name" style={{ color: moveAnim.color }}>{moveAnim.name}</div>
               </div>
-              {moveAnim.hasTarget && TargetZone}
+              {moveAnim.hasTarget && !moveAnim.selfTargetOnly && TargetZone}
             </div>
           </div>
         )
