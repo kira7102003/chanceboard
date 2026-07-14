@@ -1518,19 +1518,31 @@ h2 {
   transform-origin: top left;
 }
 
-/* 一行流式：輪到 X → 招式鈕 → 移動到 後/中/前（塞不下自動換行） */
+/* 一行流式：輪到 X → 招式鈕 → 移動到 後/中/前（寬屏保持一行，窄屏才換行） */
 .act-flow {
   display: flex; flex-wrap: wrap; align-items: center;
   gap: 6px 10px; padding: 2px 0; flex-shrink: 0;
+  /* 關鍵：讓招式鈕和移動到行優先適應，確保移動到行不被擠到下一行 */
 }
 .act-flow .act-who { flex: 0 0 auto; }
 .act-flow-close { margin-left: auto; }
 .act-who { min-width: 0; font-size: 13px; color: #aab; }
 .act-who b { color: #f0f0ff; font-size: 14px; }
 .act-who-sub { font-size: 10px; color: #556; margin-left: 6px; }
-.act-slotrow { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
-.slotrow-label { font-size: 11px; color: #667; white-space: nowrap; }
-.slotbtn { min-width: 40px; font-weight: 800; }
+/* 移動到行：flex-basis 設為內容寬度，確保有足夠空間時不換行 */
+.act-slotrow { 
+  display: flex; align-items: center; gap: 4px; 
+  flex-shrink: 1; /* 可以微縮但優先級高 */
+  flex-basis: auto;
+  min-width: 180px; /* 最小寬度確保三個按鈕+標籤能放在一行 */
+}
+.slotrow-label { font-size: 11px; color: #667; white-space: nowrap; flex-shrink: 0; }
+.slotbtn { 
+  min-width: 36px; /* 縮小一點讓位 */
+  font-weight: 800; 
+  flex-shrink: 1; /* 如果空間實在不足，縮小按鈕寬度 */
+  padding: 4px 9px; /* 也縮小 padding */
+}
 .slotbtn.current {
   border-color: var(--gold); color: var(--gold2);
   background: rgba(200,161,90,.12);
@@ -1541,6 +1553,13 @@ h2 {
 .act-movegrid {
   display: flex; flex-wrap: wrap; gap: 6px;
   flex: 1 1 auto; min-width: 0; align-items: center;
+  /* 寬屏時，讓招式按鈕優先換行，保護移動到行 */
+}
+/* 媒體查詢：寬屏時調整優先級 */
+@media (min-width: 1200px) {
+  .act-movegrid {
+    flex-basis: auto; /* 讓招式網格先消耗空間 */
+  }
 }
 .movebtn {
   display: flex; flex-direction: column; gap: 2px; text-align: left;
