@@ -558,11 +558,12 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                           <FlowerCardFace key={cardKey} card={card}
                             picked={pickedCard?.key === cardKey}
                             disabled={flowerUsedThisAction || lockedByOther}
+                            lockedByOther={lockedByOther}
                             onPick={() => {
                               setPickedCard(prev => prev?.key === cardKey ? null : { id: card.id, key: cardKey })
                               setPickedMove(null)
                             }}
-                            onDiscard={discardedThisAction || lockedByOther ? undefined : () => onDiscardCard(card.id)} />
+                            onDiscard={discardedThisAction || !!pickedCard ? undefined : () => onDiscardCard(card.id)} />
                         )
                       })}
                     </div>
@@ -811,8 +812,8 @@ function SuitCountCard({ slot, cardId, name, count, onDiscard }: {
   )
 }
 
-function FlowerCardFace({ card, picked, disabled, onPick, onDiscard }: {
-  card: Card; picked: boolean; disabled: boolean; onPick: () => void; onDiscard?: () => void
+function FlowerCardFace({ card, picked, disabled, lockedByOther, onPick, onDiscard }: {
+  card: Card; picked: boolean; disabled: boolean; lockedByOther: boolean; onPick: () => void; onDiscard?: () => void
 }) {
   const img = getCardImg(card.id)
   return (
@@ -825,6 +826,8 @@ function FlowerCardFace({ card, picked, disabled, onPick, onDiscard }: {
       }
       <div className="cf-name">{card.name}</div>
       {card.description && <div className="cf-desc">{card.description}</div>}
+      {picked && <div className="cf-selection-state is-picked">✓ 已選定</div>}
+      {lockedByOther && <div className="cf-selection-state is-locked">本次不可使用</div>}
       {onDiscard && <button className="cf-discard" title="棄牌" onClick={e => { e.stopPropagation(); onDiscard() }}>×</button>}
     </div>
   )

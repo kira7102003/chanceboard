@@ -1944,6 +1944,30 @@ h2 {
   border: 2px solid #ffe39a !important;
   box-shadow: 0 0 24px rgba(255,205,92,.7), 0 0 12px rgba(255,225,145,.45) inset;
 }
+.cf-selection-state {
+  position: absolute;
+  left: 7px;
+  right: 7px;
+  bottom: 7px;
+  z-index: 4;
+  padding: 4px 3px;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.cf-selection-state.is-picked {
+  color: #fff1b8;
+  border: 1px solid #d9ad43;
+  background: rgba(83, 55, 9, .94);
+  box-shadow: 0 0 12px rgba(217, 173, 67, .45);
+}
+.cf-selection-state.is-locked {
+  color: #c3c7d6;
+  border: 1px solid rgba(170, 177, 201, .38);
+  background: rgba(12, 15, 28, .9);
+}
 .cardface.picked::after {
   content: '✓ 已選'; position: absolute; left: 5px; bottom: 5px; z-index: 5;
   padding: 2px 6px; border-radius: 8px; background: #f0c65c;
