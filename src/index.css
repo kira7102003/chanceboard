@@ -848,7 +848,7 @@ h2 {
 /* ── Deck page ─────────────────────────────────────────────── */
 .deck-page {
   flex: 1; padding: 28px 32px; display: flex; flex-direction: column;
-  gap: 16px; max-width: 1200px; margin: 0 auto; width: 100%;
+  gap: 16px; max-width: 1200px; margin: 0 auto; width: 100%; position: relative;
 }
 .deck-page .dk-header h2 {
   color: #f1f3ff; text-shadow: 0 2px 8px rgba(0,0,0,.95), 0 0 14px rgba(90,174,238,.2);
@@ -877,6 +877,65 @@ h2 {
   position: relative;
 }
 .deck-card:hover { transform: translateY(-2px); border-color: rgba(200,161,90,.22); box-shadow: 0 4px 16px rgba(0,0,0,.4); }
+.dk-gathering .deck-card { animation: dkGather .5s ease-in both; pointer-events: none; }
+.dk-dealing .deck-card { pointer-events: none; }
+.deck-card.dk-card-dealt {
+  animation: dkCardDealt .38s cubic-bezier(.18,.8,.25,1.35) both;
+  z-index: 5; border-color: #ffe39a !important;
+}
+@keyframes dkGather {
+  0% { opacity: 1; transform: scale(1); filter: brightness(1); }
+  65% { opacity: .45; transform: scale(.72); filter: brightness(1.5); }
+  100% { opacity: .08; transform: scale(.18); filter: brightness(2); }
+}
+@keyframes dkCardDealt {
+  0% { transform: scale(.62) rotateY(75deg); box-shadow: 0 0 30px #ffe39a; }
+  60% { transform: scale(1.1) rotateY(0); box-shadow: 0 0 24px rgba(255,211,102,.85); }
+  100% { transform: scale(1); }
+}
+.dk-random-fx {
+  position: absolute; inset: 0; z-index: 900; display: flex; align-items: center; justify-content: center;
+  pointer-events: auto; overflow: hidden; border-radius: 14px;
+  background: radial-gradient(circle at center, rgba(54,42,105,.34), rgba(3,5,15,.08) 52%, transparent 75%);
+}
+.dk-random-stack { position: relative; width: 82px; height: 112px; filter: drop-shadow(0 0 20px rgba(200,161,90,.7)); }
+.dk-random-stack i {
+  position: absolute; inset: 0; border: 2px solid var(--gold); border-radius: 9px;
+  background: linear-gradient(145deg, #29204c, #090d23 70%);
+  box-shadow: inset 0 0 20px rgba(153,85,238,.35);
+  animation: dkStackShuffle .42s ease-in-out infinite alternate;
+}
+.dk-random-stack i:nth-child(1) { transform: rotate(-8deg) translateX(-8px); }
+.dk-random-stack i:nth-child(2) { transform: rotate(7deg) translateX(7px); animation-delay: -.12s; }
+.dk-random-stack i:nth-child(3) { transform: rotate(-3deg) translateY(-4px); animation-delay: -.24s; }
+.dk-random-stack i:nth-child(4) { transform: translateY(-8px); animation-delay: -.32s; }
+.dk-random-stack span {
+  position: absolute; inset: 0; z-index: 2; display: grid; place-items: center;
+  color: #fff0bd; font-size: 34px; text-shadow: 0 0 18px #fff, 0 0 32px var(--gold);
+  animation: dkStackGlow .5s ease-in-out infinite alternate;
+}
+.dk-random-fx > b {
+  position: absolute; left: 50%; top: 50%; z-index: 4;
+  color: #fff0bd; font-size: 24px; text-shadow: 0 0 14px var(--gold);
+  animation: dkDealFly 1.45s ease-out infinite;
+  animation-delay: var(--deal-delay);
+  opacity: 0;
+}
+.dk-random-label {
+  position: absolute; top: calc(50% + 78px); color: var(--gold2);
+  font-size: 12px; font-weight: 800; letter-spacing: 4px;
+  text-shadow: 0 2px 8px #000, 0 0 12px rgba(200,161,90,.5);
+}
+@keyframes dkStackShuffle { to { transform: translateX(8px) rotate(5deg); } }
+@keyframes dkStackGlow { to { transform: scale(1.18) rotate(18deg); } }
+@keyframes dkDealFly {
+  0% { opacity: 0; transform: translate(-50%,-50%) scale(.4); }
+  15% { opacity: 1; }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--deal-x)), calc(-50% + 34vh)) scale(1.15) rotate(220deg);
+  }
+}
 .deck-card.in-deck { background: linear-gradient(160deg, rgba(200,161,90,.18) 0%, var(--bg2) 70%); border-color: rgba(200,161,90,.45); }
 .deck-card-header { display: flex; gap: 9px; align-items: flex-start; }
 .deck-card-img {

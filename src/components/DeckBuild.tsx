@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { cards as allCards } from '../data/db'
 import { fillDeck } from '../engine/randomDeck'
@@ -18,16 +18,17 @@ const flowerCards = allCards.filter(c => !c.isSuitCard)
 // ── CardRow: stable top-level component so hooks don't reset ──────────────────
 interface CardRowProps {
   card: Card; cnt: number; total: number
+  pulse?: boolean
   onAdd: () => void; onRemove: () => void
 }
-function CardRow({ card, cnt, total, onAdd, onRemove }: CardRowProps) {
+function CardRow({ card, cnt, total, pulse, onAdd, onRemove }: CardRowProps) {
   const [showDesc, setShowDesc] = useState(false)
   const col    = SUIT_COLOR[card.color]
   const imgUrl = getCardImg(card.id)
 
   return (
     <div
-      className={`deck-card${cnt > 0 ? ' in-deck' : ''}`}
+      className={`deck-card${cnt > 0 ? ' in-deck' : ''}${pulse ? ' dk-card-dealt' : ''}`}
       style={{ borderTopColor: cnt > 0 ? col : undefined, borderTopWidth: cnt > 0 ? 2 : 1 }}
       onMouseEnter={() => setShowDesc(true)}
       onMouseLeave={() => setShowDesc(false)}
@@ -63,6 +64,12 @@ export default function DeckBuild({ onConfirm }: Props) {
   const { mySide, isSolo } = useGameStore()
   const [selected, setSelected] = useState<string[]>([])
   const [tab,      setTab]      = useState<'suit' | 'flower'>('suit')
+  const [randomPhase, setRandomPhase] = useState<'gather' | 'deal' | null>(null)
+  const [dealtCardId, setDealtCardId] = useState<string | null>(null)
+  const [dealTotal, setDealTotal] = useState(0)
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
+
+  useEffect(() => () => timersRef.current.forEach(clearTimeout), [])
 
   const countOf  = (id: string) => selected.filter(x => x === id).length
   const add      = (id: string) => { if (selected.length < DECK_SIZE) setSelected(s => [...s, id]) }
@@ -70,10 +77,57 @@ export default function DeckBuild({ onConfirm }: Props) {
     const idx = selected.lastIndexOf(id)
     if (idx !== -1) setSelected(s => { const a = [...s]; a.splice(idx, 1); return a })
   }
-  const randomize = () => setSelected(s => fillDeck(s))
+  const randomize = () => {
+    if (randomPhase) return
+    const base = [...selected]
+    const target = fillDeck(base)
+    const remaining = [...base]
+    const additions = target.filter(id => {
+      const idx = remaining.indexOf(id)
+      if (idx >= 0) { remaining.splice(idx, 1); return false }
+      return true
+    })
+    if (additions.length === 0) return
+
+    setDealTotal(additions.length)
+    setRandomPhase('gather')
+    const gatherTimer = setTimeout(() => {
+      setRandomPhase('deal')
+      additions.forEach((id, i) => {
+        const dealTimer = setTimeout(() => {
+          setSelected(s => [...s, id])
+          setDealtCardId(id)
+          const pulseTimer = setTimeout(() => setDealtCardId(null), 180)
+          timersRef.current.push(pulseTimer)
+          if (i === additions.length - 1) {
+            const finishTimer = setTimeout(() => setRandomPhase(null), 420)
+            timersRef.current.push(finishTimer)
+          }
+        }, i * 150)
+        timersRef.current.push(dealTimer)
+      })
+    }, 520)
+    timersRef.current.push(gatherTimer)
+  }
 
   return (
-    <div className="deck-page">
+    <div className={`deck-page${randomPhase === 'gather' ? ' dk-gathering' : ''}${randomPhase === 'deal' ? ' dk-dealing' : ''}`}>
+
+      {randomPhase && (
+        <div className="dk-random-fx" aria-hidden="true">
+          <div className="dk-random-stack">
+            <i /><i /><i /><i />
+            <span>✦</span>
+          </div>
+          {randomPhase === 'deal' && Array.from({ length: dealTotal }).map((_, i) => (
+            <b key={i} style={{
+              '--deal-x': `${(i - 4.5) * 8}vw`,
+              '--deal-delay': `${i * .15}s`,
+            } as React.CSSProperties}>◆</b>
+          ))}
+          <div className="dk-random-label">{randomPhase === 'gather' ? '牌組收集中' : '命運發牌中'}</div>
+        </div>
+      )}
 
       {/* ── Header ── */}
       <div className="dk-header">
@@ -82,7 +136,7 @@ export default function DeckBuild({ onConfirm }: Props) {
             自訂牌組 — <span className={`side side-${mySide}`}>{mySide} 方</span>
           </h2>
         </div>
-        <button className="btn dk-random-btn" onClick={randomize}>
+        <button className="btn dk-random-btn" disabled={!!randomPhase} onClick={randomize}>
           🎲 {selected.length === 0 ? '隨機配置' : `補齊（+${DECK_SIZE - selected.length}）`}
         </button>
       </div>
@@ -127,6 +181,7 @@ export default function DeckBuild({ onConfirm }: Props) {
             {suitCards.map(c => (
               <CardRow key={c.id} card={c}
                 cnt={countOf(c.id)} total={selected.length}
+                pulse={dealtCardId === c.id}
                 onAdd={() => add(c.id)} onRemove={() => remove(c.id)} />
             ))}
           </div>
@@ -138,6 +193,7 @@ export default function DeckBuild({ onConfirm }: Props) {
             {flowerCards.map(c => (
               <CardRow key={c.id} card={c}
                 cnt={countOf(c.id)} total={selected.length}
+                pulse={dealtCardId === c.id}
                 onAdd={() => add(c.id)} onRemove={() => remove(c.id)} />
             ))}
           </div>
@@ -147,7 +203,7 @@ export default function DeckBuild({ onConfirm }: Props) {
 
       {/* ── Footer ── */}
       <div className="dk-footer">
-        <button className="btn primary" disabled={selected.length === 0} onClick={() => onConfirm(selected)}>
+        <button className="btn primary" disabled={selected.length === 0 || !!randomPhase} onClick={() => onConfirm(selected)}>
           {isSolo ? '確認牌組 — 開始挑戰' : '確認牌組 — 等待對手'}
         </button>
       </div>
