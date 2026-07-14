@@ -269,7 +269,8 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
       )}
       {/* ── Move animation overlay — directional ── */}
       {moveAnim && (() => {
-        const defFlip = moveAnim.attackerSide === 'A'
+        const attackFromLeft = moveAnim.attackerSide === 'A'
+        const mirrorImages = !attackFromLeft
 
         const Portrait = ({ img, name, flip }: { img: string|null; name: string; flip: boolean }) => (
           <>
@@ -289,13 +290,13 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                 <div className="ma-group-row">
                   {moveAnim.groupTargets.map((t, i) => (
                     <div key={i}>
-                      <Portrait img={t.charImg} name={t.name} flip={defFlip} />
+                      <Portrait img={t.charImg} name={t.name} flip={mirrorImages} />
                     </div>
                   ))}
                 </div>
               )
               : moveAnim.targetName
-                ? <Portrait img={moveAnim.targetCharImg} name={moveAnim.targetName} flip={defFlip} />
+                ? <Portrait img={moveAnim.targetCharImg} name={moveAnim.targetName} flip={mirrorImages} />
                 : <div className="ma-no-img" style={{ opacity: .15 }}>⚔</div>
             }
           </div>
@@ -303,12 +304,15 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
 
         return (
           <div className="move-anim-overlay" key={animKey}>
-            <div className="ma-battle-row">
+            <div className={`ma-battle-row ${attackFromLeft ? 'ma-from-left' : 'ma-from-right'}`}>
               <div className="ma-zone-skill">
                 <div className="ma-skill-wrap">
                   {moveAnim.img
                     ? <img src={moveAnim.img} className="ma-skill-img" alt=""
-                        style={{ filter: `drop-shadow(0 0 18px ${moveAnim.color}cc)` }} />
+                        style={{
+                          filter: `drop-shadow(0 0 18px ${moveAnim.color}cc)`,
+                          transform: mirrorImages ? 'scaleX(-1)' : undefined,
+                        }} />
                     : <div className="ma-skill-empty" style={{ color: moveAnim.color }}>⚡</div>
                   }
                 </div>

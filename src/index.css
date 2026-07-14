@@ -2001,6 +2001,7 @@ h2 {
   flex: 2; display: flex; flex-direction: column; align-items: center; gap: 7px;
   animation: maCharIn 2.4s ease-in-out forwards;
 }
+.ma-battle-row.ma-from-right { flex-direction: row-reverse; }
 
 /* Target zone — fades in, then shakes when skill arrives */
 .ma-zone-target {
