@@ -7,8 +7,9 @@ import Collection from './Collection'
 import Shop       from './Shop'
 import Summon     from './Summon'
 import Teams      from './Teams'
+import Settings   from './Settings'
 
-type Panel = 'summon' | 'collection' | 'shop' | 'teams' | null
+type Panel = 'summon' | 'collection' | 'shop' | 'teams' | 'settings' | null
 
 interface Props {
   onJoin:        (roomId: string) => void
@@ -106,6 +107,10 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
       {panel === 'summon'     && <Summon     onClose={() => setPanel(null)} />}
       {panel === 'collection' && <Collection onClose={() => setPanel(null)} />}
       {panel === 'shop'       && <Shop       onClose={() => setPanel(null)} />}
+      {panel === 'settings'   && <Settings
+        onClose={() => setPanel(null)}
+        onOpenAdmin={() => { setPanel(null); onAdmin() }}
+      />}
       {panel === 'teams'      && (
         <Teams
           onClose={() => setPanel(null)}
@@ -180,7 +185,7 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
 
           {/* Bottom row */}
           <div style={{ display: 'flex', gap: 8 }}>
-            <button className="lv2-btn-settings" style={{ flex: 1 }} onClick={onAdmin}>
+            <button className="lv2-btn-settings" style={{ flex: 1 }} onClick={() => setPanel('settings')}>
               <span>⚙</span><span>設定</span>
             </button>
             <button className="lv2-btn-settings" style={{ flex: 'none', gap: 6 }}

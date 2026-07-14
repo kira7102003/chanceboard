@@ -16,6 +16,10 @@ interface PlayerState {
   unlockChar: (id: string) => void
   saveTeam:   (team: Omit<SavedTeam, 'id'>) => void
   deleteTeam: (id: string) => void
+  setCoins: (n: number) => void
+  setGems: (n: number) => void
+  removeOwnedChar: (id: string) => void
+  clearCollection: () => void
 }
 
 export const usePlayerStore = create<PlayerState>()(
@@ -51,6 +55,12 @@ export const usePlayerStore = create<PlayerState>()(
       deleteTeam: (id) => set(s => ({
         savedTeams: s.savedTeams.filter(t => t.id !== id),
       })),
+      setCoins: (n) => set({ coins: Math.max(0, Math.floor(n)) }),
+      setGems: (n) => set({ gems: Math.max(0, Math.floor(n)) }),
+      removeOwnedChar: (id) => set(s => ({
+        ownedCharIds: s.ownedCharIds.filter(charId => charId !== id),
+      })),
+      clearCollection: () => set({ ownedCharIds: [] }),
     }),
     { name: 'cb_player' }
   )
