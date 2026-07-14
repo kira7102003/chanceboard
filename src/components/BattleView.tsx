@@ -703,7 +703,6 @@ function MoveGrid({ unit, clock, suitInHand, picked, onPick, readOnly }: {
             <div className="movebtn-line1">
               <b>{move.name}</b>
               <span className={`suitchip sc-${slot}`}>{slot}×{need}</span>
-              {suitInHand && !canUse && <span className="movebtn-lack">{have}/{need}</span>}
               {onCD && <span className="movebtn-cdchip">⏳冷卻中</span>}
             </div>
           </button>
