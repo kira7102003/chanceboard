@@ -1076,25 +1076,38 @@ h2 {
   max-width: 100%;
   align-self: center;
   overflow: visible;
+  /* 照抄參考版 .cell：格子有底色 + 陣營色頂邊 */
+  background: linear-gradient(180deg, rgba(14,18,40,.5) 0%, rgba(8,10,24,.5) 100%);
+  border-radius: 10px;
+  border-top: 3px solid transparent;
+}
+.slot-col-my    .slot-cards-stack { border-top-color: #5aaeee; box-shadow: 0 0 14px rgba(90,174,238,.1) inset; }
+.slot-col-enemy .slot-cards-stack { border-top-color: #ee7744; box-shadow: 0 0 14px rgba(238,120,60,.1) inset; }
+
+/* 前/中/後 小字標在格子右上角（照抄參考版 .slotlabel） */
+.stack-slotlabel {
+  position: absolute; top: 4px; right: 8px; z-index: 6;
+  font-size: 10px; font-weight: 900; letter-spacing: 2px;
+  text-shadow: 0 0 6px currentColor, 0 1px 3px rgba(0,0,0,.9);
+  pointer-events: none;
 }
 .slot-cards-stack > .unit-card {
   position: absolute; top: 0; left: 0; right: 0; bottom: 0; width: 100%;
   transition: transform .25s ease, box-shadow .2s, opacity .25s ease;
 }
+/* 照抄參考版疊卡：最前張完全不透明，後面的卡側探出、微降透明度 */
 .slot-cards-stack > .unit-card:nth-child(1) { z-index: 3; }
-/* front card 50% transparent when stacked (single card stays opaque) */
-.slot-cards-stack > .unit-card:not(:only-child):nth-child(1) { opacity: 0.5; }
 
-/* fan: back cards peek toward 後, semi-transparent */
+/* fan: back cards peek toward 後, slightly dimmed */
 .slot-stack-left-far  > .unit-card:nth-child(2),
-.slot-stack-left-near > .unit-card:nth-child(2) { z-index: 2; transform: translateX(-15%); opacity: .55; }
+.slot-stack-left-near > .unit-card:nth-child(2) { z-index: 2; transform: translateX(-15%); opacity: .75; }
 .slot-stack-left-far  > .unit-card:nth-child(3),
-.slot-stack-left-near > .unit-card:nth-child(3) { z-index: 1; transform: translateX(-25%); opacity: .35; }
+.slot-stack-left-near > .unit-card:nth-child(3) { z-index: 1; transform: translateX(-25%); opacity: .55; }
 
 .slot-stack-right-far  > .unit-card:nth-child(2),
-.slot-stack-right-near > .unit-card:nth-child(2) { z-index: 2; transform: translateX(15%);  opacity: .55; }
+.slot-stack-right-near > .unit-card:nth-child(2) { z-index: 2; transform: translateX(15%);  opacity: .75; }
 .slot-stack-right-far  > .unit-card:nth-child(3),
-.slot-stack-right-near > .unit-card:nth-child(3) { z-index: 1; transform: translateX(25%);  opacity: .35; }
+.slot-stack-right-near > .unit-card:nth-child(3) { z-index: 1; transform: translateX(25%);  opacity: .55; }
 
 /* Hover: spread stacked cards, all opaque — no size change */
 .slot-col { position: relative; }
@@ -1153,39 +1166,83 @@ h2 {
   box-shadow: 0 0 18px rgba(90,174,238,.18), 0 0 5px rgba(90,174,238,.25) inset;
 }
 
-.unit-card-name {
-  font-size: 12px; font-weight: 700; margin-bottom: 5px; letter-spacing: .3px;
-}
-.uc-portrait {
-  width: 100%; flex: 1; min-height: 0;
-  border-radius: 10px 10px 0 0; margin-bottom: 0; position: relative; overflow: hidden;
+/* ── UnitCard 內容層 — 照抄參考版 renderUnitBlock()：
+   立繪鋪滿背景（.unit-art）、名字列疊頂端（.unit-head）、
+   血條+ATK/DEF/SPD+狀態標籤疊底端（.unit-footer） ─────────── */
+.uc-art {
+  position: absolute; inset: 0; overflow: hidden; border-radius: 10px;
   background: var(--bg2);
 }
-.uc-portrait-img {
+.uc-art-img {
   position: absolute; inset: 0; width: 100%; height: 100%;
   object-fit: contain; object-position: center bottom;
   display: block;
 }
-.uc-portrait-name {
-  position: absolute; bottom: 0; left: 0; right: 0;
-  background: linear-gradient(0deg, rgba(0,0,0,.72) 0%, transparent 100%);
-  font-size: 11px; font-weight: 700; padding: 8px 5px 3px; letter-spacing: .3px;
-}
-.uc-dead-overlay {
+.uc-art-fallback {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 34px; font-weight: 900; opacity: .3;
+}
+.uc-head {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 2;
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 6px 10px;
+  background: linear-gradient(180deg, rgba(0,0,0,.78) 0%, rgba(0,0,0,.4) 55%, transparent 100%);
+}
+.uc-el-icon {
+  width: 18px; height: 18px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; border-radius: 50%;
+  background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.18);
+}
+.uc-name {
+  font-size: 12px; font-weight: 800; letter-spacing: .3px; color: #f0f0ff;
+  text-shadow: 0 1px 4px rgba(0,0,0,.9);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+}
+.uc-footer {
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 2;
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 12px 6px 5px;
+  background: linear-gradient(0deg, rgba(0,0,0,.85) 0%, rgba(0,0,0,.5) 60%, transparent 100%);
+}
+/* 血條 13px 高、HP 數字疊在條內置中（照抄 .hpwrap/.hptext） */
+.uc-hpwrap {
+  position: relative; height: 13px;
+  background: rgba(0,0,0,.7); border-radius: 4px; overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.9), 0 1px 0 rgba(255,255,255,.04);
+}
+.uc-hpbar {
+  height: 100%; border-radius: 4px;
+  transition: width .4s cubic-bezier(.2,0,.1,1);
+}
+.uc-hptext {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 800; color: #fff;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 2px rgba(0,0,0,.95);
+}
+.uc-mini-stats {
+  font-size: 9px; font-weight: 700; color: #c8d0ee;
+  font-variant-numeric: tabular-nums; letter-spacing: .3px;
+  text-shadow: 0 1px 3px rgba(0,0,0,.9);
+}
+.uc-tags { display: flex; flex-wrap: wrap; gap: 2px; }
+.uc-tag {
+  font-size: 8px; padding: 1px 5px; border-radius: 8px; font-weight: 700;
+  background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.14); color: #b8c0dd;
+  white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+}
+.uc-tag-next { border-color: rgba(200,161,90,.4); color: #e8c880; }
+.uc-tag-status { border-color: rgba(120,80,200,.35); color: #b499e8; background: rgba(100,70,180,.25); }
+.uc-dead-overlay {
+  position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center;
   background: rgba(0,0,0,.35);
   font-size: 13px; font-weight: 900; letter-spacing: 2px;
   color: rgba(180,60,60,.9); text-shadow: 0 1px 6px rgba(0,0,0,.9);
 }
-.unit-card-row {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 2px 6px 4px; margin-top: 0;
-}
-.uc-hp    { font-size: 9px; color: #2c2c48; font-variant-numeric: tabular-nums; }
-.uc-timer { font-size: 9px; color: #22223a; font-variant-numeric: tabular-nums; }
-.uc-timer-ready { color: var(--gold); font-weight: 800; text-shadow: 0 0 10px rgba(200,161,90,.6); }
 
-/* ── HP bar ─────────────────────────────────────────────────── */
+/* ── HP bar（其他畫面仍用） ─────────────────────────────────── */
 .hp-bar-wrap {
   height: 5px; background: rgba(0,0,0,.7); border-radius: 4px; overflow: hidden;
   box-shadow: inset 0 1px 3px rgba(0,0,0,.9), 0 1px 0 rgba(255,255,255,.04);
@@ -1432,20 +1489,212 @@ h2 {
   border-top: 1px solid rgba(200,161,90,.08);
 }
 
-/* ── Log panel（左欄，寬度≈棋盤一格） ─────────────────────── */
-.log-panel {
-  flex: 0 0 calc((100% - 60px) / 6); min-width: 100px; max-width: 200px;
-  overflow-y: auto; padding: 6px 14px;
+/* ── Log panel（左欄，寬度≈棋盤一格，照抄 #logPanelWrap：標題+內捲動） ── */
+.log-panel-wrap {
+  flex: 0 0 calc((100% - 60px) / 6); min-width: 110px; max-width: 220px;
+  display: flex; flex-direction: column; min-height: 0;
   background: linear-gradient(180deg, rgba(8,9,20,.98) 0%, rgba(4,5,13,.98) 100%);
   border-right: 1px solid rgba(200,161,90,.07);
+}
+.log-panel-label {
+  flex-shrink: 0; padding: 4px 14px 2px;
+  font-size: 9px; font-weight: 800; letter-spacing: 2px;
+  color: rgba(200,161,90,.45);
+  border-bottom: 1px solid rgba(200,161,90,.1);
+}
+.log-panel {
+  flex: 1; min-height: 0;
+  overflow-y: auto; padding: 6px 14px;
   font-size: 10px; line-height: 1.8;
   scrollbar-width: thin; scrollbar-color: rgba(200,161,90,.1) transparent;
 }
 
-/* ── Right column (action + hand stacked) ─────────────────── */
-.battle-right {
-  flex: 1; display: flex; flex-direction: column; min-width: 0;
+/* ── 出手面板（右欄，照抄 #actPanel）────────────────────────── */
+.act-panel {
+  flex: 1; min-width: 0; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 6px 12px 8px;
+  background: linear-gradient(180deg, rgba(10,13,28,.98) 0%, rgba(6,7,16,.98) 100%);
+  scrollbar-width: thin; scrollbar-color: rgba(200,161,90,.1) transparent;
+  /* transform-scale fallback applied by useFitBattleLayout() */
+  transform-origin: top left;
 }
+
+/* 輪到 X ＋ 移動到：前/中/後（照抄 #actHintRow） */
+.act-hint-row {
+  display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  padding: 2px 0;
+}
+.act-who { flex: 1; min-width: 0; font-size: 13px; color: #aab; }
+.act-who b { color: #f0f0ff; font-size: 14px; }
+.act-who-sub { font-size: 10px; color: #556; margin-left: 6px; }
+.act-slotrow { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.slotrow-label { font-size: 11px; color: #667; white-space: nowrap; }
+.slotbtn { min-width: 40px; font-weight: 800; }
+.slotbtn.current {
+  border-color: var(--gold); color: var(--gold2);
+  background: rgba(200,161,90,.12);
+  box-shadow: 0 0 10px rgba(200,161,90,.25);
+}
+
+/* 招式大按鈕 grid（照抄 #act-movegrid / .movebtn）：寬螢幕一排四欄，窄幅自動換行 */
+.act-movegrid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 6px;
+  flex-shrink: 0;
+}
+.movebtn {
+  display: flex; flex-direction: column; gap: 2px; text-align: left;
+  padding: 6px 10px; border-radius: 8px; cursor: pointer;
+  background: linear-gradient(155deg, var(--bg4), var(--bg3));
+  border: 1px solid rgba(255,255,255,.1); color: var(--text);
+  font: inherit; font-size: 11px;
+  transition: border-color .15s, box-shadow .15s, transform .08s;
+}
+.movebtn:not(:disabled):hover {
+  transform: translateY(-1px);
+  border-color: rgba(200,161,90,.4);
+  box-shadow: 0 4px 16px rgba(0,0,0,.5);
+}
+.movebtn:disabled { opacity: .35; cursor: not-allowed; }
+.movebtn.movebtn-ro:disabled { opacity: .8; cursor: default; }
+.movebtn.picked {
+  border-color: var(--gold);
+  background: linear-gradient(155deg, rgba(60,48,20,.9), var(--bg3));
+  box-shadow: 0 0 14px rgba(200,161,90,.3), 0 0 3px rgba(200,161,90,.4) inset;
+}
+.movebtn-line1 { display: flex; align-items: center; gap: 6px; }
+.movebtn-line1 b { font-size: 12px; color: #e8e8f8; }
+.movebtn-lack { font-size: 9px; color: #cc4444; font-weight: 800; }
+.movebtn-cdchip {
+  font-size: 9px; color: #889; background: rgba(0,0,0,.5);
+  padding: 1px 5px; border-radius: 3px;
+}
+.movebtn-stats { font-size: 10px; color: #8890b8; font-variant-numeric: tabular-nums; }
+.movebtn-targetrule { font-size: 9px; color: #6a8a7a; }
+.movebtn-desc { font-size: 9px; color: #556; line-height: 1.45; }
+.movebtn-blocked-warn {
+  grid-column: 1 / -1; font-size: 10px; color: #cc5555;
+  padding: 4px 8px; background: rgba(200,60,60,.06);
+  border: 1px solid rgba(200,60,60,.2); border-radius: 6px;
+}
+
+/* 花色 chip（照抄 .suitchip：劍紅 槍綠 法藍 願黃） */
+.suitchip {
+  font-size: 9px; font-weight: 800; padding: 1px 6px; border-radius: 8px;
+  white-space: nowrap; flex-shrink: 0;
+}
+.suitchip.sc-劍 { background: #4a1f1f; color: #ff8f8f; }
+.suitchip.sc-槍 { background: #1f3a20; color: #8fe08f; }
+.suitchip.sc-法 { background: #1c2c4a; color: #8fbaff; }
+.suitchip.sc-願 { background: #463a12; color: #ffe08f; }
+
+/* 底列：花色計數卡 + 花牌區 + 出手鈕（照抄 #actCardsRow） */
+.act-cards-row {
+  display: flex; gap: 8px; align-items: stretch; flex-shrink: 0;
+  margin-top: auto; padding-top: 4px;
+  border-top: 1px solid rgba(200,161,90,.07);
+}
+.suit-count-row { display: flex; gap: 5px; flex-shrink: 0; }
+.act-card-zone {
+  flex: 1; min-width: 0; display: flex; gap: 5px; align-items: stretch;
+  overflow-x: auto; scrollbar-width: thin;
+  scrollbar-color: rgba(200,161,90,.1) transparent;
+}
+.act-confirm-col {
+  margin-left: auto; flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 4px; align-self: stretch;
+}
+.act-confirm {
+  flex: 1; min-width: 120px; padding: 12px 20px;
+  font-size: 16px; font-weight: 800; letter-spacing: 1px;
+}
+.act-confirm:disabled { opacity: .3; cursor: not-allowed; }
+.act-pass { padding: 3px 10px; font-size: 11px; }
+
+/* 卡面（照抄 .cardface 戰鬥尺寸 122×172：花色計數卡與花牌卡） */
+.cardface {
+  position: relative; width: 122px; height: 172px; border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.14); flex-shrink: 0; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; padding: 14px 6px 18px;
+  cursor: default; transition: transform .15s, box-shadow .15s, border-color .15s;
+  background: linear-gradient(155deg, var(--bg4), var(--bg3));
+}
+.cardface.mini { width: 64px; height: 88px; padding: 8px 3px 12px; gap: 2px; }
+.cardface.suit-劍 { background: linear-gradient(155deg, #3a1616 0%, #181b26 78%); border-color: #7a3232; }
+.cardface.suit-槍 { background: linear-gradient(155deg, #123a1a 0%, #181b26 78%); border-color: #2c7a3f; }
+.cardface.suit-法 { background: linear-gradient(155deg, #122a48 0%, #181b26 78%); border-color: #2c5a9a; }
+.cardface.suit-願 { background: linear-gradient(155deg, #463a12 0%, #181b26 78%); border-color: #9a7a2c; }
+.cardface.suit-flower { background: linear-gradient(155deg, #2a1d40 0%, #181b26 78%); border-color: #6a4fa8; cursor: pointer; }
+.cardface.suit-flower:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,.5); }
+.cardface.picked {
+  transform: translateY(-8px);
+  border-color: var(--gold) !important;
+  box-shadow: 0 0 16px rgba(200,161,90,.4), 0 8px 20px rgba(0,0,0,.6);
+}
+.cardface.cf-empty { opacity: .3; }
+.cf-img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; display: block; opacity: .85;
+}
+.cf-corner {
+  position: absolute; top: 4px; left: 7px; z-index: 2;
+  font-size: 11px; font-weight: 900;
+  text-shadow: 0 1px 3px rgba(0,0,0,.9);
+}
+.cf-bigicon { font-size: 32px; font-weight: 900; z-index: 1; line-height: 1; }
+.cf-name {
+  z-index: 2; font-size: 11px; font-weight: 800; text-align: center; color: #e8e8f5;
+  text-shadow: 0 1px 3px rgba(0,0,0,.95);
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cardface.mini .cf-name { font-size: 8px; }
+/* 花牌顯示效果說明（照抄參考版卡面小字） */
+.cf-desc {
+  z-index: 2; font-size: 8px; color: #9aa0c0; text-align: center;
+  line-height: 1.4; padding: 0 4px; max-height: 46px; overflow: hidden;
+  text-shadow: 0 1px 3px rgba(0,0,0,.9);
+}
+.cf-badge {
+  position: absolute; bottom: 5px; right: 6px; z-index: 2;
+  font-size: 11px; font-weight: 900; color: #fff;
+  font-variant-numeric: tabular-nums;
+  background: rgba(10,12,20,.85); border: 1px solid rgba(255,255,255,.5);
+  border-radius: 10px; padding: 1px 8px; line-height: 1.4;
+}
+.cf-discard {
+  position: absolute; top: 1px; right: 3px; z-index: 3;
+  background: none; border: none; padding: 2px; cursor: pointer;
+  font-size: 11px; line-height: 1; color: rgba(220,90,90,.4);
+  transition: color .12s;
+}
+.cardface:hover .cf-discard { color: rgba(230,90,90,.9); }
+.cf-discard:hover { color: #ff4444 !important; }
+
+/* 自動戰鬥切換鈕（照抄 #autoBattleBtn：亮起=金色） */
+.auto-toggle { white-space: nowrap; }
+.auto-toggle.on {
+  border-color: var(--gold); color: var(--gold2);
+  background: rgba(200,161,90,.12);
+  box-shadow: 0 0 10px rgba(200,161,90,.3);
+}
+
+/* 順序條兩行卡（照抄 .obchip：名字/時間兩行 + 陣營色左邊） */
+.atb-chip {
+  flex-direction: column; align-items: flex-start; gap: 0;
+  padding: 2px 8px 3px; border-radius: 6px; border-left-width: 3px;
+}
+.atb-chip .atb-name { font-size: 10px; font-weight: 700; white-space: nowrap; line-height: 1.3; }
+.atb-chip .atb-time { font-size: 9px; opacity: .75; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.atb-chip.atb-A { border-left-color: #5aaeee; }
+.atb-chip.atb-B { border-left-color: #ee7744; }
+.atb-chip.atb-ready {
+  border-color: rgba(200,161,90,.75); color: #ffe9b0;
+  background: rgba(200,161,90,.08);
+  box-shadow: 0 0 12px rgba(200,161,90,.3);
+}
+.atb-chip.atb-ready.atb-A { border-left-color: #5aaeee; }
+.atb-chip.atb-ready.atb-B { border-left-color: #ee7744; }
 
 /* ── Hand panel ─────────────────────────────────────────────── */
 .hand-panel {

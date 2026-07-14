@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { useGameStore } from '../store/gameStore'
 import type { Unit } from '../types/unit'
 import type { Card } from '../types/card'
-import type { MoveSlot } from '../types/move'
+import type { Move, MoveSlot } from '../types/move'
 import { getReadyUnits } from '../engine/atb'
+import { effectiveATK, effectiveDEF, effectiveSPD } from '../engine/combat'
 import ScorePanel from './ScorePanel'
 import { getCharImg, getCharWideImg, getMoveImg, getCardImg } from '../utils/charStore'
 import { useFitBattleLayout } from '../hooks/useFitBattleLayout'
@@ -17,10 +18,53 @@ function getSlotLabel(_side: 'A' | 'B', slot: number): string {
   return '後'
 }
 const EL_COLOR: Record<string, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee' }
+const EL_ICON:  Record<string, string> = { '劍': '⚔', '槍': '🔫', '法': '✨' }
+const SUIT_ICON: Record<string, string> = { '劍': '⚔', '槍': '🔫', '法': '✨', '願': '🌠' }
 const MOVE_SLOTS: MoveSlot[] = ['劍', '槍', '法', '願']
-const SLOT_LABEL: Record<MoveSlot, string> = { '劍': '刀', '槍': '槍', '法': '法', '願': '願', '被': '' }
 const SLOT_COLOR: Record<MoveSlot, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee', '願': '#ddaa22', '被': '#666' }
 const SUIT_FOR: Record<string, string> = { '劍': 'red', '槍': 'green', '法': 'blue', '願': 'yellow' }
+
+// Suit cards from data/db (ids stable): shown as the always-visible count row
+// in the act panel, mirroring the reference's #suit-count-row card faces.
+const SUIT_CARDS: Array<{ slot: MoveSlot; id: string; name: string }> = [
+  { slot: '劍', id: '001', name: '刀劍(Sword)' },
+  { slot: '槍', id: '002', name: '槍炮(Gun)' },
+  { slot: '法', id: '003', name: '魔法(Magic)' },
+  { slot: '願', id: '004', name: '心願(Wish)' },
+]
+
+// StatusKey → 顯示名稱（參考版卡片標籤用「ATK+(30%) 常駐」這種格式）
+const STATUS_LABEL: Record<string, string> = {
+  hpPlus: 'HP+', hpMinus: 'HP-', atkPlus: 'ATK+', atkMinus: 'ATK-',
+  defPlus: 'DEF+', defMinus: 'DEF-', spdPlus: 'SPD+', spdMinus: 'SPD-',
+  batPlus: 'BAT+', batMinus: 'BAT-', sureHit: '必中', evasion: '迴避',
+  sealed: '封招', rooted: '禁足', confused: '混亂', hidden: '隱身',
+  burning: '燃燒', frozen: '凍結', damageReduction: '減傷', linked: '連動',
+  liberated: '解放', shield: '護盾', paralyzed: '麻痺', empowered: '強擊',
+  awakened: '覺醒', lucky: '幸運', counter: '反擊', charged: '帶電',
+}
+
+// 常駐判定：battle-start passives 給超大 expiresAt 表示整場有效
+const PERMANENT_TICKS = 6000
+
+function statusTagText(key: string, mode: string, value: number, remainTicks: number): string {
+  const label = STATUS_LABEL[key] ?? key
+  const mag = mode === 'pct'
+    ? (value ? `(${Math.round(value * 100)}%)` : '')
+    : (value ? `+${value}` : '')
+  const remain = remainTicks >= PERMANENT_TICKS ? '常駐' : `${Math.max(0, Math.ceil(remainTicks / 10))}s`
+  return `${label}${mag} ${remain}`
+}
+
+// Ported from the reference's moveTargetRuleShort(): one-line targeting rule
+function moveTargetRule(move: Move): string | null {
+  if (move.powerRatio == null) return null
+  const grp = move.scope === '群'
+  if (move.rangeType === '劍') return '🎯近戰・需前排・' + (grp ? '鏡像群體' : '鏡像單體')
+  if (move.rangeType === '槍') return '🎯遠程・' + (grp ? '最近一格全體' : '最近敵人')
+  if (move.rangeType === '法') return '🎯法系・不需前排・' + (grp ? '交錯群體' : '交錯單體')
+  return null
+}
 
 interface Props {
   onPlayCard:    (cardId: string) => void
@@ -57,19 +101,29 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
   const arenaRef       = useRef<HTMLDivElement>(null)
   const actRowRef      = useRef<HTMLDivElement>(null)
   const actionAreaRef  = useRef<HTMLDivElement>(null)
-  const slotNameRef    = useRef<HTMLDivElement>(null)
   const slotColRef     = useRef<HTMLDivElement>(null)
-  useFitBattleLayout({ battleMainRef, arenaRef, actRowRef, actionAreaRef, slotNameRef, slotColRef })
+  useFitBattleLayout({ battleMainRef, arenaRef, actRowRef, actionAreaRef, slotColRef })
   const [moveAnim,  setMoveAnim]  = useState<MoveAnim | null>(null)
   const [animKey,   setAnimKey]   = useState(0)
   // pending destination slot per unit (preview before confirming with a skill/pass)
   const [pendingSlots, setPendingSlots] = useState<Record<string, 1|2|3>>({})
   // preview: clicking a non-active own unit shows their moves read-only
   const [previewUnitId, setPreviewUnitId] = useState<string | null>(null)
+  // pick-then-confirm (照抄參考版：點招式/花牌先選取，按「出手」才執行)
+  const [pickedMove,   setPickedMove]   = useState<MoveSlot | null>(null)
+  const [pickedCardId, setPickedCardId] = useState<string | null>(null)
 
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight
   }, [game?.log.length])
+
+  // Clear picks whenever the acting unit changes (same as the reference's
+  // per-turn actMovePicked/actPending reset in nextTurn()).
+  const activeReadyId = game ? getReadyUnits(game).filter(u => u.side === mySide)[0]?.id : undefined
+  useEffect(() => {
+    setPickedMove(null)
+    setPickedCardId(null)
+  }, [activeReadyId])
 
   // Watch log for moveAnim entries (triggers for ALL moves incl. AI)
   // Scan all NEW entries (not just the last) because a single tick can push many log lines
@@ -111,6 +165,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
   const enemyTeam = mySide === 'A' ? game.teamB : game.teamA
   const previewUnit = previewUnitId ? myTeam.find(u => u.id === previewUnitId && u.alive) ?? null : null
   const myHand    = mySide === 'A' ? game.handA : game.handB
+  const oppHand   = mySide === 'A' ? game.handB : game.handA
   const myCustomLeft = mySide === 'A' ? game.customDeckOrder.length : game.customDeckOrderB.length
   const oppSide = mySide === 'A' ? 'B' : 'A'
 
@@ -120,6 +175,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
 
   const suitInHand: Record<string, number> = { red: 0, green: 0, blue: 0, yellow: 0 }
   for (const c of myHand) if (c.color in suitInHand) suitInHand[c.color]++
+  const flowerCards = myHand.filter(c => !c.isSuitCard)
 
   const atbQueue = [...game.teamA, ...game.teamB]
     .filter(u => u.alive)
@@ -170,12 +226,22 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
     setPendingSlots(prev => { const n = {...prev}; delete n[unit.id]; return n })
   }
 
-  const handleMoveClick = (unit: Unit, slot: MoveSlot) => {
-    const move = unit.moves[slot]
-    if (!move) return
-    applyPendingMove(unit)
-    onExecuteMove(unit.id, slot, null)
+  const confirmAct = (unit: Unit) => {
+    if (pickedMove) {
+      const slot = pickedMove
+      setPickedMove(null)
+      setPickedCardId(null)
+      if (!unit.moves[slot]) return
+      applyPendingMove(unit)
+      onExecuteMove(unit.id, slot, null)
+    } else if (pickedCardId) {
+      const id = pickedCardId
+      setPickedCardId(null)
+      onPlayCard(id)
+    }
   }
+
+  const pickedCardInHand = pickedCardId != null && myHand.some(c => c.id === pickedCardId)
 
   return (
     <div className="battle">
@@ -257,56 +323,35 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
         <div className="bh-item bh-sep bh-timer">
           <span className="bh-timer-secs">{10 - Math.floor((game.clock % 100) / 10)}</span>s
         </div>
-        <div className="bh-item bh-sep">牌庫 <b>{game.drawPublic.length}</b> · 棄牌 <b>{game.discardPublic.length}</b></div>
+        <div className="bh-item bh-sep">牌庫 <b>{game.drawPublic.length}</b> · 棄牌堆 <b>{game.discardPublic.length}</b></div>
         {!isAIBattle && (
           <div className="bh-item bh-sep">
-            手牌 <b>{myHand.length}</b>{myCustomLeft > 0 && <> · 自訂剩 <b>{myCustomLeft}</b></>}
+            對方手牌 <b>{oppHand.length}</b>{myCustomLeft > 0 && <> · 自訂剩 <b>{myCustomLeft}</b></>}
           </div>
         )}
         <div className="bh-atb">
-          <span className="atb-label">行動順序</span>
+          <span className="atb-label">順序</span>
           {atbQueue.map(u => {
             const ticks = Math.max(0, u.nextActionAt - game.clock)
             const ready = ticks === 0
             return (
               <div key={u.id} className={`atb-chip atb-${u.side} ${ready ? 'atb-ready' : ''}`}>
-                <span style={{ color: EL_COLOR[u.element], fontSize: 8 }}>⬥</span>
-                {u.name}
-                <span className="atb-t">{ready ? '⚡行動' : `${Math.ceil(ticks / 10)}s`}</span>
+                <div className="atb-name">
+                  <span style={{ color: EL_COLOR[u.element], fontSize: 8 }}>⬥</span> {u.name}
+                </div>
+                <div className="atb-time">{ready ? '行動中' : `${Math.ceil(ticks / 10)}s`}</div>
               </div>
             )
           })}
         </div>
         <div style={{ flex: 1 }} />
-        {/* 前中後 PASS — 右側 */}
-        {!isAIBattle && readyUnits.length > 0 && (() => {
-          const au = readyUnits[0]
-          const pending = getPendingSlot(au)
-          return (
-            <div className="bh-pos-row">
-              {([3,2,1] as const).map(s => {
-                const tooFar = Math.abs(s - au.slot) > 1
-                return (
-                  <button key={s}
-                    className={`btn sm ${pending === s ? 'primary' : ''}`}
-                    disabled={tooFar}
-                    onClick={() => !tooFar && setPendingSlots(prev => ({ ...prev, [au.id]: s }))}>
-                    {getSlotLabel(au.side, s)}
-                  </button>
-                )
-              })}
-              <button className="btn danger sm" onClick={() => { applyPendingMove(au); onPass(au.id) }}>PASS</button>
-            </div>
-          )
-        })()}
         {isAIBattle
           ? <span style={{ fontSize: 12, color: '#9955ee', letterSpacing: 1 }}>🤖 AI 對戰觀戰中</span>
-          : <>
-              <label className="auto-check">
-                <input type="checkbox" checked={isAutoMe} onChange={onToggleAuto} />
-                自動
-              </label>
-            </>
+          : (
+            <button className={`btn sm auto-toggle ${isAutoMe ? 'on' : ''}`} onClick={onToggleAuto}>
+              ⚫ 自動戰鬥
+            </button>
+          )
         }
         {(isAutoMe || isAIBattle) && (
           <button className="auto-speed-btn" onClick={() => {
@@ -314,7 +359,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
             const idx = speeds.indexOf(autoSpeed)
             setAutoSpeed(speeds[(idx + 1) % 3])
           }}>
-            ⚡ {autoSpeed}×
+            {autoSpeed}X
           </button>
         )}
       </div>
@@ -327,10 +372,11 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
             {/* 我方: 後→中→前 (facing enemy on the right) */}
             {([3,2,1] as const).map(slot => {
               const fanClass = slot === 3 ? 'slot-stack-right-far' : slot === 2 ? 'slot-stack-left-near' : 'slot-stack-left-far'
+              const label = getSlotLabel(mySide ?? 'A', slot)
               return (
                 <div key={`my-${slot}`} className="slot-col slot-col-my" ref={slot === 3 ? slotColRef : undefined}>
-                  <div className="slot-name" ref={slot === 3 ? slotNameRef : undefined} style={{ color: DIST_COLOR[getSlotLabel(mySide ?? 'A', slot)] }}>{getSlotLabel(mySide ?? 'A', slot)}</div>
                   <div className={`slot-cards-stack ${fanClass}`}>
+                    <div className="stack-slotlabel" style={{ color: DIST_COLOR[label] }}>{label}</div>
                     {myTeam.filter(u => getPendingSlot(u) === slot)
                       .sort((a, b) => b.hp - a.hp)
                       .map(u => {
@@ -361,10 +407,11 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
             {/* 敵方: 前→中→後 */}
             {([1,2,3] as const).map(slot => {
               const fanClass = slot === 3 ? 'slot-stack-left-far' : slot === 2 ? 'slot-stack-right-near' : 'slot-stack-right-far'
+              const label = getSlotLabel(oppSide, slot)
               return (
                 <div key={`enemy-${slot}`} className="slot-col slot-col-enemy">
-                  <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(oppSide, slot)] }}>{getSlotLabel(oppSide, slot)}</div>
                   <div className={`slot-cards-stack ${fanClass}`}>
+                    <div className="stack-slotlabel" style={{ color: DIST_COLOR[label] }}>{label}</div>
                     {enemyTeam.filter(u => u.slot === slot)
                       .sort((a, b) => b.hp - a.hp)
                       .map(u => (
@@ -377,56 +424,111 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
           </div>
         </div>
 
-        {/* ── Act row: log (left) | action + hand (right) ── */}
+        {/* ── Act row: 戰鬥紀錄 (left) | 出手面板 (right) — 照抄參考版 #actRow ── */}
         <div className="battle-act-row" ref={actRowRef}>
-          <div className="log-panel" ref={logRef}>
-            {game.log.slice(-80).map((l, i) => (
-              <div key={i} className="log-line" dangerouslySetInnerHTML={{ __html: l.html }} />
-            ))}
+          <div className="log-panel-wrap">
+            <div className="log-panel-label">戰鬥紀錄</div>
+            <div className="log-panel" ref={logRef}>
+              {game.log.slice(-80).map((l, i) => (
+                <div key={i} className="log-line" dangerouslySetInnerHTML={{ __html: l.html }} />
+              ))}
+            </div>
           </div>
 
           {!isAIBattle && (
-            <div className="battle-right">
-              {/* Action / Preview area */}
-              <div className="action-area" ref={actionAreaRef}>
-                {previewUnit && previewUnit.id !== readyUnits[0]?.id
-                  ? <UnitPreviewPanel unit={previewUnit} clock={game.clock} onClose={() => setPreviewUnitId(null)} />
-                  : readyUnits.length > 0
-                    ? (() => {
-                        const activeUnit = readyUnits[0]
-                        const waitingUnits = readyUnits.slice(1)
-                        return (
-                          <>
-                            {waitingUnits.length > 0 && (
-                              <div className="rup-queue">
-                                <span className="rup-queue-label">待機</span>
-                                {waitingUnits.map(u => (
-                                  <div key={u.id} className="rup-queue-chip">
-                                    <span style={{ color: EL_COLOR[u.element] }}>⬥</span>
-                                    <span>{u.name}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            <ReadyUnitPanel
-                              key={activeUnit.id}
-                              unit={activeUnit}
-                              clock={game.clock}
-                              suitInHand={suitInHand}
-                              onMove={slot => handleMoveClick(activeUnit, slot)}
-                            />
-                          </>
-                        )
-                      })()
-                    : <div className="action-idle">等待行動…</div>
-                }
-              </div>
-              {/* Hand panel */}
-              <HandPanel
-                hand={myHand}
-                onPlayCard={onPlayCard}
-                onDiscardCard={onDiscardCard}
-              />
+            <div className="act-panel" ref={actionAreaRef}>
+              {previewUnit && previewUnit.id !== readyUnits[0]?.id
+                ? (
+                  <>
+                    <div className="act-hint-row">
+                      <div className="act-who">
+                        查看 <b style={{ color: EL_COLOR[previewUnit.element] }}>{previewUnit.name}</b>
+                        <span className="act-who-sub">
+                          （{getSlotLabel(previewUnit.side, previewUnit.slot)}・
+                          {previewUnit.nextActionAt > game.clock ? `${Math.ceil((previewUnit.nextActionAt - game.clock) / 10)}s 後行動` : '即將行動'}）
+                        </span>
+                      </div>
+                      <button className="btn sm" onClick={() => setPreviewUnitId(null)}>✕</button>
+                    </div>
+                    <MoveGrid unit={previewUnit} clock={game.clock} readOnly />
+                  </>
+                )
+                : readyUnits.length > 0
+                  ? (() => {
+                      const au = readyUnits[0]
+                      const waitingUnits = readyUnits.slice(1)
+                      const pending = getPendingSlot(au)
+                      return (
+                        <>
+                          <div className="act-hint-row">
+                            <div className="act-who">
+                              輪到【我方】<b style={{ color: EL_COLOR[au.element] }}>{EL_ICON[au.element]} {au.name}</b>
+                              {waitingUnits.length > 0 && (
+                                <span className="act-who-sub">
+                                  （待機：{waitingUnits.map(u => u.name).join('、')}）
+                                </span>
+                              )}
+                            </div>
+                            <div className="act-slotrow">
+                              <span className="slotrow-label">移動到：</span>
+                              {([3,2,1] as const).map(s => {
+                                const tooFar = Math.abs(s - au.slot) > 1
+                                return (
+                                  <button key={s}
+                                    className={`btn sm slotbtn ${pending === s ? 'current' : ''}`}
+                                    disabled={tooFar}
+                                    onClick={() => !tooFar && setPendingSlots(prev => ({ ...prev, [au.id]: s }))}>
+                                    {getSlotLabel(au.side, s)}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
+
+                          <MoveGrid
+                            unit={au}
+                            clock={game.clock}
+                            suitInHand={suitInHand}
+                            picked={pickedMove}
+                            onPick={s => { setPickedMove(prev => prev === s ? null : s); setPickedCardId(null) }}
+                          />
+
+                          <div className="act-cards-row">
+                            <div className="suit-count-row">
+                              {SUIT_CARDS.map(sc => {
+                                const count = suitInHand[SUIT_FOR[sc.slot]] ?? 0
+                                const discardTarget = myHand.find(c => c.color === SUIT_FOR[sc.slot])
+                                return (
+                                  <SuitCountCard key={sc.slot} slot={sc.slot} cardId={sc.id} name={sc.name} count={count}
+                                    onDiscard={discardTarget ? () => onDiscardCard(discardTarget.id) : undefined} />
+                                )
+                              })}
+                            </div>
+                            <div className="act-card-zone">
+                              {flowerCards.map((card, i) => (
+                                <FlowerCardFace key={`${card.id}-${i}`} card={card}
+                                  picked={pickedCardId === card.id}
+                                  onPick={() => { setPickedCardId(prev => prev === card.id ? null : card.id); setPickedMove(null) }}
+                                  onDiscard={() => onDiscardCard(card.id)} />
+                              ))}
+                            </div>
+                            <div className="act-confirm-col">
+                              <button className="btn primary act-confirm"
+                                disabled={!pickedMove && !pickedCardInHand}
+                                onClick={() => confirmAct(au)}>
+                                出手 ▸
+                              </button>
+                              <button className="btn danger act-pass"
+                                onClick={() => { applyPendingMove(au); onPass(au.id) }}>
+                                PASS
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      )
+                    })()
+                  : <div className="action-idle">等待行動…</div>
+              }
             </div>
           )}
         </div>
@@ -435,14 +537,15 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
   )
 }
 
-// ─── UnitCard ────────────────────────────────────────────────────────────────
+// ─── UnitCard — 照抄參考版 renderUnitBlock()：立繪鋪滿背景、名字列疊頂端、
+//     血條(數字疊在條內)+ATK/DEF/SPD+狀態標籤合併疊底端 ────────────────────
 
 function UnitCard({ unit, clock, onClick, selectable, highlighted, isPreview, isCurrentTurn }: {
   unit: Unit; clock: number; onClick?: () => void; selectable?: boolean; highlighted?: boolean; isPreview?: boolean; isCurrentTurn?: boolean
 }) {
-  const pct     = unit.alive ? (unit.hp / unit.maxHp) * 100 : 0
+  const pct     = unit.alive ? Math.max(0, (unit.hp / unit.maxHp) * 100) : 0
   const ticks   = Math.max(0, unit.nextActionAt - clock)
-  const hpColor = pct > 60 ? '#22cc66' : pct > 30 ? '#ccaa22' : '#cc3333'
+  const hpColor = pct > 50 ? '#22cc66' : pct > 20 ? '#ccaa22' : '#cc3333'
   const img     = getCharWideImg(unit.characterId) ?? getCharImg(unit.characterId)
   const flip    = unit.side === 'B'
   const stateClass = selectable ? 'selectable' : (onClick && isPreview ? 'previewable' : (onClick ? 'targetable' : ''))
@@ -451,262 +554,128 @@ function UnitCard({ unit, clock, onClick, selectable, highlighted, isPreview, is
     <div
       className={`unit-card ${!unit.alive ? 'dead' : ''} ${isCurrentTurn ? 'uc-ready' : ''} ${stateClass} ${highlighted ? 'uc-preview-active' : ''}`}
       onClick={onClick}
+      title={onClick && isPreview
+        ? `${unit.name}（${unit.element}系 / ${getSlotLabel(unit.side, unit.slot)}）點擊查看完整招式`
+        : undefined}
     >
-      {img
-        ? (
-          <div className="uc-portrait">
-            <img src={img} className="uc-portrait-img" alt=""
+      <div className="uc-art">
+        {img
+          ? <img src={img} className="uc-art-img" alt=""
               style={flip ? { transform: 'scaleX(-1)' } : undefined} />
-            {!unit.alive && <div className="uc-dead-overlay">陣亡</div>}
-          </div>
-        )
-        : <div className="unit-card-name" style={{ color: EL_COLOR[unit.element] }}>{unit.name}</div>
-      }
-      <div className="hp-bar-wrap">
-        <div className="hp-bar" style={{ width: `${pct}%`, background: hpColor }} />
+          : <div className="uc-art-fallback" style={{ color: EL_COLOR[unit.element] }}>{unit.name[0]}</div>
+        }
       </div>
-      <div className="unit-card-row">
-        <span className="uc-hp">{unit.alive ? `${unit.hp}/${unit.maxHp}` : '倒下'}</span>
-        <span className={`uc-timer ${isCurrentTurn ? 'uc-timer-ready' : ''}`}>
-          {isCurrentTurn ? '⚡ 行動' : `${Math.ceil(ticks / 10)}s`}
-        </span>
+      <div className="uc-head">
+        <span className="uc-el-icon">{EL_ICON[unit.element] ?? '❔'}</span>
+        <span className="uc-name">{unit.name}</span>
       </div>
-      {unit.statuses.length > 0 && (
-        <div className="status-chips">
-          {unit.statuses.map((s, i) => <span key={i} className="status-chip">{s.key}</span>)}
+      <div className="uc-footer">
+        <div className="uc-hpwrap">
+          <div className="uc-hpbar" style={{ width: `${pct}%`, background: hpColor }} />
+          <div className="uc-hptext">{unit.alive ? `${Math.max(0, Math.round(unit.hp))} / ${unit.maxHp}` : '倒下'}</div>
         </div>
-      )}
+        <div className="uc-mini-stats">
+          ATK {Math.round(effectiveATK(unit))} DEF {Math.round(effectiveDEF(unit))} SPD {Math.round(effectiveSPD(unit) * 10) / 10}
+        </div>
+        <div className="uc-tags">
+          <span className="uc-tag uc-tag-next">
+            {isCurrentTurn ? '⏳行動中' : `下次 ${Math.ceil(ticks / 10)}s`}
+          </span>
+          {unit.statuses.map((s, i) => {
+            const text = statusTagText(s.key, s.mode, s.value, s.expiresAt - clock)
+            return <span key={i} className="uc-tag uc-tag-status" title={text}>{text}</span>
+          })}
+        </div>
+      </div>
+      {!unit.alive && <div className="uc-dead-overlay">陣亡</div>}
     </div>
   )
 }
 
-// ─── ReadyUnitPanel ──────────────────────────────────────────────────────────
+// ─── MoveGrid — 照抄參考版 #act-movegrid：2欄大按鈕，名稱+花色chip、
+//     威力/命中/爆擊、目標規則、完整描述常駐顯示；點選=picked 金框 ─────────
 
-function ReadyUnitPanel({ unit, clock, suitInHand, onMove }: {
+function MoveGrid({ unit, clock, suitInHand, picked, onPick, readOnly }: {
   unit: Unit; clock: number
-  suitInHand: Record<string, number>
-  onMove: (s: MoveSlot) => void
+  suitInHand?: Record<string, number>
+  picked?: MoveSlot | null
+  onPick?: (s: MoveSlot) => void
+  readOnly?: boolean
 }) {
-  const [hoveredSlot, setHoveredSlot] = useState<MoveSlot | null>(null)
-  const [popAnchor,  setPopAnchor]   = useState<DOMRect | null>(null)
-  const hoveredMove = hoveredSlot ? unit.moves[hoveredSlot] : null
-
+  const lib = unit.statuses.some(s => s.key === 'liberated')
+  const blocked = unit.statuses.some(s => s.key === 'sealed')
   return (
-    <div className="rup">
-      <div className="rup-hdr" style={{ cursor: 'default' }}>
-        <b style={{ color: EL_COLOR[unit.element] }}>{unit.name}</b>
-        <span className="rup-pos">目前在 {getSlotLabel(unit.side, unit.slot)}</span>
-      </div>
-      <div className="rup-body">
-        <div className="rup-skills-grid">
-          {MOVE_SLOTS.map(slot => {
-            const move = unit.moves[slot]
-            if (!move) return null
-            const sKey   = SUIT_FOR[slot]
-            const have   = sKey ? (suitInHand[sKey] ?? 0) : 999
-            const lib    = unit.statuses.some(s => s.key === 'liberated')
-            const need   = lib ? 1 : (move.condition ?? 1)
-            const canUse = !sKey || have >= need
-            const onCD   = (unit.moveCooldownUntil[move.id] ?? 0) > clock
-            const ok     = canUse && !onCD
-            return (
-              <button
-                key={slot}
-                className={`btn skill-btn ${!ok ? 'skill-dim' : ''}`}
-                style={{ borderColor: ok ? SLOT_COLOR[slot] : '#2a2a3e' }}
-                onClick={() => ok && onMove(slot)}
-                onMouseEnter={e => { setHoveredSlot(slot); setPopAnchor(e.currentTarget.getBoundingClientRect()) }}
-                onMouseLeave={() => { setHoveredSlot(null); setPopAnchor(null) }}
-              >
-                <span
-                  className="act-infobtn"
-                  onClick={e => { e.stopPropagation(); setHoveredSlot(slot); setPopAnchor(e.currentTarget.getBoundingClientRect()) }}
-                >
-                  ⓘ
-                </span>
-                <div className="skill-top">
-                  <span style={{ color: ok ? SLOT_COLOR[slot] : '#444', fontWeight: 800 }}>
-                    {SLOT_LABEL[slot]}
-                  </span>
-                  {sKey && (
-                    <span className={canUse ? 'skill-ok' : 'skill-ng'}>{have}/{need}</span>
-                  )}
-                  {onCD && <span className="skill-cd">CD</span>}
-                </div>
-                <div className="skill-name">{move.name}</div>
-              </button>
-            )
-          })}
-        </div>
-      </div>
-      {hoveredMove && hoveredSlot && popAnchor && (
-        <>
-          <MoveInfoBox move={hoveredMove} slot={hoveredSlot} anchor={popAnchor} />
-          <ActDetailPopup move={hoveredMove} slot={hoveredSlot} onClose={() => { setHoveredSlot(null); setPopAnchor(null) }} />
-        </>
-      )}
+    <div className="act-movegrid">
+      {MOVE_SLOTS.map(slot => {
+        const move = unit.moves[slot]
+        if (!move) return null
+        const need   = lib ? 1 : (move.condition ?? 1)
+        const have   = suitInHand ? (suitInHand[SUIT_FOR[slot]] ?? 0) : need
+        const canUse = have >= need
+        const onCD   = (unit.moveCooldownUntil[move.id] ?? 0) > clock
+        const ok     = canUse && !onCD && !blocked && !readOnly && !!onPick
+        const stats  = move.powerRatio != null
+          ? `威力${move.powerRatio} 命中${Math.round((move.hitRate ?? 0) * 100)}%`
+            + (move.critRate ? ` 爆擊${Math.round(move.critRate * 100)}%` : '')
+            + (move.effectChance > 0 && move.effectChance < 1 ? ` 觸發${Math.round(move.effectChance * 100)}%` : '')
+          : ''
+        const rule = moveTargetRule(move)
+        return (
+          <button key={slot}
+            className={`movebtn ${picked === slot ? 'picked' : ''} ${readOnly ? 'movebtn-ro' : ''}`}
+            disabled={!ok}
+            onClick={() => ok && onPick?.(slot)}>
+            <div className="movebtn-line1">
+              <b>{move.name}</b>
+              <span className={`suitchip sc-${slot}`}>{slot}×{need}</span>
+              {suitInHand && !canUse && <span className="movebtn-lack">{have}/{need}</span>}
+              {onCD && <span className="movebtn-cdchip">⏳冷卻中</span>}
+            </div>
+            <div className="movebtn-stats">{stats || '（支援型招式）'}</div>
+            {rule && <div className="movebtn-targetrule">{rule}</div>}
+            {move.description && <div className="movebtn-desc">{move.description}</div>}
+          </button>
+        )
+      })}
+      {blocked && <div className="movebtn-blocked-warn">此角色目前處於「封招」狀態，無法使用招式。</div>}
     </div>
   )
 }
 
-// ─── HandPanel ───────────────────────────────────────────────────────────────
+// ─── Card faces — 照抄參考版 renderCardFace()：花色計數小卡 + 花牌卡 ───────
 
-const HP_ICON: Record<string, string> = { red: '劍', green: '槍', blue: '法', yellow: '院' }
-
-function HandPanel({ hand, onPlayCard, onDiscardCard }: {
-  hand: Card[]
-  onPlayCard: (id: string) => void
-  onDiscardCard: (id: string) => void
+function SuitCountCard({ slot, cardId, name, count, onDiscard }: {
+  slot: MoveSlot; cardId: string; name: string; count: number; onDiscard?: () => void
 }) {
+  const img = getCardImg(cardId)
   return (
-    <div className="hand-panel">
-      <div className="hp-label">手牌 <span className="hp-hint">（× 棄牌）</span></div>
-      <div className="hp-body">
-        <div className="hp-chips">
-          {hand.map((card, i) => {
-            const cardImg = getCardImg(card.id)
-            return (
-              <div key={`${card.id}-${i}`}
-                  className={`hp-chip hp-${card.color === 'flower' ? 'flower' : card.color}`}>
-                {cardImg && (
-                  <img src={cardImg} className="hp-chip-img" alt=""
-                    onClick={!card.isSuitCard ? () => onPlayCard(card.id) : undefined}
-                    style={!card.isSuitCard ? { cursor: 'pointer' } : undefined}
-                    onError={e => { e.currentTarget.style.display = 'none' }} />
-                )}
-                {card.isSuitCard
-                  ? <span className="hp-icon">{HP_ICON[card.color]}</span>
-                  : <span className="hp-icon hp-flower-name" onClick={() => onPlayCard(card.id)}>花 {card.name}</span>
-                }
-                <button className="hp-discard" title="棄牌" onClick={() => onDiscardCard(card.id)}>×</button>
-              </div>
-            )
-          })}
-        </div>
-      </div>
+    <div className={`cardface suit-${slot} ${count === 0 ? 'cf-empty' : ''}`}>
+      <div className="cf-corner" style={{ color: SLOT_COLOR[slot] }}>{SUIT_ICON[slot]} {slot}</div>
+      {img
+        ? <img src={img} className="cf-img" alt="" onError={e => { e.currentTarget.style.display = 'none' }} />
+        : <div className="cf-bigicon">{SUIT_ICON[slot]}</div>
+      }
+      <div className="cf-name">{name}</div>
+      <div className="cf-badge">×{count}</div>
+      {onDiscard && <button className="cf-discard" title="棄1張" onClick={onDiscard}>×</button>}
     </div>
   )
 }
 
-// ─── MoveInfoBox ─────────────────────────────────────────────────────────────
-
-const RANGE_LABEL: Record<string, string> = {
-  '劍': '劍・前排近戰', '槍': '槍・最近格', '法': '法・交錯格',
-}
-
-const POP_W = 252
-
-type MoveInfoData = {
-  name: string; description: string; powerRatio: number | null; hitRate: number | null
-  critRate: number | null; rangeType: string | null; scope: string | null
-  condition: number | null; cooldown: number | null; effectChance: number
-}
-
-function MoveInfoContent({ move, slot }: { move: MoveInfoData; slot: MoveSlot }) {
+function FlowerCardFace({ card, picked, onPick, onDiscard }: {
+  card: Card; picked: boolean; onPick: () => void; onDiscard: () => void
+}) {
+  const img = getCardImg(card.id)
   return (
-    <>
-      <div className="mib-header">
-        <span style={{ color: SLOT_COLOR[slot], fontWeight: 800 }}>{SLOT_LABEL[slot]}</span>
-        <b style={{ marginLeft: 5 }}>{move.name}</b>
-        <span style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
-          {move.rangeType && <span className="mib-tag">{RANGE_LABEL[move.rangeType] ?? move.rangeType}</span>}
-          {move.scope === '群' && <span className="mib-tag">群體</span>}
-        </span>
-      </div>
-      {move.description && <div className="mib-desc">{move.description}</div>}
-      <div className="mib-stats">
-        {move.powerRatio != null && <span className="mib-stat">威力 <b>{move.powerRatio}x</b></span>}
-        {move.hitRate   != null && move.hitRate  < 1 && <span className="mib-stat">命中 <b>{Math.round(move.hitRate*100)}%</b></span>}
-        {move.critRate  != null && move.critRate > 0 && <span className="mib-stat">爆擊 <b>{Math.round(move.critRate*100)}%</b></span>}
-        {move.condition != null && <span className="mib-stat">需 <b>{move.condition}</b> 張</span>}
-        {move.cooldown  != null && <span className="mib-stat">CD <b>{move.cooldown}s</b></span>}
-        {move.effectChance > 0 && move.effectChance < 1 && <span className="mib-stat">觸發 <b>{Math.round(move.effectChance * 100)}%</b></span>}
-      </div>
-    </>
-  )
-}
-
-function MoveInfoBox({ move, slot, anchor }: { move: MoveInfoData; slot: MoveSlot; anchor: DOMRect }) {
-  const left = anchor.right + 10 + POP_W > window.innerWidth
-    ? anchor.left - POP_W - 6
-    : anchor.right + 10
-  const top = Math.min(anchor.top, window.innerHeight - 230)
-
-  return (
-    <div className="move-info-box" style={{ position: 'fixed', top, left, width: POP_W, zIndex: 9200 }}>
-      <MoveInfoContent move={move} slot={slot} />
-    </div>
-  )
-}
-
-// Tap-friendly counterpart to MoveInfoBox: centered fixed overlay + backdrop,
-// shown instead of the anchored hover box on short/touch viewports (CSS-gated
-// under the existing ≤440px compact breakpoint, see .act-detail-popup in index.css).
-function ActDetailPopup({ move, slot, onClose }: { move: MoveInfoData; slot: MoveSlot; onClose: () => void }) {
-  return (
-    <div className="act-detail-backdrop" onClick={onClose}>
-      <div className="act-detail-popup" onClick={e => e.stopPropagation()}>
-        <MoveInfoContent move={move} slot={slot} />
-      </div>
-    </div>
-  )
-}
-
-// ─── UnitPreviewPanel ────────────────────────────────────────────────────────
-
-function UnitPreviewPanel({ unit, clock, onClose }: { unit: Unit; clock: number; onClose: () => void }) {
-  const [hoveredSlot, setHoveredSlot] = useState<MoveSlot | null>(null)
-  const [popAnchor,  setPopAnchor]   = useState<DOMRect | null>(null)
-  const hoveredMove = hoveredSlot ? unit.moves[hoveredSlot] : null
-
-  return (
-    <div className="rup rup-preview">
-      <div className="rup-hdr" style={{ cursor: 'default' }}>
-        <b style={{ color: EL_COLOR[unit.element] }}>{unit.name}</b>
-        <span className="rup-pos">
-          {getSlotLabel(unit.side, unit.slot)} · 預覽（未行動）
-        </span>
-        <span style={{ marginLeft: 'auto', fontSize: 9, color: '#2c2c48' }}>
-          {unit.nextActionAt > clock ? `${Math.ceil((unit.nextActionAt - clock) / 10)}s 後行動` : '即將行動'}
-        </span>
-        <button className="btn sm" style={{ marginLeft: 8, padding: '1px 7px' }} onClick={onClose}>✕</button>
-      </div>
-      <div className="rup-body">
-        <div className="rup-skills-grid">
-          {MOVE_SLOTS.map(slot => {
-            const move = unit.moves[slot]
-            if (!move) return null
-            const onCD = (unit.moveCooldownUntil[move.id] ?? 0) > clock
-            return (
-              <div
-                key={slot}
-                className="btn skill-btn"
-                style={{ borderColor: SLOT_COLOR[slot], cursor: 'default', opacity: onCD ? 0.4 : 0.82 }}
-                onMouseEnter={e => { setHoveredSlot(slot); setPopAnchor(e.currentTarget.getBoundingClientRect()) }}
-                onMouseLeave={() => { setHoveredSlot(null); setPopAnchor(null) }}
-              >
-                <span
-                  className="act-infobtn"
-                  onClick={e => { e.stopPropagation(); setHoveredSlot(slot); setPopAnchor(e.currentTarget.getBoundingClientRect()) }}
-                >
-                  ⓘ
-                </span>
-                <div className="skill-top">
-                  <span style={{ color: SLOT_COLOR[slot], fontWeight: 800 }}>{SLOT_LABEL[slot]}</span>
-                  {onCD && <span className="skill-cd">CD</span>}
-                </div>
-                <div className="skill-name">{move.name}</div>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-      {hoveredMove && hoveredSlot && popAnchor && (
-        <>
-          <MoveInfoBox move={hoveredMove} slot={hoveredSlot} anchor={popAnchor} />
-          <ActDetailPopup move={hoveredMove} slot={hoveredSlot} onClose={() => { setHoveredSlot(null); setPopAnchor(null) }} />
-        </>
-      )}
+    <div className={`cardface suit-flower ${picked ? 'picked' : ''}`} onClick={onPick}>
+      <div className="cf-corner" style={{ color: '#b499e8' }}>✿ 花</div>
+      {img
+        ? <img src={img} className="cf-img" alt="" onError={e => { e.currentTarget.style.display = 'none' }} />
+        : <div className="cf-bigicon">✿</div>
+      }
+      <div className="cf-name">{card.name}</div>
+      {card.description && <div className="cf-desc">{card.description}</div>}
+      <button className="cf-discard" title="棄牌" onClick={e => { e.stopPropagation(); onDiscard() }}>×</button>
     </div>
   )
 }

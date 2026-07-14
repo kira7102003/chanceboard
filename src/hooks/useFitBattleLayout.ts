@@ -5,7 +5,6 @@ interface FitBattleLayoutRefs {
   arenaRef: RefObject<HTMLDivElement | null>
   actRowRef: RefObject<HTMLDivElement | null>
   actionAreaRef: RefObject<HTMLDivElement | null>
-  slotNameRef: RefObject<HTMLDivElement | null>
   slotColRef: RefObject<HTMLDivElement | null>
 }
 
@@ -17,8 +16,8 @@ const CARD_ASPECT = 24 / 43
 // header between the arena and the act row by the action panel's actual content
 // size, clamp so neither side collapses, and scale the act row down (instead of
 // letting it grow/scroll) if it still doesn't fit at the clamped height.
-const HAND_H = 116
-const ACT_ROW_MIN_H = 150
+// (The hand row now lives inside the act panel itself, so no extra HAND_H.)
+const ACT_ROW_MIN_H = 170
 const BOARD_RATIO_MIN = 0.35
 const BOARD_RATIO_SHORT_H = 500
 const BOARD_RATIO_TALL_H = 800
@@ -29,7 +28,7 @@ export function useFitBattleLayout(refs: FitBattleLayoutRefs) {
   const rafRef = useRef<number | null>(null)
 
   useLayoutEffect(() => {
-    const { battleMainRef, arenaRef, actRowRef, actionAreaRef, slotNameRef, slotColRef } = refs
+    const { battleMainRef, arenaRef, actRowRef, actionAreaRef, slotColRef } = refs
 
     const fit = () => {
       const mainEl = battleMainRef.current
@@ -45,9 +44,8 @@ export function useFitBattleLayout(refs: FitBattleLayoutRefs) {
       const mainH = mainEl.clientHeight
       if (mainH <= 0) return
 
-      const slotNameH = slotNameRef.current?.offsetHeight ?? 24
       const actionAreaScrollH = actionAreaEl.scrollHeight
-      const desiredActRowH = actionAreaScrollH + HAND_H
+      const desiredActRowH = actionAreaScrollH
 
       const minBoardH = mainH * BOARD_RATIO_MIN
       const maxActRowH = mainH - minBoardH
@@ -55,7 +53,7 @@ export function useFitBattleLayout(refs: FitBattleLayoutRefs) {
       actRowEl.style.setProperty('--act-row-h', `${Math.round(actRowH)}px`)
 
       const arenaH = mainH - actRowH
-      let cellH = Math.max(100, Math.round(arenaH - slotNameH - ARENA_CHROME_V - SAFETY))
+      let cellH = Math.max(100, Math.round(arenaH - ARENA_CHROME_V - SAFETY))
 
       // Clamp by available column width too, so a tall-but-narrow viewport
       // can't blow the card's aspect-ratio-derived width past its column
@@ -69,7 +67,7 @@ export function useFitBattleLayout(refs: FitBattleLayoutRefs) {
 
       arenaEl.style.setProperty('--board-cell-h', `${cellH}px`)
 
-      const availableForActionArea = actRowH - HAND_H
+      const availableForActionArea = actRowH
       if (actionAreaScrollH > 0 && availableForActionArea > 30 && actionAreaScrollH > availableForActionArea) {
         const boardRatioT = Math.max(0, Math.min(1, (mainH - BOARD_RATIO_SHORT_H) / (BOARD_RATIO_TALL_H - BOARD_RATIO_SHORT_H)))
         const scaleFloor = 0.4 + boardRatioT * 0.2
