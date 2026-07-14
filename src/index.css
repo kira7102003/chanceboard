@@ -341,7 +341,7 @@ body { margin: 0; }
 ══════════════════════════════════════════════════════════════ */
 .char-select {
   flex: 1; padding: 12px 20px; display: flex; flex-direction: column;
-  gap: 8px; max-width: 1400px; margin: 0 auto; width: 100%; min-height: 0;
+  gap: 8px; max-width: 1400px; margin: 0 auto; width: 100%;
   overflow: visible; /* 確保內容可以溢出 */
   align-items: center; /* 中心對齐 */
 }
@@ -465,7 +465,7 @@ body { margin: 0; }
   position: relative;
   width: 100%;
   flex: 1;
-  min-height: 0;
+  min-height: 400px; /* 設定最小高度讓角色不會被裁剪 */
   overflow: visible; /* 改為 visible 讓中間角色不被裁剪 */
   cursor: grab;
   touch-action: pan-y;
@@ -473,7 +473,6 @@ body { margin: 0; }
   display: flex;
   align-items: center;
   justify-content: center;
-  padding-bottom: 60px; /* 預留空間給角色的腳 */
 }
 .cs-carousel:active { cursor: grabbing; }
 
