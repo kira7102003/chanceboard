@@ -21,7 +21,7 @@ interface PlayerState {
   setGems: (n: number) => void
   removeOwnedChar: (id: string) => void
   clearCollection: () => void
-  setDefaultTeam: (id: string) => void
+  setDefaultTeam: (id: string | null) => void
 }
 
 export const usePlayerStore = create<PlayerState>()(

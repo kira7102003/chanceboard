@@ -289,12 +289,17 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
             <span>隊伍</span>
             <select value={savedTeams.find(t => t.id === defaultTeamId)?.id ?? ''}
               onChange={e => {
+                if (e.target.value === '') {
+                  setDefaultTeam(null)
+                  loadTeam([])
+                  return
+                }
                 const team = savedTeams.find(t => t.id === e.target.value)
                 if (!team) return
                 setDefaultTeam(team.id)
                 loadTeam(team.charIds)
               }}>
-              <option value="" disabled>選擇隊伍</option>
+              <option value="">自選</option>
               {savedTeams.map(team => <option key={team.id} value={team.id}>{team.name}</option>)}
             </select>
           </label>
@@ -353,9 +358,6 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
               />
               {sel && selIdx >= 0 && (
                 <span className="cs-pos" style={{ background: col }}>{'前中後'[selIdx]}</span>
-              )}
-              {isCenter && (
-                <div className="cs-car-name" style={{ color: col }}>{c.name}</div>
               )}
             </div>
           )
