@@ -269,27 +269,20 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
   }
 
   const confirmAct = (unit: Unit) => {
-    if (pickedMove) {
-      const slot = pickedMove
-      setPickedMove(null)
-      setPickedCard(null)
-      if (!unit.moves[slot]) return
-      applyPendingMove(unit)
-      onExecuteMove(unit.id, slot, null)
-    } else if (pickedCard) {
-      const id = pickedCard.id
-      setPickedCard(null)
-      // 花牌本身就是本次行動：使用成功後立即結束角色行動，
-      // 不再停留於同一角色讓玩家追加招式。
-      if (myHand.some(c => c.id === id)) {
-        onPlayCard(id)
-        onPass(unit.id)
-      }
-    } else {
-      // 沒選招式/卡片：純移動（或什麼都不做＝跳過）也統一按出手執行
-      applyPendingMove(unit)
-      onPass(unit.id)
-    }
+    const slot = pickedMove
+    const cardId = pickedCard?.id ?? null
+    if (slot && !unit.moves[slot]) return
+
+    setPickedMove(null)
+    setPickedCard(null)
+
+    // One confirm commits the whole staged action. Flower resolves first so
+    // its buff can affect the move selected in the same action.
+    if (cardId && myHand.some(card => card.id === cardId)) onPlayCard(cardId)
+    applyPendingMove(unit)
+
+    if (slot) onExecuteMove(unit.id, slot, null)
+    else onPass(unit.id)
   }
 
   return (
@@ -533,7 +526,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                               clock={game.clock}
                               suitInHand={suitInHand}
                               picked={pickedMove}
-                              onPick={s => { setPickedMove(prev => prev === s ? null : s); setPickedCard(null) }}
+                              onPick={s => setPickedMove(prev => prev === s ? null : s)}
                             />
                             <div className="act-slotrow">
                               <span className="slotrow-label">移動到：</span>
@@ -579,7 +572,6 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                             lockedByOther={lockedByOther}
                             onPick={() => {
                               setPickedCard(prev => prev?.key === cardKey ? null : { id: card.id, key: cardKey })
-                              setPickedMove(null)
                             }}
                             onDiscard={discardedThisAction || !!pickedCard ? undefined : () => onDiscardCard(card.id)} />
                         )
