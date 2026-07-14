@@ -150,9 +150,6 @@ export default function DeckBuild({ onConfirm }: Props) {
         <button className="btn primary" disabled={selected.length === 0} onClick={() => onConfirm(selected)}>
           {isSolo ? '確認牌組 — 開始挑戰' : '確認牌組 — 等待對手'}
         </button>
-        {selected.length < DECK_SIZE && (
-          <span className="hint dk-hint">建議選滿 {DECK_SIZE} 張</span>
-        )}
       </div>
 
     </div>
