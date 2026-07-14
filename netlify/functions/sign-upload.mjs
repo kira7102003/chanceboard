@@ -34,7 +34,7 @@ export const handler = async (event) => {
 
     const { path, contentType, size } = JSON.parse(event.body ?? '{}')
     if (!path) return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Missing path' }) }
-    if (!/^(?:(?:chars|moves|story|backgrounds|cards)\/[a-zA-Z0-9_.-]+\.(?:webp|json)|chars\.json|moves\.json|image-manifest\.json)$/.test(path)) {
+    if (!/^(?:(?:chars|moves|story|backgrounds|cards)\/[a-zA-Z0-9_.-]+\.(?:webp|json)|chars\.json|moves\.json|image-manifest\.json|daily-rewards\.json)$/.test(path)) {
       return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Invalid path' }) }
     }
     if (typeof size !== 'number' || size < 1 || size > 8 * 1024 * 1024) {

@@ -4,6 +4,8 @@ import { getChars, saveChars, resetChars, getCharImg, getUrlByKey, uploadByKey, 
 import { CARD_ICON } from '../data/cardIcons'
 import type { Character } from '../types/character'
 import type { Move, RangeType, Scope } from '../types/move'
+import { DEFAULT_DAILY_REWARD, getDailyRewards, localDateKey, saveDailyRewardSettings } from '../utils/dailyRewards'
+import type { DailyReward } from '../utils/dailyRewards'
 
 const EL_COLOR: Record<string, string>   = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee' }
 const SLOT_COLOR: Record<string, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee', '願': '#ddaa22', '被': '#666688' }
@@ -129,6 +131,19 @@ export default function Admin({ onBack }: Props) {
               <div className="adm-list-sub">26 張卡牌</div>
             </div>
           </div>
+          <div
+            className={`adm-list-item ${selId === '__daily__' ? 'active' : ''}`}
+            onClick={() => { setSelId('__daily__'); setTab('basic') }}
+          >
+            <div style={{
+              width: 38, height: 68, borderRadius: 6, background: '#111122', flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
+            }}>📅</div>
+            <div className="adm-list-text">
+              <div className="adm-list-name" style={{ color: '#c8a15a' }}>每日簽到設定</div>
+              <div className="adm-list-sub">上月～下下月</div>
+            </div>
+          </div>
           <div style={{ height: 1, background: 'rgba(200,161,90,.12)', margin: '2px 0' }} />
           {chars.map((c, i) => (
             <div key={c.id}
@@ -173,6 +188,8 @@ export default function Admin({ onBack }: Props) {
             <BgSettings />
           ) : selId === '__cards__' ? (
             <div className="adm-panel"><CardImgSettings /></div>
+          ) : selId === '__daily__' ? (
+            <div className="adm-panel"><DailyRewardSettings /></div>
           ) : char ? (
             <>
               <div className="adm-tabs">
@@ -192,6 +209,73 @@ export default function Admin({ onBack }: Props) {
           ) : null}
         </div>
       </div>
+    </div>
+  )
+}
+
+function DailyRewardSettings() {
+  const [monthOffset, setMonthOffset] = useState(0)
+  const [rewards, setRewards] = useState<Record<string, DailyReward>>(() => getDailyRewards())
+  const [status, setStatus] = useState('')
+  const now = new Date()
+  const month = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1)
+  const days = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate()
+  const today = localDateKey()
+  const labels = ['上月', '本月', '下月', '下下月']
+
+  const dateKeyFor = (day: number) => localDateKey(new Date(month.getFullYear(), month.getMonth(), day))
+  const updateDay = (dateKey: string, field: keyof DailyReward, value: number) => {
+    if (dateKey < today) return
+    setRewards(prev => ({
+      ...prev,
+      [dateKey]: { ...(prev[dateKey] ?? DEFAULT_DAILY_REWARD), [field]: Math.max(0, value || 0) },
+    }))
+  }
+  const save = async () => {
+    const editable = Object.fromEntries(Object.entries(rewards).filter(([dateKey]) => dateKey >= today))
+    setStatus('儲存中…')
+    try {
+      await saveDailyRewardSettings(editable)
+      setStatus('✓ 已儲存至雲端')
+    } catch (error) {
+      console.error('[dailyRewards] save failed', error)
+      setStatus('✗ 儲存失敗')
+    }
+  }
+
+  return (
+    <div className="daily-admin">
+      <div className="daily-admin-head">
+        <div>
+          <h2>📅 每日簽到設定</h2>
+          <p>未另外設定的日期，預設為 💰 金幣 +200、💎 鑽石 +5。過去日期不可修改。</p>
+        </div>
+        <button className="btn primary" onClick={save}>儲存設定</button>
+      </div>
+      <div className="daily-month-tabs">
+        {labels.map((label, index) => (
+          <button key={label} className={`adm-tab ${monthOffset === index - 1 ? 'active' : ''}`}
+            onClick={() => setMonthOffset(index - 1)}>{label}</button>
+        ))}
+      </div>
+      <div className="daily-month-title">{month.getFullYear()} 年 {month.getMonth() + 1} 月</div>
+      <div className="daily-admin-grid">
+        {Array.from({ length: days }, (_, index) => index + 1).map(day => {
+          const dateKey = dateKeyFor(day)
+          const reward = rewards[dateKey] ?? DEFAULT_DAILY_REWARD
+          const past = dateKey < today
+          return (
+            <div key={dateKey} className={`daily-admin-day${past ? ' past' : ''}`}>
+              <b>{day} 日</b>
+              <label>💰 <input type="number" min="0" disabled={past} value={reward.coins}
+                onChange={e => updateDay(dateKey, 'coins', Number(e.target.value))} /></label>
+              <label>💎 <input type="number" min="0" disabled={past} value={reward.gems}
+                onChange={e => updateDay(dateKey, 'gems', Number(e.target.value))} /></label>
+            </div>
+          )
+        })}
+      </div>
+      {status && <div className="daily-admin-status">{status}</div>}
     </div>
   )
 }

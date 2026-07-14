@@ -8,6 +8,7 @@ interface PlayerState {
   ownedCharIds: string[]
   savedTeams:   SavedTeam[]
   defaultTeamId: string | null
+  dailyClaims: Record<string, string[]>
 
   // Model mutations (Controller calls these)
   addCoins:   (n: number) => void
@@ -22,6 +23,7 @@ interface PlayerState {
   removeOwnedChar: (id: string) => void
   clearCollection: () => void
   setDefaultTeam: (id: string | null) => void
+  claimDailyReward: (userId: string, dateKey: string, coins: number, gems: number) => boolean
 }
 
 export const usePlayerStore = create<PlayerState>()(
@@ -32,6 +34,7 @@ export const usePlayerStore = create<PlayerState>()(
       ownedCharIds: [],
       savedTeams:   [],
       defaultTeamId: null,
+      dailyClaims: {},
 
       addCoins:   (n) => set(s => ({ coins: s.coins + n })),
       spendCoins: (n) => {
@@ -66,6 +69,17 @@ export const usePlayerStore = create<PlayerState>()(
       })),
       clearCollection: () => set({ ownedCharIds: [] }),
       setDefaultTeam: (id) => set({ defaultTeamId: id }),
+      claimDailyReward: (userId, dateKey, coins, gems) => {
+        const claims = get().dailyClaims ?? {}
+        const userClaims = claims[userId] ?? []
+        if (userClaims.includes(dateKey)) return false
+        set(s => ({
+          coins: s.coins + Math.max(0, Math.floor(coins)),
+          gems: s.gems + Math.max(0, Math.floor(gems)),
+          dailyClaims: { ...s.dailyClaims, [userId]: [...userClaims, dateKey] },
+        }))
+        return true
+      },
     }),
     { name: 'cb_player' }
   )

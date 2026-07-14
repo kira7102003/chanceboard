@@ -1,6 +1,7 @@
 import { lazy, Suspense, useState, useEffect } from 'react'
 import Lobby      from './components/Lobby'
 import Login       from './components/Login'
+import DailyCheckIn from './components/DailyCheckIn'
 import { useGameStore }           from './store/gameStore'
 import { usePlayerStore }         from './store/playerStore'
 import { useRoom, loadSession, clearSession } from './hooks/useRoom'
@@ -9,6 +10,7 @@ import { useSolo }                from './hooks/useSolo'
 import { useAIBattle }           from './hooks/useAIBattle'
 import { supabase }               from './utils/supabase'
 import type { User }              from '@supabase/supabase-js'
+import { initDailyRewards } from './utils/dailyRewards'
 
 const CharSelect = lazy(() => import('./components/CharSelect'))
 const DeckBuild = lazy(() => import('./components/DeckBuild'))
@@ -60,7 +62,7 @@ export default function App() {
   const saved = loadSession()
   const [onlineRoomId, setOnlineRoomId] = useState('')
   const [showAdmin,    setShowAdmin]    = useState(false)
-  const [, setCloudSynced] = useState(false)
+  const [cloudSynced, setCloudSynced] = useState(false)
   const [user,      setUser]      = useState<User | null>(null)
   const [authReady, setAuthReady] = useState(false)
 
@@ -76,7 +78,7 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    initFromCloud().finally(() => {
+    Promise.allSettled([initFromCloud(), initDailyRewards()]).finally(() => {
       warmImageCache()
       setCloudSynced(true)
     })
@@ -186,6 +188,7 @@ export default function App() {
   return (
     <>
     <RotatePrompt />
+    {cloudSynced && <DailyCheckIn userId={user.id} />}
     <div className="app" style={activeBgUrl ? {
       backgroundImage: `url(${activeBgUrl})`,
       backgroundSize: 'cover',
