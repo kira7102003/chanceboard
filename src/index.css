@@ -1091,11 +1091,9 @@ h2 {
 .slot-stack-right-far  > .unit-card:nth-child(3),
 .slot-stack-right-near > .unit-card:nth-child(3) { z-index: 1; transform: translateX(25%);  opacity: .35; }
 
-/* Hover: spread all cards, full size, all opaque */
+/* Hover: spread stacked cards, all opaque — no size change */
 .slot-col { position: relative; }
 .slot-col:hover { z-index: 50; }
-/* Remove viewport-height constraint on hover so cards expand at full natural size */
-.slot-col:hover .slot-cards-stack { max-height: none; max-width: min(100%, 307px); }
 .slot-col:hover .slot-cards-stack > .unit-card { opacity: 1; }
 
 /* 前/後 slots: 2 columns of space, spread fully */
