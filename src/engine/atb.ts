@@ -827,6 +827,23 @@ export function autoPlayUnit(gs: GameState, unit: Unit): GameState {
   const isRooted = unit.statuses.some(s => s.key === 'rooted') && !unit.flags.immuneToRooted
   const hand     = side === 'A' ? gs.handA : gs.handB
 
+  // Auto "出手" with no selection is PASS. Do it immediately when the hand
+  // cannot pay for any off-cooldown move instead of entering target/reposition
+  // logic and leaving the ready unit waiting on a failed attempt.
+  const suitFor: Partial<Record<MoveSlot, string>> = {
+    '劍': 'red', '槍': 'green', '法': 'blue', '願': 'yellow',
+  }
+  const liberated = unit.statuses.some(st => st.key === 'liberated')
+  const hasAffordableMove = (['劍', '槍', '法', '願'] as MoveSlot[]).some(slot => {
+    const move = unit.moves[slot]
+    if (!move || (unit.moveCooldownUntil[move.id] ?? 0) > gs.clock) return false
+    const color = suitFor[slot]
+    if (!color) return false
+    const needed = liberated ? 1 : (move.condition ?? 1)
+    return hand.filter(card => card.color === color).length >= needed
+  })
+  if (!hasAffordableMove) return doPass(gs, unit.id)
+
   // Score moves from current slot
   const hereCandidates = scoreMoves(unit, unit.slot, enemies, allies, hand, gs.clock)
   const hereBest       = hereCandidates[0] ?? null
@@ -877,12 +894,17 @@ export function autoPlayUnit(gs: GameState, unit: Unit): GameState {
 
   if (!execMove) return doPass(workGS, unit.id)
 
-  return doExecuteMove(workGS, {
+  const executed = doExecuteMove(workGS, {
     unitId:   unit.id,
     moveSlot: execMove.slot,
     targetId: execMove.targetId,
     cardId:   null,
   })
+  const afterUnit = [...executed.teamA, ...executed.teamB].find(u => u.id === unit.id)
+  if (afterUnit && afterUnit.alive && afterUnit.nextActionAt <= executed.clock) {
+    return doPass(executed, unit.id)
+  }
+  return executed
 }
 
 export function getReadyUnits(gs: GameState): Unit[] {
