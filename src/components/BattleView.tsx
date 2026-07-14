@@ -318,7 +318,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
           <div className="slots-row">
             {/* 我方: 後→中→前 (facing enemy on the right) */}
             {([3,2,1] as const).map(slot => {
-              const fanClass = slot === 3 ? 'slot-stack-right' : 'slot-stack-left'
+              const fanClass = slot === 3 ? 'slot-stack-right-far' : slot === 2 ? 'slot-stack-left-near' : 'slot-stack-left-far'
               return (
                 <div key={`my-${slot}`} className="slot-col slot-col-my">
                   <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(mySide ?? 'A', slot)] }}>{getSlotLabel(mySide ?? 'A', slot)}</div>
@@ -352,7 +352,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
 
             {/* 敵方: 前→中→後 */}
             {([1,2,3] as const).map(slot => {
-              const fanClass = slot === 3 ? 'slot-stack-left' : 'slot-stack-right'
+              const fanClass = slot === 3 ? 'slot-stack-left-far' : slot === 2 ? 'slot-stack-right-near' : 'slot-stack-right-far'
               return (
                 <div key={`enemy-${slot}`} className="slot-col slot-col-enemy">
                   <div className="slot-name" style={{ color: DIST_COLOR[getSlotLabel(oppSide, slot)] }}>{getSlotLabel(oppSide, slot)}</div>

@@ -1065,30 +1065,48 @@ h2 {
 /* ── Unit card ─────────────────────────────────────────────── */
 /* Poker-card stacking container */
 .slot-cards-stack {
-  position: relative; aspect-ratio: 307 / 458; width: 100%; overflow: visible;
+  position: relative; aspect-ratio: 307 / 458; width: 100%;
+  /* scale down proportionally if arena is too short */
+  max-height: calc(50dvh - 60px);
+  max-width: min(100%, calc((50dvh - 60px) * 307 / 458));
+  align-self: center;
+  overflow: visible;
 }
 .slot-cards-stack > .unit-card {
   position: absolute; top: 0; left: 0; right: 0; bottom: 0; width: 100%;
   transition: transform .25s ease, box-shadow .2s, opacity .25s ease;
 }
 .slot-cards-stack > .unit-card:nth-child(1) { z-index: 3; }
-/* front card semi-transparent only when multiple units stacked */
-.slot-cards-stack > .unit-card:not(:only-child):nth-child(1) { opacity: 0.78; }
-/* fan LEFT: back cards peek left, semi-transparent */
-.slot-stack-left  > .unit-card:nth-child(2) { z-index: 2; transform: translateX(-15%); opacity: .55; }
-.slot-stack-left  > .unit-card:nth-child(3) { z-index: 1; transform: translateX(-25%); opacity: .35; }
-/* fan RIGHT: back cards peek right, semi-transparent */
-.slot-stack-right > .unit-card:nth-child(2) { z-index: 2; transform: translateX(15%);  opacity: .55; }
-.slot-stack-right > .unit-card:nth-child(3) { z-index: 1; transform: translateX(25%);  opacity: .35; }
+/* front card 50% transparent when stacked (single card stays opaque) */
+.slot-cards-stack > .unit-card:not(:only-child):nth-child(1) { opacity: 0.5; }
 
-/* Hover: spread cards fully, all opaque */
+/* fan: back cards peek toward 後, semi-transparent */
+.slot-stack-left-far  > .unit-card:nth-child(2),
+.slot-stack-left-near > .unit-card:nth-child(2) { z-index: 2; transform: translateX(-15%); opacity: .55; }
+.slot-stack-left-far  > .unit-card:nth-child(3),
+.slot-stack-left-near > .unit-card:nth-child(3) { z-index: 1; transform: translateX(-25%); opacity: .35; }
+
+.slot-stack-right-far  > .unit-card:nth-child(2),
+.slot-stack-right-near > .unit-card:nth-child(2) { z-index: 2; transform: translateX(15%);  opacity: .55; }
+.slot-stack-right-far  > .unit-card:nth-child(3),
+.slot-stack-right-near > .unit-card:nth-child(3) { z-index: 1; transform: translateX(25%);  opacity: .35; }
+
+/* Hover: spread all cards, all opaque */
 .slot-col { position: relative; }
 .slot-col:hover { z-index: 20; }
 .slot-col:hover .slot-cards-stack > .unit-card { opacity: 1; }
-.slot-col:hover .slot-stack-left  > .unit-card:nth-child(2) { transform: translateX(-107%); }
-.slot-col:hover .slot-stack-left  > .unit-card:nth-child(3) { transform: translateX(-214%); }
-.slot-col:hover .slot-stack-right > .unit-card:nth-child(2) { transform: translateX(107%);  }
-.slot-col:hover .slot-stack-right > .unit-card:nth-child(3) { transform: translateX(214%);  }
+
+/* 前/後 slots: 2 columns of space, spread fully */
+.slot-col:hover .slot-stack-left-far  > .unit-card:nth-child(2) { transform: translateX(-107%); }
+.slot-col:hover .slot-stack-left-far  > .unit-card:nth-child(3) { transform: translateX(-214%); }
+.slot-col:hover .slot-stack-right-far > .unit-card:nth-child(2) { transform: translateX(107%);  }
+.slot-col:hover .slot-stack-right-far > .unit-card:nth-child(3) { transform: translateX(214%);  }
+
+/* 中 slot: only 1 column of space; 3rd card Y-offset to stay in bounds */
+.slot-col:hover .slot-stack-left-near  > .unit-card:nth-child(2) { transform: translateX(-107%); }
+.slot-col:hover .slot-stack-left-near  > .unit-card:nth-child(3) { transform: translateX(-90%) translateY(40%); }
+.slot-col:hover .slot-stack-right-near > .unit-card:nth-child(2) { transform: translateX(107%);  }
+.slot-col:hover .slot-stack-right-near > .unit-card:nth-child(3) { transform: translateX(90%) translateY(40%);  }
 
 .unit-card {
   background: linear-gradient(155deg, var(--bg3) 0%, var(--bg2) 100%);
@@ -2139,31 +2157,12 @@ h2 {
   /* ── Spotlight panel: hide (only hides at ≤640px wide otherwise) ── */
   .unit-spotlight-panel { display: none; }
 
-  /* ── Character slots: stack units within same slot ── */
+  /* ── Character slots: compact sizes for short screens, same fan layout as web ── */
   .battle-arena   { padding: 2px 6px; }
-  .slots-row      { overflow: visible; padding-top: 0; gap: 3px; }
-  .slot-col       { position: relative; min-width: 80px; height: 155px; overflow: visible; }
-  .slot-name      { position: relative; z-index: 2; font-size: 9px; letter-spacing: 1px; padding: 1px 0; }
-  /* All unit-cards anchor to slot-col bottom; multiple units stack visually */
-  .slot-col .unit-card { position: absolute; width: 100%; bottom: 0; left: 0; }
-  /* 3rd-from-last (lowest HP) peeks most behind */
-  .slot-col .unit-card:nth-last-child(3) { bottom: 28px; left: -5px; opacity: 0.72; }
-  /* 2nd-from-last (mid HP) peeks slightly behind */
-  .slot-col .unit-card:nth-last-child(2) { bottom: 14px; left: -3px; opacity: 0.85; }
-  /* last-child (highest HP) = front, stays at bottom: 0 left: 0 */
-  /* reset poker stack on mobile — use existing absolute stacking instead */
-  .slot-cards-stack { position: static; aspect-ratio: auto; flex: 1; overflow: visible; }
-  .slot-cards-stack > .unit-card {
-    position: absolute; top: auto; right: auto; left: 0; bottom: 0;
-    width: 100%; transform: none; opacity: 1;
-  }
-  .slot-stack-left  > .unit-card:nth-child(2),
-  .slot-stack-left  > .unit-card:nth-child(3),
-  .slot-stack-right > .unit-card:nth-child(2),
-  .slot-stack-right > .unit-card:nth-child(3) { transform: none; }
-  .unit-card      { padding: 3px 5px; flex: none; }
+  .slots-row      { gap: 3px; }
+  .slot-name      { font-size: 9px; letter-spacing: 1px; padding: 1px 0; }
+  .unit-card      { padding: 3px 5px; }
   .unit-card-name { font-size: 10px; margin-bottom: 2px; }
-  .uc-portrait    { height: 115px; flex: none; }
   .status-chips   { margin-top: 2px; }
   .uc-hp          { font-size: 8px; }
   .uc-timer       { font-size: 8px; }
