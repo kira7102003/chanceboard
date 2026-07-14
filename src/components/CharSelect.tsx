@@ -263,10 +263,27 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
       {/* ── Header */}
       <div className="cs-header">
         <h2 style={{ margin: 0 }}>
-          選擇角色 — <span className={`side side-${mySide}`}>{mySide} 方</span>
+          選擇角色 — <span className={`side side-${mySide}`}>{mySide}</span>
         </h2>
         <span className="hint">選 3 位（{selectedCharIds.length}/3）</span>
         {playerCount < 2 && <span className="waiting">等待對手…</span>}
+        <div className="cs-filter-bar">
+          {(['all', '劍', '槍', '法'] as ElFilter[]).map(el => (
+            <button
+              key={el}
+              className={`cs-filter-btn ${elFilter === el ? 'active' : ''}`}
+              style={elFilter === el && el !== 'all'
+                ? { borderColor: EL_COLOR[el], color: EL_COLOR[el], background: `${EL_COLOR[el]}18` }
+                : undefined}
+              onClick={() => setElFilter(el)}
+            >
+              {el === 'all' ? '全部' : EL_LABEL[el]}
+              <span className="cs-filter-count">
+                {el === 'all' ? characters.length : characters.filter(c => c.element === el).length}
+              </span>
+            </button>
+          ))}
+        </div>
         {isSolo && savedTeams.length > 0 && (
           <label className="cs-team-picker">
             <span>隊伍</span>
@@ -282,25 +299,6 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
             </select>
           </label>
         )}
-      </div>
-
-      {/* ── Filter bar */}
-      <div className="cs-filter-bar">
-        {(['all', '劍', '槍', '法'] as ElFilter[]).map(el => (
-          <button
-            key={el}
-            className={`cs-filter-btn ${elFilter === el ? 'active' : ''}`}
-            style={elFilter === el && el !== 'all'
-              ? { borderColor: EL_COLOR[el], color: EL_COLOR[el], background: `${EL_COLOR[el]}18` }
-              : undefined}
-            onClick={() => setElFilter(el)}
-          >
-            {el === 'all' ? '全部' : EL_LABEL[el]}
-            <span className="cs-filter-count">
-              {el === 'all' ? characters.length : characters.filter(c => c.element === el).length}
-            </span>
-          </button>
-        ))}
       </div>
 
       {/* ── Carousel */}
@@ -380,8 +378,11 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
         <button className="cs-nav-btn prev" onClick={() => setFocusIdx(prevIdx)}>
           <span className="cs-nav-arrow">‹</span>
           {prevChar && prevChar.id !== focusedChar?.id && (
-            <span className="cs-nav-adj-name" style={{ fontSize: adjNameSize(prevChar.name) }}>
-              {prevChar.name}
+            <span className="cs-nav-copy">
+              <span className="cs-nav-direction">上一隻角色</span>
+              <span className="cs-nav-adj-name" style={{ fontSize: adjNameSize(prevChar.name) }}>
+                {prevChar.name}
+              </span>
             </span>
           )}
         </button>
@@ -391,8 +392,11 @@ export default function CharSelect({ onConfirm, onToggle }: Props) {
         <button className="cs-nav-btn next" onClick={() => setFocusIdx(nextIdx)}>
           <span className="cs-nav-arrow">›</span>
           {nextChar && nextChar.id !== focusedChar?.id && (
-            <span className="cs-nav-adj-name" style={{ fontSize: adjNameSize(nextChar.name) }}>
-              {nextChar.name}
+            <span className="cs-nav-copy">
+              <span className="cs-nav-direction">下一隻角色</span>
+              <span className="cs-nav-adj-name" style={{ fontSize: adjNameSize(nextChar.name) }}>
+                {nextChar.name}
+              </span>
             </span>
           )}
         </button>

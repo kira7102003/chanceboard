@@ -349,7 +349,7 @@ body { margin: 0; }
 }
 
 /* ── Header ─────────────────────────────────────────────────── */
-.cs-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; width: 100%; }
+.cs-header { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; flex-wrap: wrap; width: 100%; }
 .cs-team-picker {
   margin-left: auto; display: flex; align-items: center; gap: 7px;
   color: var(--gold); font-size: 11px; font-weight: 700;
@@ -362,6 +362,8 @@ body { margin: 0; }
 
 /* ── Filter bar ─────────────────────────────────────────────── */
 .cs-filter-bar { display: flex; gap: 8px; flex-wrap: wrap; }
+.cs-header .cs-filter-bar { flex-wrap: nowrap; gap: 5px; }
+.cs-header .cs-filter-btn { padding: 3px 11px; font-size: 11px; }
 .cs-filter-btn {
   display: flex; align-items: center; gap: 5px;
   padding: 5px 16px; border-radius: 20px;
@@ -534,25 +536,30 @@ body { margin: 0; }
 /* Nav arrows */
 .cs-nav-hint {
   display: flex; align-items: center; justify-content: space-between;
-  flex-shrink: 0; padding: 2px 0;
-  width: min(100%, 520px); gap: 12px;
+  flex-shrink: 0; padding: 3px 0;
+  width: min(100%, 620px); gap: 14px;
 }
 .cs-nav-btn {
-  background: none;
-  border: 1px solid rgba(255,255,255,.2);
-  color: rgba(255,255,255,.65);
-  border-radius: 7px; padding: 4px 8px;
+  background: linear-gradient(135deg, rgba(8,10,24,.88), rgba(28,23,14,.72));
+  border: 1px solid rgba(200,161,90,.38);
+  color: rgba(255,255,255,.78);
+  border-radius: 11px; padding: 6px 12px;
   cursor: pointer; line-height: 1.2;
-  transition: background .15s, color .15s;
-  width: clamp(128px, 18vw, 180px); max-width: 38%;
-  flex-shrink: 0; display: flex; align-items: center; gap: 6px;
+  transition: background .15s, color .15s, border-color .15s, transform .15s;
+  width: clamp(150px, 22vw, 210px); max-width: 40%; min-height: 44px;
+  flex-shrink: 0; display: flex; align-items: center; gap: 9px;
   overflow: hidden; white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0,0,0,.3), inset 0 0 14px rgba(200,161,90,.035);
 }
 .cs-nav-btn.prev { flex-direction: row; justify-content: flex-start; }
 .cs-nav-btn.next { flex-direction: row-reverse; justify-content: flex-start; }
-.cs-nav-btn:hover { background: rgba(255,255,255,.1); color: #fff; }
-.cs-nav-arrow { font-size: 22px; flex-shrink: 0; line-height: 1; color: rgba(200,161,90,.7); }
+.cs-nav-btn.next .cs-nav-copy { text-align: right; }
+.cs-nav-btn:hover { background: rgba(200,161,90,.14); color: #fff; border-color: var(--gold); transform: translateY(-1px); }
+.cs-nav-arrow { font-size: 28px; flex-shrink: 0; line-height: 1; color: var(--gold2); }
+.cs-nav-copy { min-width: 0; display: flex; flex-direction: column; gap: 1px; overflow: hidden; }
+.cs-nav-direction { color: rgba(200,161,90,.55); font-size: 8px; letter-spacing: 1px; }
 .cs-nav-adj-name {
+  display: block;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   color: rgba(200,161,90,.85); min-width: 0;
 }
@@ -2560,7 +2567,8 @@ h2 {
   .cs-header h2 { font-size: 13px; }
   .cs-filter-bar { flex-shrink: 0; }
   .cs-nav-hint  { gap: 4px; flex-shrink: 0; }
-  .cs-nav-btn   { width: 76px; padding: 3px 6px; }
+  .cs-nav-btn   { width: 140px; min-height: 36px; padding: 3px 8px; }
+  .cs-nav-direction { font-size: 7px; }
   .cs-nav-arrow { font-size: 18px; }
   .cs-nav-cur-name { font-size: 13px; }
   .cs-filter-btn { padding: 1px 8px; font-size: 10px; }
