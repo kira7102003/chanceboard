@@ -158,7 +158,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
         color: SLOT_COLOR[moveSlot as MoveSlot] ?? '#aaa',
       })
       setAnimKey(k => k + 1)
-      animTimer.current = setTimeout(() => setMoveAnim(null), 2400)
+      animTimer.current = setTimeout(() => setMoveAnim(null), 2000)
       break // show only the first new moveAnim per batch
     }
   }, [game?.log.length])
@@ -177,6 +177,11 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
 
   const readyUnits = getReadyUnits(game).filter(u => u.side === mySide)
   const isAutoMe  = mySide === 'A' ? game.autoBattleA : game.autoBattleB
+  const currentActionKey = readyUnits[0]
+    ? `${readyUnits[0].id}:${readyUnits[0].nextActionAt}`
+    : null
+  const flowerUsedThisAction = !!mySide && !!currentActionKey && game.flowerActionUsed?.[mySide] === currentActionKey
+  const discardedThisAction = !!mySide && !!currentActionKey && game.discardActionUsed?.[mySide] === currentActionKey
 
 
   const suitInHand: Record<string, number> = { red: 0, green: 0, blue: 0, yellow: 0 }
@@ -264,9 +269,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
       )}
       {/* ── Move animation overlay — directional ── */}
       {moveAnim && (() => {
-        const atkLeft   = moveAnim.attackerSide === 'A'   // A side is on the left
-        const atkFlip   = !atkLeft                         // B attacker faces left (flip)
-        const defFlip   = atkLeft                          // B defender faces left (flip)
+        const defFlip = moveAnim.attackerSide === 'A'
 
         const Portrait = ({ img, name, flip }: { img: string|null; name: string; flip: boolean }) => (
           <>
@@ -277,12 +280,6 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
             }
             <div className="ma-char-name">{name}</div>
           </>
-        )
-
-        const AttackerZone = (
-          <div className="ma-zone-attacker">
-            <Portrait img={moveAnim.charImg} name={moveAnim.charName} flip={atkFlip} />
-          </div>
         )
 
         const TargetZone = (
@@ -307,10 +304,8 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
         return (
           <div className="move-anim-overlay" key={animKey}>
             <div className="ma-battle-row">
-              {atkLeft ? AttackerZone : TargetZone}
-
               <div className="ma-zone-skill">
-                <div className={`ma-skill-wrap ${atkLeft ? 'ma-slide-ab' : 'ma-slide-ba'}`}>
+                <div className="ma-skill-wrap">
                   {moveAnim.img
                     ? <img src={moveAnim.img} className="ma-skill-img" alt=""
                         style={{ filter: `drop-shadow(0 0 18px ${moveAnim.color}cc)` }} />
@@ -319,8 +314,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                 </div>
                 <div className="ma-skill-name" style={{ color: moveAnim.color }}>{moveAnim.name}</div>
               </div>
-
-              {atkLeft ? TargetZone : AttackerZone}
+              {TargetZone}
             </div>
           </div>
         )
@@ -532,7 +526,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                         const discardTarget = myHand.find(c => c.color === SUIT_FOR[sc.slot])
                         return (
                           <SuitCountCard key={sc.slot} slot={sc.slot} cardId={sc.id} name={sc.name} count={count}
-                            onDiscard={discardTarget ? () => onDiscardCard(discardTarget.id) : undefined} />
+                            onDiscard={discardTarget && !discardedThisAction ? () => onDiscardCard(discardTarget.id) : undefined} />
                         )
                       })}
                     </div>
@@ -540,8 +534,9 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                       {flowerCards.map((card, i) => (
                         <FlowerCardFace key={`${card.id}-${i}`} card={card}
                           picked={pickedCardId === card.id}
+                          disabled={flowerUsedThisAction}
                           onPick={() => { setPickedCardId(prev => prev === card.id ? null : card.id); setPickedMove(null) }}
-                          onDiscard={() => onDiscardCard(card.id)} />
+                          onDiscard={discardedThisAction ? undefined : () => onDiscardCard(card.id)} />
                       ))}
                     </div>
                     {au && !previewing && (
@@ -737,12 +732,13 @@ function SuitCountCard({ slot, cardId, name, count, onDiscard }: {
   )
 }
 
-function FlowerCardFace({ card, picked, onPick, onDiscard }: {
-  card: Card; picked: boolean; onPick: () => void; onDiscard: () => void
+function FlowerCardFace({ card, picked, disabled, onPick, onDiscard }: {
+  card: Card; picked: boolean; disabled: boolean; onPick: () => void; onDiscard?: () => void
 }) {
   const img = getCardImg(card.id)
   return (
-    <div className={`cardface suit-flower ${picked ? 'picked' : ''}`} onClick={onPick}>
+    <div className={`cardface suit-flower ${picked ? 'picked' : ''} ${disabled ? 'cf-disabled' : ''}`}
+      onClick={() => !disabled && onPick()}>
       <div className="cf-corner" style={{ color: '#b499e8' }}>✿ 花</div>
       {img
         ? <img src={img} className="cf-img" alt="" onError={e => { e.currentTarget.style.display = 'none' }} />
@@ -750,7 +746,7 @@ function FlowerCardFace({ card, picked, onPick, onDiscard }: {
       }
       <div className="cf-name">{card.name}</div>
       {card.description && <div className="cf-desc">{card.description}</div>}
-      <button className="cf-discard" title="棄牌" onClick={e => { e.stopPropagation(); onDiscard() }}>×</button>
+      {onDiscard && <button className="cf-discard" title="棄牌" onClick={e => { e.stopPropagation(); onDiscard() }}>×</button>}
     </div>
   )
 }

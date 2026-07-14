@@ -35,6 +35,8 @@ export interface GameState {
   round: number
   actingUnitId: string | null
   actPending: { cardId: string | null; moveSlot: MoveSlot | null }
+  flowerActionUsed: Partial<Record<'A' | 'B', string>>
+  discardActionUsed: Partial<Record<'A' | 'B', string>>
   log: BattleLogEntry[]
   winner: 'A' | 'B' | 'draw' | null
   winnerReason: string | null

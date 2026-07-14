@@ -1675,6 +1675,8 @@ h2 {
 .cardface.suit-願 { background: linear-gradient(155deg, #463a12 0%, #181b26 78%); border-color: #9a7a2c; }
 .cardface.suit-flower { background: linear-gradient(155deg, #2a1d40 0%, #181b26 78%); border-color: #6a4fa8; cursor: pointer; }
 .cardface.suit-flower:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,.5); }
+.cardface.suit-flower.cf-disabled { opacity: .4; cursor: not-allowed; filter: grayscale(.65); }
+.cardface.suit-flower.cf-disabled:hover { transform: none; box-shadow: none; }
 .cardface.picked {
   transform: translateY(-8px);
   border-color: var(--gold) !important;
@@ -1984,15 +1986,14 @@ h2 {
 .move-anim-overlay {
   position: fixed; inset: 0; z-index: 9999; pointer-events: none;
   display: flex; align-items: flex-end; justify-content: center;
-  padding-bottom: 13vh;
-  background: rgba(0,0,0,0);
-  animation: moveOverlayFade 2.4s ease-in-out forwards;
+  background: rgba(0,0,0,.42);
+  animation: moveOverlayFade 2s ease-in-out forwards;
 }
 
 /* Three-zone horizontal row: left | skill | right */
 .ma-battle-row {
-  display: flex; align-items: flex-end; justify-content: center;
-  width: 100%; max-width: min(920px, 96vw); padding: 0 8px; gap: 0;
+  display: flex; align-items: center; justify-content: stretch;
+  width: 100vw; height: 100vh; max-width: none; padding: 3vh 3vw; gap: 2vw;
 }
 
 /* Attacker zone — character fades in on their side */
@@ -2003,9 +2004,9 @@ h2 {
 
 /* Target zone — fades in, then shakes when skill arrives */
 .ma-zone-target {
-  flex: 2; display: flex; flex-direction: column; align-items: center; gap: 7px;
-  opacity: 0;
-  animation: maTargetIn 1.6s .72s ease-in-out both, maShake .52s 1.12s ease-in-out;
+  flex: 1 1 50%; min-width: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 7px;
+  animation: maTargetHold 2s ease-in-out both, maShake .52s .72s ease-in-out;
 }
 
 /* Group targets row inside target zone */
@@ -2018,12 +2019,12 @@ h2 {
 
 /* Character portrait */
 .ma-portrait {
-  width: 100%; max-width: 180px; height: clamp(140px, 28vh, 260px);
+  width: 100%; max-width: 44vw; height: min(72vh, 680px);
   object-fit: contain; object-position: center bottom;
   border-radius: 8px; display: block;
 }
 .ma-no-img {
-  width: 100%; max-width: 180px; height: clamp(140px, 28vh, 260px);
+  width: 100%; max-width: 44vw; height: min(72vh, 680px);
   border-radius: 8px; background: rgba(30,30,50,.5);
   display: flex; align-items: center; justify-content: center;
   font-size: 2.4rem; color: rgba(200,200,240,.3);
@@ -2034,7 +2035,9 @@ h2 {
 
 /* Center skill zone — image slides toward target */
 .ma-zone-skill {
-  flex: 2.5; display: flex; flex-direction: column; align-items: center; gap: 10px;
+  flex: 1 1 50%; min-width: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 10px;
+  animation: maSkillIn 2s ease-in-out both;
 }
 .ma-skill-wrap {
   width: 100%; display: flex; justify-content: center;
@@ -2061,11 +2064,11 @@ h2 {
 }
 
 .ma-skill-img {
-  max-width: 148px; width: 100%; height: clamp(100px, 20vh, 180px);
+  max-width: 44vw; width: 100%; height: min(72vh, 680px);
   object-fit: contain; border-radius: 10px; background: rgba(10,10,22,.4);
 }
 .ma-skill-empty {
-  width: 120px; height: clamp(100px, 20vh, 180px);
+  width: 100%; max-width: 44vw; height: min(72vh, 680px);
   border-radius: 10px; background: rgba(30,30,50,.4);
   display: flex; align-items: center; justify-content: center;
   font-size: 3.2rem;
@@ -2074,7 +2077,7 @@ h2 {
   font-family: 'Cinzel', 'Microsoft YaHei', serif;
   font-size: clamp(.85rem, 2vw, 1.25rem); font-weight: 700; letter-spacing: 3px;
   text-shadow: 0 0 40px currentColor, 0 0 12px currentColor, 0 2px 8px rgba(0,0,0,.95);
-  text-align: center; animation: maCharIn 1.35s forwards;
+  text-align: center;
 }
 
 /* Shared keyframes */
@@ -2088,6 +2091,18 @@ h2 {
   0%   { opacity: 0; transform: translateY(8px) scale(.92); }
   18%  { opacity: 1; transform: translateY(0) scale(1); }
   78%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes maSkillIn {
+  0%   { opacity: 0; transform: scale(.88); }
+  14%  { opacity: 1; transform: scale(1); }
+  82%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes maTargetHold {
+  0%   { opacity: 0; }
+  14%  { opacity: 1; }
+  82%  { opacity: 1; }
   100% { opacity: 0; }
 }
 @keyframes maShake {

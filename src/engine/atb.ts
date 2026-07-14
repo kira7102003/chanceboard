@@ -151,6 +151,8 @@ export function initBattleState(
     round: 1,
     actingUnitId: null,
     actPending: { cardId: null, moveSlot: null },
+    flowerActionUsed: {},
+    discardActionUsed: {},
     log: [],
     winner: null,
     winnerReason: null,
@@ -260,8 +262,16 @@ export function doPlayCard(gs: GameState, side: 'A' | 'B', cardId: string): Game
   const idx  = hand.findIndex(c => c.id === cardId)
   if (idx === -1) return gs
 
-  const [card] = hand.splice(idx, 1)
+  const card = hand[idx]
+  const actingUnit = getReadyUnits(s).find(u => u.side === side)
+  if (!actingUnit) return gs
+  const actionKey = `${actingUnit.id}:${actingUnit.nextActionAt}`
+  s.flowerActionUsed ??= {}
+  if (!card.isSuitCard && s.flowerActionUsed[side] === actionKey) return gs
+
+  hand.splice(idx, 1)
   s.discardPublic.push(card)
+  if (!card.isSuitCard) s.flowerActionUsed[side] = actionKey
 
   const log: LogLine[] = []
   // For flower cards, run effects; for suit cards, add to condition pool
@@ -631,8 +641,14 @@ export function doDiscardCard(gs: GameState, side: 'A' | 'B', cardId: string): G
   const hand = side === 'A' ? s.handA : s.handB
   const idx = hand.findIndex(c => c.id === cardId)
   if (idx === -1) return gs
+  const actingUnit = getReadyUnits(s).find(u => u.side === side)
+  if (!actingUnit) return gs
+  const actionKey = `${actingUnit.id}:${actingUnit.nextActionAt}`
+  s.discardActionUsed ??= {}
+  if (s.discardActionUsed[side] === actionKey) return gs
   const [card] = hand.splice(idx, 1)
   s.discardPublic.push(card)
+  s.discardActionUsed[side] = actionKey
   s.log.push({ html: `${side} 棄牌 <b>${card.name}</b>（下回合補牌）` })
   return s
 }
