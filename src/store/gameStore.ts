@@ -160,12 +160,17 @@ export const useGameStore = create<Store>((set, get) => ({
   },
 
   tick: () => {
-    const { game, isHost } = get()
+    const { game, isHost, isSolo, isAIBattle } = get()
     if (!game || !isHost || game.phase === 'end') return
+    // Solo B is always AI-controlled even if a stale/synced game snapshot loses
+    // its autoBattleB flag. Spectator AI battles likewise never wait for input.
+    const sideIsAuto = (side: 'A' | 'B', state: GameState) =>
+      isAIBattle || (isSolo && side === 'B') ||
+      (side === 'A' ? state.autoBattleA : state.autoBattleB)
     // SA doc 7.1: 任何一方有 ready 單位且未開啟自動時，整個暫停等待該方輸入
     const readyNow = getReadyUnits(game)
-    const aPending = !game.autoBattleA && readyNow.some(u => u.side === 'A')
-    const bPending = !game.autoBattleB && readyNow.some(u => u.side === 'B')
+    const aPending = !sideIsAuto('A', game) && readyNow.some(u => u.side === 'A')
+    const bPending = !sideIsAuto('B', game) && readyNow.some(u => u.side === 'B')
     if (aPending || bPending) return
     // If both sides are only waiting for ATB, jump through the idle time to the
     // next actionable unit. Existing ready/automatic turns still advance one
@@ -173,9 +178,7 @@ export const useGameStore = create<Store>((set, get) => ({
     let next = readyNow.length === 0 ? fastForwardToNextReady(game) : tickATB(game)
     // SA doc 7.10: one AI action per tick so every move is visible (not batched)
     const ready = getReadyUnits(next)
-    const toPlay = ready.find(u =>
-      (u.side === 'A' && next.autoBattleA) || (u.side === 'B' && next.autoBattleB)
-    )
+    const toPlay = ready.find(u => sideIsAuto(u.side, next))
     if (toPlay) next = autoPlayUnit(next, toPlay)
     get()._applyGame(next)
   },
