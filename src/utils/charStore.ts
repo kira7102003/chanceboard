@@ -8,6 +8,37 @@ const MANIFEST_PATH = 'image-manifest.json'
 
 // In-memory set of keys known to exist on Supabase
 const _manifestKeys = new Set<string>()
+const _warmedUrls = new Set<string>()
+
+/** Warm remote game art while the browser is idle so opening panels does not
+ * pay the download + decode cost on the first visible frame. */
+export function warmImageCache(): void {
+  const priority = (key: string) => key.startsWith('cb_img_') ? 0
+    : key.startsWith('cb_card_img_') ? 1
+      : key.startsWith('cb_move_img_') ? 2 : 3
+  const urls = [..._manifestKeys]
+    .sort((a, b) => priority(a) - priority(b))
+    .map(getUrlByKey)
+    .filter((url): url is string => !!url && !_warmedUrls.has(url))
+
+  let index = 0
+  const warmNext = () => {
+    const url = urls[index++]
+    if (!url) return
+    _warmedUrls.add(url)
+    const img = new Image()
+    img.decoding = 'async'
+    img.fetchPriority = 'low'
+    img.src = url
+    img.decode().catch(() => {}).finally(schedule)
+  }
+  const schedule = () => {
+    if (index >= urls.length) return
+    if ('requestIdleCallback' in window) window.requestIdleCallback(warmNext, { timeout: 1200 })
+    else globalThis.setTimeout(warmNext, 40)
+  }
+  schedule()
+}
 
 // Listeners that fire when initFromCloud() completes
 type SyncListener = () => void

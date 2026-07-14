@@ -11,8 +11,9 @@ interface Props {
 }
 
 export default function Teams({ onClose }: Props) {
-  const { savedTeams, defaultTeamId, saveTeam, deleteTeam, setDefaultTeam } = usePlayerStore()
+  const { savedTeams, defaultTeamId, ownedCharIds, saveTeam, deleteTeam, setDefaultTeam } = usePlayerStore()
   const allChars = getChars().filter(c => c.enabled !== false)
+  const ownedChars = allChars.filter(c => ownedCharIds.includes(c.id))
 
   const [creating,  setCreating]  = useState(false)
   const [picking,   setPicking]   = useState<string[]>([])
@@ -59,8 +60,20 @@ export default function Teams({ onClose }: Props) {
                 onChange={e => setTeamName(e.target.value)} />
               <span className="hint">{picking.length}/3</span>
             </div>
+            <div className="team-pick-slots">
+              {POS.map((pos, i) => {
+                const char = ownedChars.find(c => c.id === picking[i])
+                return (
+                  <div key={pos} className={`team-pick-slot${char ? ' filled' : ''}`}
+                    style={{ borderColor: char ? POS_COL[i] : undefined }}>
+                    <b style={{ color: POS_COL[i] }}>{pos}</b>
+                    <span>{char?.name ?? '選擇角色'}</span>
+                  </div>
+                )
+              })}
+            </div>
             <div className="coll-grid" style={{ marginTop: 10 }}>
-              {allChars.map(c => {
+              {ownedChars.map(c => {
                 const sel    = picking.includes(c.id)
                 const selIdx = picking.indexOf(c.id)
                 const imgUrl = getUrlByKey(`cb_img_${c.id}`)
@@ -72,7 +85,7 @@ export default function Teams({ onClose }: Props) {
                       style={{ borderColor: sel ? POS_COL[selIdx] : col + '33',
                                boxShadow: sel ? `0 0 10px ${POS_COL[selIdx]}55` : 'none' }}>
                       {imgUrl
-                        ? <img src={imgUrl} alt={c.name} className="coll-img" />
+                        ? <img src={imgUrl} alt={c.name} className="coll-img" decoding="async" />
                         : <div className="coll-placeholder" style={{ color: col }}>{c.name[0]}</div>
                       }
                       {sel && (
@@ -99,7 +112,11 @@ export default function Teams({ onClose }: Props) {
               </div>
             )}
             {savedTeams.map(team => (
-              <div key={team.id} className="team-item">
+              <div key={team.id} className={`team-item${defaultTeamId === team.id ? ' is-default' : ''}`}>
+                <div className="team-item-head">
+                  <span className="team-name">{team.name}</span>
+                  {defaultTeamId === team.id && <span className="team-default-badge">預設隊伍</span>}
+                </div>
                 <div className="team-portraits">
                   {team.charIds.map((cid, i) => {
                     const ch     = allChars.find(c => c.id === cid)
@@ -109,7 +126,7 @@ export default function Teams({ onClose }: Props) {
                       <div key={cid} className="team-portrait-wrap">
                         <div className="team-portrait" style={{ borderColor: POS_COL[i] + '66' }}>
                           {imgUrl
-                            ? <img src={imgUrl} className="team-portrait-img" alt="" />
+                            ? <img src={imgUrl} className="team-portrait-img" alt="" decoding="async" />
                             : <span style={{ color: col, fontSize: 16 }}>{ch?.name[0]}</span>
                           }
                         </div>
@@ -120,7 +137,6 @@ export default function Teams({ onClose }: Props) {
                   })}
                 </div>
                 <div className="team-footer">
-                  <span className="team-name">{team.name}</span>
                   <div className="team-actions">
                     <button className={`btn ${defaultTeamId === team.id ? 'primary' : ''}`} style={{ fontSize: 12 }}
                       onClick={() => setDefaultTeam(team.id)}>

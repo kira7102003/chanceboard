@@ -8,7 +8,7 @@ import Login       from './components/Login'
 import { useGameStore }           from './store/gameStore'
 import { usePlayerStore }         from './store/playerStore'
 import { useRoom, loadSession, clearSession } from './hooks/useRoom'
-import { initFromCloud, getBgUrl, getAvailableBattleBgUrls } from './utils/charStore'
+import { initFromCloud, getBgUrl, getAvailableBattleBgUrls, warmImageCache } from './utils/charStore'
 import { useSolo }                from './hooks/useSolo'
 import { useAIBattle }           from './hooks/useAIBattle'
 import { supabase }               from './utils/supabase'
@@ -75,7 +75,10 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    initFromCloud().finally(() => setCloudSynced(true))
+    initFromCloud().finally(() => {
+      warmImageCache()
+      setCloudSynced(true)
+    })
   }, [])
 
   const { appPhase, mySide, isSolo, isAIBattle } = useGameStore()
