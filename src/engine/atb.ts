@@ -406,7 +406,7 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
   const deadAllies = (u.side === 'A' ? s.teamA : s.teamB).filter(unit => !unit.alive)
   const effectTargets = new Set(move.effectOps.map(op => op.target))
   const visualTargets = dealsDamage
-    ? targets
+    ? (move.scope === '群' ? allEnemies : targets)
     : effectTargets.has('enemyAll')
       ? allEnemies
     : effectTargets.has('allyAll')
