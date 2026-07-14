@@ -9,7 +9,9 @@ interface FitBattleLayoutRefs {
   slotColRef: RefObject<HTMLDivElement | null>
 }
 
-const CARD_ASPECT = 307 / 458
+// Matches the Admin portrait-crop tool's 768x1376 target (24:43), not the
+// generic 307:458 card shape — see .slot-cards-stack in index.css.
+const CARD_ASPECT = 24 / 43
 
 // Ported from chanceboard.html's fitBattleLayout(): split the space below the
 // header between the arena and the act row by the action panel's actual content

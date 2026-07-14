@@ -1065,8 +1065,11 @@ h2 {
 /* ── Unit card ─────────────────────────────────────────────── */
 /* Poker-card stacking container */
 .slot-cards-stack {
-  position: relative; aspect-ratio: 307 / 458; width: auto;
-  /* height driven by useFitBattleLayout() (ported from chanceboard.html's
+  position: relative; aspect-ratio: 24 / 43; width: auto;
+  /* 24:43 matches the Admin portrait-crop tool's 768x1376 target (see
+     PORTRAIT_W/PORTRAIT_H in Admin.tsx) so the box hugs the character with
+     no letterbox gap and no cropping needed.
+     height driven by useFitBattleLayout() (ported from chanceboard.html's
      fitBattleLayout()); fallback matches the old proportional-shrink guess
      for the moment before the layout effect runs on first paint. */
   height: var(--board-cell-h, calc(50dvh - 60px));
@@ -1160,7 +1163,7 @@ h2 {
 }
 .uc-portrait-img {
   position: absolute; inset: 0; width: 100%; height: 100%;
-  object-fit: cover; object-position: center bottom;
+  object-fit: contain; object-position: center bottom;
   display: block;
 }
 .uc-portrait-name {
@@ -2040,7 +2043,7 @@ h2 {
   .slots-row    { gap: 4px; padding-top: 0; }
   /* 手機：移除 307px 限制，6 欄等比縮放 */
   .slot-col     { flex: 1 1 0; min-width: 0; }
-  .slot-cards-stack { aspect-ratio: 307 / 458; }
+  .slot-cards-stack { aspect-ratio: 24 / 43; }
   .unit-card    { padding: 5px 6px; }
   .unit-card-name { font-size: 11px; }
   .battle-header { padding: 4px 8px; gap: 4px; flex-wrap: wrap; }
