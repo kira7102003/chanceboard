@@ -96,6 +96,7 @@ interface MoveAnim {
   charName: string
   charImg: string | null
   attackerSide: 'A' | 'B'
+  targetSide: 'A' | 'B'
   targetName: string | null
   targetCharImg: string | null
   targetUnitId: string | null
@@ -158,7 +159,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
       const entry = game.log[i]
       if (!entry.moveAnim) continue
       lastAnimIdx.current = i
-      const { moveId, moveName, moveSlot, charName, charId, attackerSide, targetName, targetCharId, targetUnitId, groupTargets, dealsDamage, hasTarget, missed } = entry.moveAnim
+      const { moveId, moveName, moveSlot, charName, charId, attackerSide, targetSide, targetName, targetCharId, targetUnitId, groupTargets, dealsDamage, hasTarget, missed } = entry.moveAnim
       const img = getMoveImg(moveId)
       const charImg = charId ? (getCharWideImg(charId) ?? getCharImg(charId)) : null
       const targetCharImg = targetCharId ? (getCharWideImg(targetCharId) ?? getCharImg(targetCharId)) : null
@@ -171,6 +172,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
         img,
         name: moveName, charName, charImg,
         attackerSide: attackerSide ?? 'A',
+        targetSide: targetSide ?? (attackerSide === 'A' ? 'B' : 'A'),
         targetName: targetName ?? null, targetCharImg,
         targetUnitId: targetUnitId ?? null,
         isGroup: !targetName,
@@ -181,7 +183,9 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
         missed: missed ?? false,
       })
       setAnimKey(k => k + 1)
-      animTimer.current = setTimeout(() => setMoveAnim(null), 2000)
+      const sideIsAuto = attackerSide === 'A' ? game.autoBattleA : game.autoBattleB
+      const manualAnimation = !isAIBattle && !sideIsAuto && !(isSolo && attackerSide === 'B')
+      animTimer.current = setTimeout(() => setMoveAnim(null), manualAnimation ? 3400 : 2300)
       break // show only the first new moveAnim per batch
     }
   }, [game?.log.length])
@@ -298,7 +302,9 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
       {moveAnim && (() => {
         const attackFromLeft = moveAnim.attackerSide === 'A'
         const mirrorSkill = !attackFromLeft
-        const mirrorTarget = attackFromLeft
+        const mirrorTarget = moveAnim.targetSide === 'B'
+        const sideIsAuto = moveAnim.attackerSide === 'A' ? game.autoBattleA : game.autoBattleB
+        const manualAnimation = !isAIBattle && !sideIsAuto && !(isSolo && moveAnim.attackerSide === 'B')
 
         const Portrait = ({ img, name, flip, showName = true }: { img: string|null; name: string; flip: boolean; showName?: boolean }) => (
           <>
@@ -333,7 +339,8 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
         )
 
         return (
-          <div className="move-anim-overlay" key={animKey}>
+          <div className={`move-anim-overlay${manualAnimation ? ' ma-manual' : ''}`} key={animKey}
+            style={{ '--ma-duration': manualAnimation ? '3.4s' : '2.3s' } as React.CSSProperties}>
             <div className={`ma-battle-row ${attackFromLeft ? 'ma-from-left' : 'ma-from-right'} ${!moveAnim.dealsDamage || !moveAnim.hasTarget ? 'ma-nondamage' : ''}`}>
               <div className="ma-zone-skill">
                 <div className="ma-skill-wrap">
@@ -348,7 +355,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                 </div>
                 <div className="ma-skill-name" style={{ color: moveAnim.color }}>{moveAnim.name}</div>
               </div>
-              {moveAnim.dealsDamage && moveAnim.hasTarget && TargetZone}
+              {moveAnim.hasTarget && TargetZone}
             </div>
           </div>
         )

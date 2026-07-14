@@ -2318,7 +2318,7 @@ h2 {
   position: fixed; inset: 0; z-index: 9999; pointer-events: none;
   display: flex; align-items: flex-end; justify-content: center;
   background: rgba(0,0,0,.42);
-  animation: moveOverlayFade 2s ease-in-out forwards;
+  animation: moveOverlayFade var(--ma-duration, 2.3s) ease-in-out forwards;
 }
 
 /* Three-zone horizontal row: left | skill | right */
@@ -2338,11 +2338,12 @@ h2 {
 .ma-zone-target {
   flex: 1 1 50%; min-width: 0; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 7px;
-  animation: maTargetHold 2s ease-in-out both, maShake .52s .72s ease-in-out;
+  animation: maTargetHold var(--ma-duration, 2.3s) ease-in-out both, maShake .52s .9s ease-in-out;
 }
 .ma-zone-target.ma-missed {
-  animation: maTargetHold 2s ease-in-out both;
+  animation: maTargetHold var(--ma-duration, 2.3s) ease-in-out both;
 }
+.ma-nondamage .ma-zone-target { animation: maTargetHold var(--ma-duration, 2.3s) ease-in-out both; }
 .ma-miss-text {
   position: absolute;
   z-index: 5;
@@ -2398,7 +2399,7 @@ h2 {
 .ma-zone-skill {
   flex: 1 1 50%; min-width: 0; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 10px;
-  animation: maSkillIn 2s ease-in-out both;
+  animation: maSkillIn var(--ma-duration, 2.3s) ease-in-out both;
 }
 .ma-skill-wrap {
   width: 100%; display: flex; justify-content: center;

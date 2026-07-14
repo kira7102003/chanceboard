@@ -396,10 +396,28 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
   const SLOT_COLOR: Record<string, string> = { sword:'#e87733', gun:'#22cc77', magic:'#9955ee', wish:'#ddaa22', passive:'#666' }
   const moveColor = SLOT_COLOR[action.moveSlot] ?? '#aaa'
   const moveLabel = `<span style="color:${moveColor}">【${move.name}】</span>`
-  const firstTarget = move.scope === '群' ? undefined : targets[0]
-  const groupTargets = move.scope === '群' ? targets.map(t => ({ name: t.name, charId: t.characterId })) : undefined
   const dealsDamage = typeof move.powerRatio === 'number' && move.powerRatio > 0
-  const moveAnim  = { moveId: move.id, moveName: move.name, moveSlot: action.moveSlot, charName: u.name, charId: u.characterId, attackerSide: u.side as 'A' | 'B', targetName: firstTarget?.name, targetCharId: firstTarget?.characterId, targetUnitId: firstTarget?.id, groupTargets, dealsDamage, hasTarget: targets.length > 0, missed: false }
+  const allies = (u.side === 'A' ? s.teamA : s.teamB).filter(unit => unit.alive)
+  const allEnemies = (u.side === 'A' ? s.teamB : s.teamA).filter(unit => unit.alive)
+  const deadAllies = (u.side === 'A' ? s.teamA : s.teamB).filter(unit => !unit.alive)
+  const effectTargets = new Set(move.effectOps.map(op => op.target))
+  const visualTargets = dealsDamage
+    ? targets
+    : effectTargets.has('enemyAll')
+      ? allEnemies
+    : effectTargets.has('allyAll')
+      ? allies
+      : effectTargets.has('sameCell') || effectTargets.has('sameCellAllies')
+        ? allies.filter(unit => unit.slot === u.slot)
+        : effectTargets.has('randomDeadAlly') && deadAllies.length > 0
+          ? deadAllies
+          : effectTargets.has('allyLowestHp')
+            ? [allies.reduce((lowest, unit) => unit.hp < lowest.hp ? unit : lowest, u)]
+        : [u]
+  const animationIsGroup = move.scope === '群' || visualTargets.length > 1
+  const firstTarget = animationIsGroup ? undefined : visualTargets[0]
+  const groupTargets = animationIsGroup ? visualTargets.map(t => ({ name: t.name, charId: t.characterId })) : undefined
+  const moveAnim  = { moveId: move.id, moveName: move.name, moveSlot: action.moveSlot, charName: u.name, charId: u.characterId, attackerSide: u.side as 'A' | 'B', targetSide: visualTargets[0]?.side ?? u.side, targetName: firstTarget?.name, targetCharId: firstTarget?.characterId, targetUnitId: firstTarget?.id, groupTargets, dealsDamage, hasTarget: visualTargets.length > 0, missed: false }
   const targetDesc = move.scope === '群'
     ? '⚔ 群體'
     : targets.length > 0
