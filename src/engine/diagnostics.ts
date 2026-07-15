@@ -7,6 +7,7 @@ import {
 } from './atb'
 import { runEffectOps } from './effects'
 import { resolveHit } from './combat'
+import { getMoveImg } from '../utils/charStore'
 
 export interface DiagnosticLine {
   ok: boolean
@@ -31,7 +32,21 @@ function healthy(state: GameState): boolean {
 }
 
 /** Browser-safe counterpart of scripts/test-all-moves.mjs for the admin UI. */
-export function runAllMoveTests(roster = characters): MoveTestReport {
+function verifyImage(url: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const image = new Image()
+    const timer = setTimeout(() => reject(new Error('招式圖片載入逾時')), 12000)
+    image.onload = () => {
+      clearTimeout(timer)
+      if (image.naturalWidth <= 0 || image.naturalHeight <= 0) reject(new Error('招式圖片尺寸無效'))
+      else resolve()
+    }
+    image.onerror = () => { clearTimeout(timer); reject(new Error('招式圖片載入失敗（網址失效或 404）')) }
+    image.src = url
+  })
+}
+
+export async function runAllMoveTests(roster = characters): Promise<MoveTestReport> {
   const started = performance.now()
   const originalRandom = Math.random
   const lines: DiagnosticLine[] = []
@@ -79,6 +94,14 @@ export function runAllMoveTests(roster = characters): MoveTestReport {
             const result = doExecuteMove(state, { unitId: actor.id, moveSlot: slot, targetId: target.id, cardId: null })
             if (result === state) throw new Error('出手後遊戲狀態沒有更新')
             if (!result.log.some(entry => entry.html.includes(move.name))) throw new Error('戰鬥紀錄缺少招式名稱')
+            const animation = [...result.log].reverse().find(entry => entry.moveAnim)?.moveAnim
+            if (!animation) throw new Error('出手後沒有建立招式動畫資料')
+            if (animation.moveId !== move.id || animation.moveName !== move.name) {
+              throw new Error(`招式動畫對應錯誤：預期 ${move.id}/${move.name}，實際 ${animation.moveId}/${animation.moveName}`)
+            }
+            const moveImage = getMoveImg(move.id)
+            if (!moveImage) throw new Error(`缺少招式圖片：cb_move_img_${move.id}`)
+            await verifyImage(moveImage)
             if (result.discardPublic.filter(entry => entry.id === card.id).length < need) throw new Error('沒有正確消耗手牌')
             if (move.cooldown) {
               const after = result.teamA.find(unit => unit.id === actor.id)!

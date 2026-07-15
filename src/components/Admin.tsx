@@ -239,8 +239,8 @@ function CharacterDiagnostics({ chars }: { chars: Character[] }) {
   const testMoves = () => {
     setRunningMoves(true)
     setMoveReport(null)
-    setTimeout(() => {
-      try { setMoveReport(runAllMoveTests(chars)) }
+    setTimeout(async () => {
+      try { setMoveReport(await runAllMoveTests(chars)) }
       finally { setRunningMoves(false) }
     }, 0)
   }
