@@ -115,6 +115,8 @@ export function runEffectOps(
   log: LogLine[],
 ) {
   for (const op of ops) {
+    const opChance = (op.chance as number | undefined) ?? 1
+    if (opChance < 1 && Math.random() >= opChance) continue
     const targets = resolveTarget(op, actor, primaryTarget, gs)
 
     switch (op.op) {
@@ -354,8 +356,10 @@ export function runEffectOps(
         break
 
       case 'vengeanceScaling': {
+        const base = (op.base as number | undefined) ?? 0
+        const divisor = Math.max(1, (op.divisor as number | undefined) ?? 5)
         for (const t of targets) {
-          const dmg = Math.floor(gs.round / 5)
+          const dmg = Math.floor(base + gs.round / divisor)
           applyDamage(t, dmg)
           log.push({ html: `<b>${t.name}</b> 受到 ${dmg} 傷害（回合懲罰）` })
         }
@@ -415,7 +419,9 @@ export function runEffectOps(
 
       case 'clearStatuses': {
         for (const t of targets) {
+          const clearedCount = t.statuses.length
           t.statuses = []
+          if (op.healPerStatus && clearedCount > 0) healUnit(t, clearedCount)
           log.push({ html: `<b>${t.name}</b> 清除全部狀態` })
         }
         break
