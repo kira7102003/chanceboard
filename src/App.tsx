@@ -78,10 +78,11 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    Promise.allSettled([initFromCloud(), initDailyRewards()]).finally(() => {
+    initFromCloud().finally(() => {
       warmImageCache()
       setCloudSynced(true)
     })
+    initDailyRewards().catch(error => console.warn('[dailyRewards] initialization failed', error))
   }, [])
 
   const { appPhase, mySide, isSolo, isAIBattle } = useGameStore()

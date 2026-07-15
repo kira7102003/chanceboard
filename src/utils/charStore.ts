@@ -9,37 +9,43 @@ const MANIFEST_PATH = 'image-manifest.json'
 // In-memory set of keys known to exist on Supabase
 const _manifestKeys = new Set<string>()
 const _warmedUrls = new Set<string>()
+const _warmingUrls = new Set<string>()
 
-/** Warm remote game art while the browser is idle so opening panels does not
- * pay the download + decode cost on the first visible frame. */
+/** Download and decode gameplay art as soon as the lobby opens. Character art
+ * is first because it is used by selection and battle; move art follows for
+ * the first attack animation. Exact URLs are warmed (not thumbnail URLs), so
+ * the browser can reuse the same decoded resources later. */
 export function warmImageCache(): void {
   const priority = (key: string) => key.startsWith('cb_img_') ? 0
-    : key.startsWith('cb_card_img_') ? 1
-      : key.startsWith('cb_move_img_') ? 2 : 3
+    : key.startsWith('cb_wide_img_') ? 1
+      : key.startsWith('cb_move_img_') ? 2
+        : key.startsWith('cb_card_img_') ? 3 : 4
   const urls = [..._manifestKeys]
     .sort((a, b) => priority(a) - priority(b))
-    .map(key => key.startsWith('cb_img_') || key.startsWith('cb_card_img_')
-      ? getThumbByKey(key, 260)
-      : getUrlByKey(key))
-    .filter((url): url is string => !!url && !_warmedUrls.has(url))
+    .filter(key => priority(key) <= 2)
+    .map(getUrlByKey)
+    .filter((url): url is string => !!url && !_warmedUrls.has(url) && !_warmingUrls.has(url))
 
   let index = 0
   const warmNext = () => {
     const url = urls[index++]
     if (!url) return
-    _warmedUrls.add(url)
+    _warmingUrls.add(url)
     const img = new Image()
     img.decoding = 'async'
     img.fetchPriority = 'low'
     img.src = url
-    img.decode().catch(() => {}).finally(schedule)
+    img.decode().catch(() => {}).finally(() => {
+      _warmingUrls.delete(url)
+      _warmedUrls.add(url)
+      warmNext()
+    })
   }
-  const schedule = () => {
-    if (index >= urls.length) return
-    if ('requestIdleCallback' in window) window.requestIdleCallback(warmNext, { timeout: 1200 })
-    else globalThis.setTimeout(warmNext, 40)
-  }
-  schedule()
+
+  // A small parallel pool keeps the lobby responsive while avoiding the old
+  // one-image-at-a-time delay that often lasted into the first battle.
+  const workers = Math.min(4, urls.length)
+  for (let i = 0; i < workers; i++) globalThis.setTimeout(warmNext, 0)
 }
 
 // Listeners that fire when initFromCloud() completes
