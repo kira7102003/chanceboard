@@ -66,6 +66,9 @@ export async function runAllMoveTests(roster = characters): Promise<MoveTestRepo
 
           if (slot === '被') {
             if (!move.effectTrigger || move.effectOps.length === 0) throw new Error('被動沒有可執行效果')
+            const passiveImage = getMoveImg(move.id)
+            if (!passiveImage) throw new Error(`缺少被動圖片：cb_move_img_${move.id}`)
+            await verifyImage(passiveImage)
             const actor = makeUnit(character.id, 'A', 3, 0)
             const opponentId = character.id === '001' ? '002' : '001'
             const state = initBattleState([character.id], [opponentId], 'pawn')
