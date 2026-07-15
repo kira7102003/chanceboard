@@ -6,6 +6,8 @@ import type { Character } from '../types/character'
 import type { Move, RangeType, Scope } from '../types/move'
 import { DEFAULT_DAILY_REWARD, getDailyRewards, localDateKey, saveDailyRewardSettings } from '../utils/dailyRewards'
 import type { DailyReward } from '../utils/dailyRewards'
+import { runAllMoveTests, runWinRateLadder } from '../engine/diagnostics'
+import type { MoveTestReport, LadderReport } from '../engine/diagnostics'
 
 const EL_COLOR: Record<string, string>   = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee' }
 const SLOT_COLOR: Record<string, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee', '願': '#ddaa22', '被': '#666688' }
@@ -144,6 +146,16 @@ export default function Admin({ onBack }: Props) {
               <div className="adm-list-sub">上月～下下月</div>
             </div>
           </div>
+          <div
+            className={`adm-list-item ${selId === '__tests__' ? 'active' : ''}`}
+            onClick={() => { setSelId('__tests__'); setTab('basic') }}
+          >
+            <div className="adm-list-tool-icon">🧪</div>
+            <div className="adm-list-text">
+              <div className="adm-list-name" style={{ color: '#c8a15a' }}>角色測試</div>
+              <div className="adm-list-sub">招式 LOG · 勝率天梯</div>
+            </div>
+          </div>
           <div style={{ height: 1, background: 'rgba(200,161,90,.12)', margin: '2px 0' }} />
           {chars.map((c, i) => (
             <div key={c.id}
@@ -190,6 +202,8 @@ export default function Admin({ onBack }: Props) {
             <div className="adm-panel"><CardImgSettings /></div>
           ) : selId === '__daily__' ? (
             <div className="adm-panel"><DailyRewardSettings /></div>
+          ) : selId === '__tests__' ? (
+            <div className="adm-panel"><CharacterDiagnostics /></div>
           ) : char ? (
             <>
               <div className="adm-tabs">
@@ -209,6 +223,116 @@ export default function Admin({ onBack }: Props) {
           ) : null}
         </div>
       </div>
+    </div>
+  )
+}
+
+function CharacterDiagnostics() {
+  const [moveReport, setMoveReport] = useState<MoveTestReport | null>(null)
+  const [ladderReport, setLadderReport] = useState<LadderReport | null>(null)
+  const [gamesPerPair, setGamesPerPair] = useState(2)
+  const [runningMoves, setRunningMoves] = useState(false)
+  const [runningLadder, setRunningLadder] = useState(false)
+  const [progress, setProgress] = useState({ done: 0, total: 0 })
+  const [showMatchLog, setShowMatchLog] = useState(false)
+
+  const testMoves = () => {
+    setRunningMoves(true)
+    setMoveReport(null)
+    setTimeout(() => {
+      try { setMoveReport(runAllMoveTests()) }
+      finally { setRunningMoves(false) }
+    }, 0)
+  }
+
+  const testLadder = async () => {
+    setRunningLadder(true)
+    setLadderReport(null)
+    setProgress({ done: 0, total: 0 })
+    try {
+      const report = await runWinRateLadder(gamesPerPair, (done, total) => setProgress({ done, total }))
+      setLadderReport(report)
+    } finally {
+      setRunningLadder(false)
+    }
+  }
+
+  return (
+    <div className="diag">
+      <div className="diag-head">
+        <div>
+          <h2>🧪 角色測試中心</h2>
+          <p>直接使用目前遊戲引擎測試全部角色；測試結果只顯示 LOG，不會修改玩家資料。</p>
+        </div>
+      </div>
+
+      <section className="diag-card">
+        <div className="diag-card-head">
+          <div><h3>全角色招式／被動測試</h3><p>21 名角色 × 5 項，共 105 項。</p></div>
+          <button className="btn primary" disabled={runningMoves || runningLadder} onClick={testMoves}>
+            {runningMoves ? '測試中…' : '開始測試 105 項'}
+          </button>
+        </div>
+        {moveReport && (
+          <>
+            <div className={`diag-summary ${moveReport.failed ? 'failed' : 'passed'}`}>
+              {moveReport.failed ? '✗' : '✓'} PASS {moveReport.passed}/{moveReport.total}
+              <span>失敗 {moveReport.failed} · {Math.round(moveReport.durationMs)}ms</span>
+            </div>
+            <div className="diag-log">
+              {moveReport.lines.map((line, index) => (
+                <div key={`${line.characterId}-${line.item}-${index}`} className={`diag-log-line ${line.ok ? 'ok' : 'error'}`}>
+                  <span>{line.ok ? 'PASS' : 'FAIL'}</span>
+                  <b>{line.characterId} {line.characterName}</b>
+                  <em>{line.item}</em>
+                  <small>{line.message}</small>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </section>
+
+      <section className="diag-card">
+        <div className="diag-card-head">
+          <div><h3>勝率天梯測試</h3><p>21 名角色進行 1 對 1 循環賽，奇數／偶數場交換 A、B 方。</p></div>
+          <div className="diag-ladder-actions">
+            <label>每組對戰
+              <input type="number" min="2" max="20" value={gamesPerPair}
+                disabled={runningLadder} onChange={event => setGamesPerPair(Math.max(2, Math.min(20, Number(event.target.value) || 2)))} /> 場
+            </label>
+            <button className="btn primary" disabled={runningMoves || runningLadder} onClick={testLadder}>
+              {runningLadder ? '天梯運算中…' : '開始勝率天梯'}
+            </button>
+          </div>
+        </div>
+        {runningLadder && (
+          <div className="diag-progress">
+            <div style={{ width: `${progress.total ? progress.done / progress.total * 100 : 0}%` }} />
+            <span>{progress.done} / {progress.total || '計算中'}</span>
+          </div>
+        )}
+        {ladderReport && (
+          <>
+            <div className="diag-summary passed">✓ 完成 {ladderReport.totalMatches} 場
+              <span>每組 {ladderReport.gamesPerPair} 場 · {(ladderReport.durationMs / 1000).toFixed(2)}s</span>
+            </div>
+            <div className="diag-table-wrap"><table className="diag-table">
+              <thead><tr><th>排名</th><th>角色</th><th>積分</th><th>場次</th><th>勝</th><th>敗</th><th>和</th><th>勝率</th></tr></thead>
+              <tbody>{ladderReport.rows.map(row => <tr key={row.characterId}>
+                <td className="diag-rank">{row.rank <= 3 ? ['🥇','🥈','🥉'][row.rank - 1] : row.rank}</td>
+                <td><b>{row.characterName}</b><small>{row.characterId}</small></td>
+                <td>{row.points}</td><td>{row.games}</td><td>{row.wins}</td><td>{row.losses}</td><td>{row.draws}</td>
+                <td><strong>{row.winRate.toFixed(1)}%</strong></td>
+              </tr>)}</tbody>
+            </table></div>
+            <button className="btn sm" onClick={() => setShowMatchLog(value => !value)}>
+              {showMatchLog ? '收起完整對戰 LOG' : `顯示完整對戰 LOG（${ladderReport.log.length} 筆）`}
+            </button>
+            {showMatchLog && <div className="diag-match-log">{ladderReport.log.map((line, index) => <div key={index}>{line}</div>)}</div>}
+          </>
+        )}
+      </section>
     </div>
   )
 }

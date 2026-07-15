@@ -2539,6 +2539,7 @@ h2 {
 }
 .adm-list-name { font-size: 13px; font-weight: 700; color: var(--text-h); }
 .adm-list-sub  { font-size: 11px; color: #555575; }
+.adm-list-tool-icon { width:38px; height:68px; border-radius:6px; background:#111122; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:22px; }
 
 /* Editor area */
 .adm-editor { display: flex; flex-direction: column; overflow: hidden; min-height: 0; height: 100%; }
@@ -2733,6 +2734,45 @@ h2 {
 .adm-card-item-hdr { display: flex; align-items: center; gap: 7px; }
 .adm-card-item-icon { width: 20px; height: 20px; flex-shrink: 0; }
 .adm-card-item-name { font-size: 13px; font-weight: 700; }
+
+/* ── Admin diagnostics ───────────────────────────────────────────────────── */
+.diag { display:flex; flex-direction:column; gap:16px; color:#dce1f3; }
+.diag-head h2 { margin:0 0 5px; color:#ffe39a; }
+.diag-head p, .diag-card-head p { margin:0; color:#8f98b8; font-size:12px; line-height:1.6; }
+.diag-card { display:flex; flex-direction:column; gap:12px; padding:15px; border:1px solid rgba(200,161,90,.2); border-radius:12px; background:rgba(7,10,25,.78); }
+.diag-card-head { display:flex; justify-content:space-between; align-items:center; gap:14px; }
+.diag-card-head h3 { margin:0 0 4px; color:#f3d581; font-size:16px; }
+.diag-summary { display:flex; align-items:center; gap:12px; padding:9px 12px; border-radius:8px; font-size:15px; font-weight:900; }
+.diag-summary span { margin-left:auto; font-size:11px; font-weight:500; color:#aab2cd; }
+.diag-summary.passed { color:#72e2a5; background:rgba(34,204,119,.11); border:1px solid rgba(34,204,119,.28); }
+.diag-summary.failed { color:#ff8585; background:rgba(238,68,68,.11); border:1px solid rgba(238,68,68,.28); }
+.diag-log, .diag-match-log { max-height:330px; overflow:auto; border:1px solid #202644; border-radius:8px; background:#050817; font:11px/1.55 Consolas,monospace; }
+.diag-log-line { display:grid; grid-template-columns:42px minmax(130px,1fr) minmax(140px,1fr) 1.4fr; gap:8px; padding:6px 9px; border-bottom:1px solid rgba(120,135,180,.09); }
+.diag-log-line > span { font-weight:900; }
+.diag-log-line.ok > span { color:#4bd58c; }
+.diag-log-line.error { background:rgba(238,68,68,.08); }
+.diag-log-line.error > span, .diag-log-line.error small { color:#ff7979; }
+.diag-log-line b { color:#dce1f3; }
+.diag-log-line em { color:#e4c46e; font-style:normal; }
+.diag-log-line small { color:#7f89aa; }
+.diag-ladder-actions { display:flex; align-items:center; gap:10px; }
+.diag-ladder-actions label { color:#aab2cd; font-size:12px; white-space:nowrap; }
+.diag-ladder-actions input { width:48px; margin:0 4px; padding:6px; color:#fff; background:#080b1d; border:1px solid #30385d; border-radius:6px; }
+.diag-progress { position:relative; height:24px; overflow:hidden; border-radius:7px; background:#080b1d; border:1px solid #252d50; }
+.diag-progress > div { height:100%; background:linear-gradient(90deg,#745c20,#c8a15a); transition:width .12s linear; }
+.diag-progress span { position:absolute; inset:0; display:grid; place-items:center; color:#fff; font-size:11px; font-weight:800; text-shadow:0 1px 3px #000; }
+.diag-table-wrap { max-height:420px; overflow:auto; border:1px solid #202644; border-radius:8px; }
+.diag-table { width:100%; border-collapse:collapse; font-size:12px; text-align:center; }
+.diag-table th { position:sticky; top:0; z-index:1; padding:8px; color:#d7bd76; background:#11162d; }
+.diag-table td { padding:7px 8px; border-top:1px solid rgba(120,135,180,.1); color:#b9c1dc; }
+.diag-table tbody tr:nth-child(-n+3) { background:rgba(200,161,90,.06); }
+.diag-table td:nth-child(2) { text-align:left; }
+.diag-table td b { color:#eef1ff; }
+.diag-table td small { display:block; color:#59617f; font-size:9px; }
+.diag-table td strong { color:#62d99b; }
+.diag-rank { font-size:15px; color:#e7c96d !important; font-weight:900; }
+.diag-match-log { padding:8px 10px; color:#9da7c7; }
+.diag-match-log > div { padding:3px 0; border-bottom:1px solid rgba(120,135,180,.07); }
 
 /* ══════════════════════════════════════════════════════════════
    RESPONSIVE — portrait mobile (≤640px)
