@@ -886,6 +886,19 @@ function scoreMoves(
 // Smart AI: scores moves from current position, optionally repositions if it
 // would unlock meaningfully better moves, then executes the best candidate.
 export function autoPlayUnit(gs: GameState, unit: Unit): GameState {
+  // Auto mode uses at most one flower card during this unit action, matching
+  // the manual flow: use flower first, then choose movement/move and 出手.
+  const initialHand = unit.side === 'A'
+    ? [...gs.handA, ...gs.handCustomA]
+    : [...gs.handB, ...gs.handCustomB]
+  const actionKey = `${unit.id}:${unit.nextActionAt}`
+  const flowerCards = initialHand.filter(card => !card.isSuitCard)
+  if (flowerCards.length > 0 && gs.flowerActionUsed[unit.side] !== actionKey) {
+    const flower = flowerCards[Math.floor(Math.random() * flowerCards.length)]
+    gs = doPlayCard(gs, unit.side, flower.id)
+    unit = findUnit(gs, unit.id) ?? unit
+  }
+
   // 封招 (sealed): can't use moves, pass immediately
   if (unit.statuses.some(s => s.key === 'sealed')) return doPass(gs, unit.id)
 

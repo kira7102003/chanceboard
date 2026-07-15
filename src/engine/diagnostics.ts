@@ -259,16 +259,18 @@ export interface LadderRow {
 }
 
 export interface LadderReport {
+  mode: '1v1' | '3v3'
   gamesPerPair: number
   totalMatches: number
   durationMs: number
   rows: LadderRow[]
   log: string[]
   errors: number
+  flowerCardsPlayed: number
 }
 
-function runAutoMatch(idA: string, idB: string): GameState {
-  let state = initBattleState([idA], [idB], 'pawn')
+function runAutoMatch(idsA: string[], idsB: string[]): GameState {
+  let state = initBattleState(idsA, idsB, 'pawn')
   let actions = 0
   while (state.phase !== 'end' && actions++ < 500) {
     state = fastForwardToNextReady(state)
@@ -284,6 +286,7 @@ export async function runWinRateLadder(
   gamesPerPair = 2,
   onProgress?: (done: number, total: number) => void,
   roster = characters,
+  mode: '1v1' | '3v3' = '1v1',
 ): Promise<LadderReport> {
   const started = performance.now()
   const rounds = Math.max(2, Math.min(20, Math.floor(gamesPerPair)))
@@ -294,6 +297,69 @@ export async function runWinRateLadder(
   const log: string[] = []
   let done = 0
   let errors = 0
+  let flowerCardsPlayed = 0
+
+  const recordMatch = (idsA: string[], idsB: string[], result: GameState | null, error?: unknown) => {
+    const participants = [...idsA, ...idsB]
+    for (const id of participants) stats.get(id)!.games++
+    if (!result || error) {
+      errors++
+      for (const id of participants) stats.get(id)!.draws++
+      return
+    }
+    flowerCardsPlayed += result.log.filter(entry => entry.html.includes('打出')).length
+    if (result.winner === 'draw' || !result.winner) {
+      for (const id of participants) { stats.get(id)!.draws++; stats.get(id)!.points++ }
+      return
+    }
+    const winners = result.winner === 'A' ? idsA : idsB
+    const losers = result.winner === 'A' ? idsB : idsA
+    for (const id of winners) { stats.get(id)!.wins++; stats.get(id)!.points += 3 }
+    for (const id of losers) stats.get(id)!.losses++
+  }
+
+  if (mode === '3v3') {
+    const baseMatches = activeRoster.length * (activeRoster.length - 1) / 2
+    const total3v3 = baseMatches * rounds
+    const pickTeam = (anchor: number, blocked: Set<number>, salt: number) => {
+      const indexes: number[] = [anchor]
+      blocked.add(anchor)
+      for (let step = 1; indexes.length < 3 && step <= activeRoster.length * 2; step++) {
+        const candidate = (anchor + step * (salt + 1)) % activeRoster.length
+        if (!blocked.has(candidate)) { blocked.add(candidate); indexes.push(candidate) }
+      }
+      for (let candidate = 0; indexes.length < 3 && candidate < activeRoster.length; candidate++) {
+        if (!blocked.has(candidate)) { blocked.add(candidate); indexes.push(candidate) }
+      }
+      return indexes.map(index => activeRoster[index].id)
+    }
+    let matchIndex = 0
+    for (let i = 0; i < activeRoster.length; i++) {
+      for (let j = i + 1; j < activeRoster.length; j++) {
+        for (let game = 0; game < rounds; game++) {
+          const blocked = new Set<number>()
+          const firstTeam = pickTeam(i, blocked, j + game)
+          const secondTeam = pickTeam(j, blocked, i + game + 2)
+          const swapped = game % 2 === 1
+          const idsA = swapped ? secondTeam : firstTeam
+          const idsB = swapped ? firstTeam : secondTeam
+          try {
+            const result = runAutoMatch(idsA, idsB)
+            recordMatch(idsA, idsB, result)
+            const namesA = idsA.map(id => activeRoster.find(c => c.id === id)!.name).join('／')
+            const namesB = idsB.map(id => activeRoster.find(c => c.id === id)!.name).join('／')
+            log.push(`#${matchIndex + 1} [${namesA}] vs [${namesB}] → ${result.winner === 'draw' ? '平手' : result.winner + ' 方勝'}（${result.winnerReason ?? '達行動上限'}）`)
+          } catch (error) {
+            recordMatch(idsA, idsB, null, error)
+            log.push(`#${matchIndex + 1} 3v3 ERROR：${error instanceof Error ? error.message : String(error)}`)
+          }
+          matchIndex++; done++
+          onProgress?.(done, total3v3)
+          if (done % 2 === 0) await new Promise<void>(resolve => setTimeout(resolve, 0))
+        }
+      }
+    }
+  } else {
 
   for (let i = 0; i < activeRoster.length; i++) {
     for (let j = i + 1; j < activeRoster.length; j++) {
@@ -303,23 +369,12 @@ export async function runWinRateLadder(
         const swapped = game % 2 === 1
         const idA = swapped ? second.id : first.id
         const idB = swapped ? first.id : second.id
-        const statA = stats.get(idA)!
-        const statB = stats.get(idB)!
-        statA.games++; statB.games++
         try {
-          const result = runAutoMatch(idA, idB)
-          if (result.winner === 'draw' || !result.winner) {
-            statA.draws++; statB.draws++; statA.points++; statB.points++
-          } else {
-            const winnerId = result.winner === 'A' ? idA : idB
-            const loserId = result.winner === 'A' ? idB : idA
-            stats.get(winnerId)!.wins++; stats.get(winnerId)!.points += 3
-            stats.get(loserId)!.losses++
-          }
+          const result = runAutoMatch([idA], [idB])
+          recordMatch([idA], [idB], result)
           log.push(`#${done + 1} ${first.name} vs ${second.name} → ${result.winner === 'draw' ? '平手' : result.winner === (swapped ? 'B' : 'A') ? first.name + ' 勝' : second.name + ' 勝'}（${result.winnerReason ?? '達行動上限'}）`)
         } catch (error) {
-          errors++
-          statA.draws++; statB.draws++
+          recordMatch([idA], [idB], null, error)
           log.push(`#${done + 1} ${first.name} vs ${second.name} → ERROR：${error instanceof Error ? error.message : String(error)}`)
         }
         done++
@@ -327,6 +382,7 @@ export async function runWinRateLadder(
         if (done % 4 === 0) await new Promise<void>(resolve => setTimeout(resolve, 0))
       }
     }
+  }
   }
 
   const rows = activeRoster.map(character => {
@@ -336,5 +392,5 @@ export async function runWinRateLadder(
   }).sort((a, b) => b.points - a.points || b.winRate - a.winRate || b.wins - a.wins)
     .map((row, index) => ({ ...row, rank: index + 1 }))
 
-  return { gamesPerPair: rounds, totalMatches: total, durationMs: performance.now() - started, rows, log, errors }
+  return { mode, gamesPerPair: rounds, totalMatches: total, durationMs: performance.now() - started, rows, log, errors, flowerCardsPlayed }
 }

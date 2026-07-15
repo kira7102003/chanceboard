@@ -2763,6 +2763,9 @@ h2 {
 .diag-log-line em { color:#e4c46e; font-style:normal; }
 .diag-log-line small { color:#7f89aa; }
 .diag-ladder-actions { display:flex; align-items:center; gap:10px; }
+.diag-mode-tabs { display:flex; padding:2px; border:1px solid #30385d; border-radius:7px; background:#070a19; }
+.diag-mode-tabs button { padding:6px 9px; border:0; border-radius:5px; color:#707a9e; background:transparent; cursor:pointer; font-size:11px; font-weight:800; }
+.diag-mode-tabs button.active { color:#1a1203; background:#d4ae5e; }
 .diag-ladder-actions label { color:#aab2cd; font-size:12px; white-space:nowrap; }
 .diag-ladder-actions input { width:48px; margin:0 4px; padding:6px; color:#fff; background:#080b1d; border:1px solid #30385d; border-radius:6px; }
 .diag-progress { position:relative; height:24px; overflow:hidden; border-radius:7px; background:#080b1d; border:1px solid #252d50; }

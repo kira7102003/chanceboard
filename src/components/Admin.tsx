@@ -231,6 +231,7 @@ function CharacterDiagnostics({ chars }: { chars: Character[] }) {
   const [moveReport, setMoveReport] = useState<MoveTestReport | null>(null)
   const [ladderReport, setLadderReport] = useState<LadderReport | null>(null)
   const [gamesPerPair, setGamesPerPair] = useState(2)
+  const [ladderMode, setLadderMode] = useState<'1v1' | '3v3'>('1v1')
   const [runningMoves, setRunningMoves] = useState(false)
   const [runningLadder, setRunningLadder] = useState(false)
   const [progress, setProgress] = useState({ done: 0, total: 0 })
@@ -250,7 +251,7 @@ function CharacterDiagnostics({ chars }: { chars: Character[] }) {
     setLadderReport(null)
     setProgress({ done: 0, total: 0 })
     try {
-      const report = await runWinRateLadder(gamesPerPair, (done, total) => setProgress({ done, total }), chars)
+      const report = await runWinRateLadder(gamesPerPair, (done, total) => setProgress({ done, total }), chars, ladderMode)
       setLadderReport(report)
     } finally {
       setRunningLadder(false)
@@ -304,14 +305,18 @@ function CharacterDiagnostics({ chars }: { chars: Character[] }) {
 
       <section className="diag-card">
         <div className="diag-card-head">
-          <div><h3>勝率天梯測試</h3><p>21 名角色進行 1 對 1 循環賽，奇數／偶數場交換 A、B 方。</p></div>
+          <div><h3>勝率天梯測試</h3><p>可測 1v1 個人戰或 3v3 混合隊伍戰；都會實際抽牌、使用花牌、支付招式牌及交換 A／B 方。</p></div>
           <div className="diag-ladder-actions">
+            <div className="diag-mode-tabs">
+              <button className={ladderMode === '1v1' ? 'active' : ''} disabled={runningLadder} onClick={() => setLadderMode('1v1')}>1 對 1</button>
+              <button className={ladderMode === '3v3' ? 'active' : ''} disabled={runningLadder} onClick={() => setLadderMode('3v3')}>3 對 3</button>
+            </div>
             <label>每組對戰
               <input type="number" min="2" max="20" value={gamesPerPair}
                 disabled={runningLadder} onChange={event => setGamesPerPair(Math.max(2, Math.min(20, Number(event.target.value) || 2)))} /> 場
             </label>
             <button className="btn primary" disabled={runningMoves || runningLadder} onClick={testLadder}>
-              {runningLadder ? '天梯運算中…' : '開始勝率天梯'}
+              {runningLadder ? `${ladderMode} 天梯運算中…` : `開始 ${ladderMode} 勝率天梯`}
             </button>
           </div>
         </div>
@@ -323,8 +328,8 @@ function CharacterDiagnostics({ chars }: { chars: Character[] }) {
         )}
         {ladderReport && (
           <>
-            <div className={`diag-summary ${ladderReport.errors ? 'failed' : 'passed'}`}>✓ 完成 {ladderReport.totalMatches} 場
-              <span>組合 {ladderReport.rows.length * (ladderReport.rows.length - 1) / 2} 組 · 錯誤 {ladderReport.errors} · 每組 {ladderReport.gamesPerPair} 場 · {(ladderReport.durationMs / 1000).toFixed(2)}s</span>
+            <div className={`diag-summary ${ladderReport.errors ? 'failed' : 'passed'}`}>✓ {ladderReport.mode} 完成 {ladderReport.totalMatches} 場
+              <span>花牌使用 {ladderReport.flowerCardsPlayed} 次 · 錯誤 {ladderReport.errors} · 每組 {ladderReport.gamesPerPair} 場 · {(ladderReport.durationMs / 1000).toFixed(2)}s</span>
             </div>
             <div className="diag-table-wrap"><table className="diag-table">
               <thead><tr><th>排名</th><th>角色</th><th>積分</th><th>場次</th><th>勝</th><th>敗</th><th>和</th><th>勝率</th></tr></thead>
