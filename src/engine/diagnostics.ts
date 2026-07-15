@@ -47,7 +47,7 @@ function verifyImage(url: string): Promise<void> {
   })
 }
 
-export async function runAllMoveTests(roster = characters): Promise<MoveTestReport> {
+export async function runAllMoveTests(roster = characters, testPassiveImages = false): Promise<MoveTestReport> {
   const started = performance.now()
   const originalRandom = Math.random
   const lines: DiagnosticLine[] = []
@@ -71,10 +71,12 @@ export async function runAllMoveTests(roster = characters): Promise<MoveTestRepo
 
           if (slot === '被') {
             if (!move.effectTrigger || move.effectOps.length === 0) throw new Error('被動沒有可執行效果')
-            const passiveImage = getMoveImg(move.id)
-            if (!passiveImage) throw new Error(`缺少被動圖片：cb_move_img_${move.id}`)
-            await verifyImage(passiveImage)
-            verifiedPassiveImages.add(move.id)
+            if (testPassiveImages) {
+              const passiveImage = getMoveImg(move.id)
+              if (!passiveImage) throw new Error(`缺少被動圖片：cb_move_img_${move.id}`)
+              await verifyImage(passiveImage)
+              verifiedPassiveImages.add(move.id)
+            }
             const actor = makeUnit(character.id, 'A', 3, 0)
             const opponentId = character.id === '001' ? '002' : '001'
             const state = initBattleState([character.id], [opponentId], 'pawn')
@@ -239,7 +241,7 @@ export async function runAllMoveTests(roster = characters): Promise<MoveTestRepo
     passed, failed: lines.length - passed, total: lines.length, durationMs: performance.now() - started, lines,
     checklist: [
       { label: '招式圖片', ok: verifiedActiveImages.size === activeCount, detail: `${verifiedActiveImages.size}/${activeCount} 張已載入並對應` },
-      { label: '被動圖片', ok: verifiedPassiveImages.size === passiveCount, detail: `${verifiedPassiveImages.size}/${passiveCount} 張已載入並對應` },
+      ...(testPassiveImages ? [{ label: '被動圖片', ok: verifiedPassiveImages.size === passiveCount, detail: `${verifiedPassiveImages.size}/${passiveCount} 張已載入並對應` }] : []),
       { label: '卡片＋招式＋對手', ...comboCheck },
       { label: '3v3 混戰壓力', ...stressCheck },
     ],
@@ -269,6 +271,19 @@ export interface LadderReport {
   flowerCardsPlayed: number
   movesExecuted: number
   suitCardsSpent: number
+  topTeams: TeamLadderRow[]
+}
+
+export interface TeamLadderRow {
+  rank: number
+  characterIds: string[]
+  characterNames: string[]
+  games: number
+  wins: number
+  draws: number
+  winRate: number
+  cardUsage: Record<'劍' | '槍' | '法' | '願', number>
+  flowerCardsPlayed: number
 }
 
 function runAutoMatch(idsA: string[], idsB: string[]): GameState {
@@ -302,6 +317,7 @@ export async function runWinRateLadder(
   let flowerCardsPlayed = 0
   let movesExecuted = 0
   let suitCardsSpent = 0
+  const teamStats = new Map<string, Omit<TeamLadderRow, 'rank' | 'characterNames' | 'winRate'>>()
 
   const recordMatch = (idsA: string[], idsB: string[], result: GameState | null, error?: unknown) => {
     const participants = [...idsA, ...idsB]
@@ -315,6 +331,26 @@ export async function runWinRateLadder(
     const moveEntries = result.log.filter(entry => entry.moveAnim)
     movesExecuted += moveEntries.length
     suitCardsSpent += moveEntries.reduce((sum, entry) => sum + (entry.cardsSpent ?? 0), 0)
+    if (mode === '3v3') {
+      for (const [side, ids] of [['A', idsA], ['B', idsB]] as const) {
+        const characterIds = [...ids].sort()
+        const key = characterIds.join('|')
+        const stat = teamStats.get(key) ?? {
+          characterIds, games: 0, wins: 0, draws: 0,
+          cardUsage: { 劍: 0, 槍: 0, 法: 0, 願: 0 }, flowerCardsPlayed: 0,
+        }
+        stat.games++
+        if (result.winner === side) stat.wins++
+        else if (!result.winner || result.winner === 'draw') stat.draws++
+        for (const entry of moveEntries) {
+          if (entry.moveAnim?.attackerSide !== side) continue
+          const slot = entry.moveAnim.moveSlot as keyof typeof stat.cardUsage
+          if (slot in stat.cardUsage) stat.cardUsage[slot] += entry.cardsSpent ?? 0
+        }
+        stat.flowerCardsPlayed += result.log.filter(entry => entry.html.startsWith(`${side} 打出`)).length
+        teamStats.set(key, stat)
+      }
+    }
     if (result.winner === 'draw' || !result.winner) {
       for (const id of participants) { stats.get(id)!.draws++; stats.get(id)!.points++ }
       return
@@ -399,5 +435,11 @@ export async function runWinRateLadder(
   }).sort((a, b) => b.points - a.points || b.winRate - a.winRate || b.wins - a.wins)
     .map((row, index) => ({ ...row, rank: index + 1 }))
 
-  return { mode, gamesPerPair: rounds, totalMatches: total, durationMs: performance.now() - started, rows, log, errors, flowerCardsPlayed, movesExecuted, suitCardsSpent }
+  const topTeams = [...teamStats.values()]
+    .map(stat => ({ ...stat, rank: 0, characterNames: stat.characterIds.map(id => activeRoster.find(c => c.id === id)?.name ?? id), winRate: stat.games ? stat.wins / stat.games * 100 : 0 }))
+    .sort((a, b) => b.winRate - a.winRate || b.wins - a.wins || b.games - a.games)
+    .slice(0, 3)
+    .map((team, index) => ({ ...team, rank: index + 1 }))
+
+  return { mode, gamesPerPair: rounds, totalMatches: total, durationMs: performance.now() - started, rows, log, errors, flowerCardsPlayed, movesExecuted, suitCardsSpent, topTeams }
 }

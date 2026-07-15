@@ -231,7 +231,8 @@ function CharacterDiagnostics({ chars }: { chars: Character[] }) {
   const [moveReport, setMoveReport] = useState<MoveTestReport | null>(null)
   const [ladderReport, setLadderReport] = useState<LadderReport | null>(null)
   const [gamesPerPair, setGamesPerPair] = useState(2)
-  const [ladderMode, setLadderMode] = useState<'1v1' | '3v3'>('1v1')
+  const [ladderMode, setLadderMode] = useState<'1v1' | '3v3'>('3v3')
+  const [testPassiveImages, setTestPassiveImages] = useState(false)
   const [runningMoves, setRunningMoves] = useState(false)
   const [runningLadder, setRunningLadder] = useState(false)
   const [progress, setProgress] = useState({ done: 0, total: 0 })
@@ -241,7 +242,7 @@ function CharacterDiagnostics({ chars }: { chars: Character[] }) {
     setRunningMoves(true)
     setMoveReport(null)
     setTimeout(async () => {
-      try { setMoveReport(await runAllMoveTests(chars)) }
+      try { setMoveReport(await runAllMoveTests(chars, testPassiveImages)) }
       finally { setRunningMoves(false) }
     }, 0)
   }
@@ -270,9 +271,13 @@ function CharacterDiagnostics({ chars }: { chars: Character[] }) {
       <section className="diag-card">
         <div className="diag-card-head">
           <div><h3>全角色招式／被動測試</h3><p>{chars.length} 名角色 × 5 項，並測試每張花牌、每個主動招式、每個對手及 3v3 混戰；未來新增資料會自動加入。</p></div>
-          <button className="btn primary" disabled={runningMoves || runningLadder} onClick={testMoves}>
-            {runningMoves ? '測試中…' : `開始測試 ${chars.length * 5} 項`}
-          </button>
+          <div className="diag-ladder-actions">
+            <label><input type="checkbox" checked={testPassiveImages} disabled={runningMoves}
+              onChange={event => setTestPassiveImages(event.target.checked)} /> 測試被動圖片</label>
+            <button className="btn primary" disabled={runningMoves || runningLadder} onClick={testMoves}>
+              {runningMoves ? '測試中…' : `開始測試 ${chars.length * 5} 項`}
+            </button>
+          </div>
         </div>
         {moveReport && (
           <>
@@ -340,6 +345,18 @@ function CharacterDiagnostics({ chars }: { chars: Character[] }) {
                 <td><strong>{row.winRate.toFixed(1)}%</strong></td>
               </tr>)}</tbody>
             </table></div>
+            {ladderReport.mode === '3v3' && ladderReport.topTeams.length > 0 && <>
+              <h3>勝率最高三人隊伍與手牌使用</h3>
+              <div className="diag-table-wrap"><table className="diag-table">
+                <thead><tr><th>排名</th><th>三人隊伍</th><th>勝率</th><th>場次</th><th>勝場</th><th>手牌搭配（實際消耗）</th></tr></thead>
+                <tbody>{ladderReport.topTeams.map(team => <tr key={team.characterIds.join('-')}>
+                  <td className="diag-rank">{['🥇','🥈','🥉'][team.rank - 1]}</td>
+                  <td><b>{team.characterNames.join('／')}</b></td>
+                  <td><strong>{team.winRate.toFixed(1)}%</strong></td><td>{team.games}</td><td>{team.wins}</td>
+                  <td>劍 {team.cardUsage.劍} · 槍 {team.cardUsage.槍} · 法 {team.cardUsage.法} · 願 {team.cardUsage.願} · 花 {team.flowerCardsPlayed}</td>
+                </tr>)}</tbody>
+              </table></div>
+            </>}
             <button className="btn sm" onClick={() => setShowMatchLog(value => !value)}>
               {showMatchLog ? '收起完整對戰 LOG' : `顯示完整對戰 LOG（${ladderReport.log.length} 筆）`}
             </button>
