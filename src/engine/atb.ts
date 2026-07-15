@@ -11,7 +11,7 @@ import type { Card } from '../types/card'
 import type { StatusEntry } from '../types/status'
 import { characters, moves as allMoves, cards as allCards, deckWeights } from '../data/db'
 import type { PieceType } from '../types/piece'
-import { calcBAT, effectiveSPD, resolveHit, applyDamage, elementMult } from './combat'
+import { calcBAT, effectiveATK, effectiveDEF, effectiveSPD, resolveHit, applyDamage, elementMult } from './combat'
 import { runEffectOps, runCardEffects, tickStatuses } from './effects'
 import type { LogLine } from './effects'
 
@@ -822,15 +822,24 @@ function scoreMoves(
       if (hand.filter(c => c.color === color).length < needed) continue
     }
 
-    // Support / wish moves (no powerRatio): score by how hurt the team is
+    // Support moves should be saved when their effects cannot help yet.
     if (!move.powerRatio) {
       const minHpPct = Math.min(
         unit.hp / unit.maxHp,
         ...allies.map(a => a.hp / a.maxHp),
       )
-      // Only queue support when someone is actually hurt; 0.7+ means barely needed
-      const score = 0.15 + (1 - minHpPct) * 0.65
-      result.push({ slot, score, targetId: null })
+      const hasUsefulEffect = move.effectOps.some(op => {
+        if (op.op === 'healPct' || op.op === 'healFlat' || op.op === 'condHeal' || op.op === 'condHealIfNoMove') return minHpPct < 0.95
+        if (op.op === 'clearStatuses' || op.op === 'clearStatusKey') {
+          return [unit, ...allies].some(a => a.statuses.some(s => NEGATIVE_STATUS_KEYS.has(s.key)))
+        }
+        return op.op !== 'revive'
+      })
+      if (hasUsefulEffect) result.push({
+        slot,
+        score: 0.35 + (1 - minHpPct) * 1.25 + move.effectOps.length * 0.08,
+        targetId: null,
+      })
       continue
     }
 
@@ -858,29 +867,76 @@ function scoreMoves(
     let score = 0
     let targetId: string | null = null
 
+    const moveElement = move.rangeType === '劍' || move.rangeType === '槍' || move.rangeType === '法' ? move.rangeType : null
+    const sureHit = unit.statuses.some(s => s.key === 'sureHit')
+    const expectedAgainst = (target: Unit): number => {
+      if (unit.flags.alwaysMiss && target.isHuman && !sureHit) return 0
+      const evasion = target.statuses.find(s => s.key === 'evasion')?.value ?? 0
+      const hitChance = sureHit ? 1 : Math.max(0, Math.min(1, (move.hitRate ?? 1) * (1 - evasion / 100)))
+      const critChance = unit.statuses.some(s => s.key === 'lucky') ? 1 : (move.critRate ?? 0)
+      const raw = Math.max(2, Math.round(
+        effectiveATK(unit) * move.powerRatio! * elementMult(moveElement, target.element)
+        / effectiveDEF(target, enemies.filter(e => e.id !== target.id && e.slot === target.slot)),
+      ))
+      const damage = raw * (1 + critChance) * hitChance
+      const finishBonus = damage >= target.hp ? 1.65 : target.hp / target.maxHp < 0.3 ? 1.3 : 1
+      return damage * finishBonus
+    }
+
     if (move.scope === '群') {
-      const moveElement = move.rangeType === '劍' || move.rangeType === '槍' || move.rangeType === '法' ? move.rangeType : null
-      const avgEl = reachable.reduce((s, e) =>
-        s + elementMult(moveElement, e.element), 0) / reachable.length
-      score = move.powerRatio * reachable.length * avgEl
+      score = reachable.reduce((sum, target) => sum + expectedAgainst(target), 0)
     } else {
-      let best: Unit
-      if (move.rangeType === '槍') {
-        best = reachable.reduce((a, b) => (a.hp / a.maxHp) <= (b.hp / b.maxHp) ? a : b)
-      } else {
-        // Other single-target: prefer lowest HP% (finish kills first)
-        best = reachable.reduce((a, b) => (a.hp / a.maxHp) <= (b.hp / b.maxHp) ? a : b)
-      }
-      const moveElement = move.rangeType === '劍' || move.rangeType === '槍' || move.rangeType === '法' ? move.rangeType : null
-      const elBonus = elementMult(moveElement, best.element)
-      score = move.powerRatio * elBonus * (best.hp / best.maxHp < 0.3 ? 1.4 : 1)
+      const best = reachable.reduce((a, b) => expectedAgainst(a) >= expectedAgainst(b) ? a : b)
+      score = expectedAgainst(best)
       targetId = best.id
     }
+
+    score += move.effectOps.length * 0.25
 
     if (score > 0) result.push({ slot, score, targetId })
   }
 
   return result.sort((a, b) => b.score - a.score)
+}
+
+const NEGATIVE_STATUS_KEYS = new Set([
+  'hpMinus', 'atkMinus', 'defMinus', 'spdMinus', 'batPlus', 'sealed', 'rooted',
+  'confused', 'burning', 'frozen', 'paralyzed', 'charged',
+])
+
+function scoreFlowerCard(card: Card, unit: Unit, gs: GameState, hand: Card[]): number {
+  const allies = unit.side === 'A' ? gs.teamA : gs.teamB
+  const enemies = unit.side === 'A' ? gs.teamB : gs.teamA
+  const enemyHand = unit.side === 'A' ? [...gs.handB, ...gs.handCustomB] : [...gs.handA, ...gs.handCustomA]
+  const missingHp = unit.maxHp - unit.hp
+  let score = 0
+
+  for (const op of card.effectOps) {
+    if (op.op === 'revive') score += allies.some(a => !a.alive) ? 100 : -100
+    else if (op.op === 'healFlat') score += missingHp > 0 ? Math.min(Number(op.amount ?? 0), missingHp) * 2 : -25
+    else if (op.op === 'healPct') score += missingHp > 0 ? Math.min(unit.maxHp * Number(op.pct ?? 0), missingHp) * 2 : -25
+    else if (op.op === 'clearStatuses') score += unit.statuses.filter(s => NEGATIVE_STATUS_KEYS.has(s.key)).length * 18
+    else if (op.op === 'clearStatusKey') score += unit.statuses.some(s => s.key === op.key) ? 35 : -30
+    else if (op.op === 'draw') score += op.fromOpponent ? (enemyHand.length > 0 ? 24 : -20) : (hand.length < 7 ? Number(op.count ?? 1) * 9 : 2)
+    else if (op.op === 'discard') score += enemyHand.length > 0 ? Math.min(enemyHand.length, Number(op.count ?? 1)) * 10 : -25
+    else if (op.op === 'swapHandsFull') score += enemyHand.length > hand.length ? (enemyHand.length - hand.length) * 12 : -30
+    else if (op.op === 'status') {
+      const key = String(op.key)
+      if (unit.statuses.some(s => s.key === key)) score -= 12
+      else if (key === 'sureHit') {
+        const needed = enemies.some(e => e.alive && (e.statuses.some(s => s.key === 'evasion') || (unit.flags.alwaysMiss && e.isHuman)))
+        score += needed ? 55 : 8
+      } else if (key === 'liberated') {
+        score += Object.values(unit.moves).some(m => m && m.condition && m.condition > 1) ? 28 : 4
+      } else if (key === 'hpPlus') score += missingHp > 0 ? 22 : 5
+      else if (['hidden', 'shield', 'damageReduction', 'evasion'].includes(key)) score += unit.hp / unit.maxHp < 0.5 ? 34 : 16
+      else if (key === 'counter') score += enemies.filter(e => e.alive).length * 6
+      else if (['lucky', 'empowered', 'atkPlus'].includes(key)) score += 30
+      else if (['linked', 'batMinus'].includes(key)) score += 24
+      else score += 14
+    }
+  }
+  return score
 }
 
 // Smart AI: scores moves from current position, optionally repositions if it
@@ -892,11 +948,16 @@ export function autoPlayUnit(gs: GameState, unit: Unit): GameState {
     ? [...gs.handA, ...gs.handCustomA]
     : [...gs.handB, ...gs.handCustomB]
   const actionKey = `${unit.id}:${unit.nextActionAt}`
-  const flowerCards = initialHand.filter(card => !card.isSuitCard)
+  const flowerCards = initialHand
+    .filter(card => !card.isSuitCard)
+    .map(card => ({ card, score: scoreFlowerCard(card, unit, gs, initialHand) }))
+    .sort((a, b) => b.score - a.score)
   if (flowerCards.length > 0 && gs.flowerActionUsed[unit.side] !== actionKey) {
-    const flower = flowerCards[Math.floor(Math.random() * flowerCards.length)]
-    gs = doPlayCard(gs, unit.side, flower.id)
-    unit = findUnit(gs, unit.id) ?? unit
+    const bestFlower = flowerCards[0]
+    if (bestFlower.score >= 12) {
+      gs = doPlayCard(gs, unit.side, bestFlower.card.id)
+      unit = findUnit(gs, unit.id) ?? unit
+    }
   }
 
   // 封招 (sealed): can't use moves, pass immediately
@@ -958,23 +1019,9 @@ export function autoPlayUnit(gs: GameState, unit: Unit): GameState {
     }
   }
 
-  // SA C3: if no move can reach anyone, randomly use any affordable move (can't be stuck)
+  // If no useful move can reach a valid target, keep the cards and pass.
   if (!execMove) {
-    const suitFallback: Record<string, string> = { '劍': 'red', '槍': 'green', '法': 'blue', '願': 'yellow' }
-    const liberatedFb  = unit.statuses.some(st => st.key === 'liberated')
-    const fallbackSlots = (['劍', '槍', '法', '願'] as MoveSlot[]).filter(sl => {
-      const m = unit.moves[sl]
-      if (!m) return false
-      if ((unit.moveCooldownUntil[m.id] ?? 0) > gs.clock) return false
-      const color = suitFallback[sl]
-      if (!color) return false
-      const needed = liberatedFb ? 1 : (m.condition ?? 1)
-      return hand.filter(c => c.color === color).length >= needed
-    })
-    if (fallbackSlots.length > 0) {
-      const sl = fallbackSlots[Math.floor(Math.random() * fallbackSlots.length)]
-      execMove = { slot: sl, score: 0, targetId: null }
-    }
+    return doPass(workGS, unit.id)
   }
 
   if (!execMove) return doPass(workGS, unit.id)
