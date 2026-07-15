@@ -26,7 +26,9 @@ const targets = {
   enemyTeam: 'enemyAll', ownTeam: 'allyAll',
 }
 const distances = { near: 1, mid: 2, far: 3 }
-const nonHumanTitles = new Set(['機器人', '人偶', '精靈'])
+// Game-rule classification (not inferred from title/species): only Heather is
+// currently a non-human target for Twocolors' Robot Law passive.
+const nonHumanCharacterIds = new Set(['018'])
 
 function convertOp(input) {
   const op = { ...input }
@@ -88,7 +90,7 @@ const characters = [...source.characters]
   .map(c => ({
     id: c.id, name: cleanName(c.name), title: cleanName(c.title),
     gender: c.gender === '女' ? 'female' : 'male', element: c.element,
-    isHuman: !nonHumanTitles.has(cleanName(c.title)),
+    isHuman: !nonHumanCharacterIds.has(c.id),
     hp: c.hp, atk: c.atk, def: c.def, spd: c.spd,
     moveNameSword: cleanName(c.moveNameSword), moveNameGun: cleanName(c.moveNameGun),
     moveNameMagic: cleanName(c.moveNameMagic), moveNameWish: cleanName(c.moveNameWish),
