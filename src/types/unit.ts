@@ -18,6 +18,7 @@ export interface UnitFlags {
 export interface Unit {
   id: string
   characterId: string
+  isHuman: boolean
   name: string
   side: 'A' | 'B'
   slot: 1 | 2 | 3

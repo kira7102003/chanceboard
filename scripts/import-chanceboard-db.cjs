@@ -26,6 +26,7 @@ const targets = {
   enemyTeam: 'enemyAll', ownTeam: 'allyAll',
 }
 const distances = { near: 1, mid: 2, far: 3 }
+const nonHumanTitles = new Set(['機器人', '人偶', '精靈'])
 
 function convertOp(input) {
   const op = { ...input }
@@ -87,6 +88,7 @@ const characters = [...source.characters]
   .map(c => ({
     id: c.id, name: cleanName(c.name), title: cleanName(c.title),
     gender: c.gender === '女' ? 'female' : 'male', element: c.element,
+    isHuman: !nonHumanTitles.has(cleanName(c.title)),
     hp: c.hp, atk: c.atk, def: c.def, spd: c.spd,
     moveNameSword: cleanName(c.moveNameSword), moveNameGun: cleanName(c.moveNameGun),
     moveNameMagic: cleanName(c.moveNameMagic), moveNameWish: cleanName(c.moveNameWish),
@@ -100,7 +102,7 @@ const moves = [...source.moves]
     condition: m.condition, rangeType: m.rangeType, scope: m.scope,
     powerRatio: m.powerRatio, hitRate: m.hitRate, critRate: m.critRate,
     cooldown: m.cooldown, description: m.id === '025'
-      ? '機器人不得傷害人形角色；攻擊必定無法命中，且必中不能繞過此限制'
+      ? '機器人不得傷害人類角色；非人類可正常命中，且必中或血腥機關期間可蓋過此限制'
       : m.description,
     effectTrigger: m.effectTrigger, effectOps: (m.effectOps ?? []).map(convertOp),
     effectChance: m.effectChance ?? 1,

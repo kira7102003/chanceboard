@@ -57,9 +57,11 @@ export interface HitResult {
 
 export function resolveHit(attacker: Unit, target: Unit, move: Move, targetSlotAllies: Unit[] = []): HitResult {
   const sureHit = attacker.statuses.some(s => s.key === 'sureHit')
-  // 圖卡勒絲「機器人三定律」：不得傷害人形角色。這是被動限制，
-  // 優先於必中，因此花牌或其他必中效果也不能繞過它。
-  if (attacker.flags.alwaysMiss) return { hit: false, crit: false, rawDamage: 0 }
+  // 圖卡勒絲「機器人三定律」只阻止她傷害人類。非人類可正常
+  // 命中；必中（包含血腥機關期間）可以暫時蓋過此被動。
+  if (attacker.flags.alwaysMiss && target.isHuman && !sureHit) {
+    return { hit: false, crit: false, rawDamage: 0 }
+  }
   if (target.statuses.some(s => s.key === 'hidden')) return { hit: false, crit: false, rawDamage: 0 }
 
   const evasion = target.statuses.find(s => s.key === 'evasion')

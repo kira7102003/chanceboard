@@ -16,6 +16,8 @@ export interface Character {
   moveNameMagic: string
   moveNameWish: string
   passiveName: string
+  /** false for non-human beings that are exempt from Robot Law restrictions. */
+  isHuman?: boolean
   story?: string
   enabled?: boolean   // undefined / true = shown in CharSelect; false = hidden
 }

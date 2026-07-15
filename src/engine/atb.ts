@@ -49,6 +49,7 @@ export function makeUnit(charId: string, side: 'A' | 'B', slot: 1 | 2 | 3, start
   const unit: Unit = {
     id: `${side}-${charId}-${++_uid}`,
     characterId: charId,
+    isHuman: char.isHuman !== false,
     name: char.name,
     side,
     slot,
@@ -570,7 +571,8 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
 
   // Apply cooldown
   if (move.cooldown) {
-    u.moveCooldownUntil[move.id] = s.clock + move.cooldown * 10
+    // Database cooldown is measured in rounds. One round is 100 ticks (10s).
+    u.moveCooldownUntil[move.id] = s.clock + move.cooldown * 100
   }
 
   // Advance ATB timer — BAT- shortens cooldown, BAT+ extends it
