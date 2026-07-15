@@ -292,10 +292,12 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
       )}
       {/* ── Move animation overlay — directional ── */}
       {moveAnim && (() => {
-        const attackFromLeft = moveAnim.attackerSide === 'A'
+        // Direction is viewer-relative: the local team is always rendered on the
+        // left and the opposing team on the right, including the B-side view.
+        const attackFromLeft = moveAnim.attackerSide === mySide
         const mirrorSkill = !attackFromLeft
-        const mirrorTarget = moveAnim.targetSide === 'B'
-        const targetOnRight = moveAnim.targetSide === 'B'
+        const targetOnRight = moveAnim.targetSide !== mySide
+        const mirrorTarget = targetOnRight
         const sideIsAuto = moveAnim.attackerSide === 'A' ? game.autoBattleA : game.autoBattleB
         const manualAnimation = !isAIBattle && !sideIsAuto && !(isSolo && moveAnim.attackerSide === 'B')
 
@@ -428,7 +430,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                     {units.map((u, i) => {
                         const isActive = !isAIBattle && readyUnits[0]?.id === u.id
                         return (
-                          <UnitCard key={u.id} unit={u} clock={game.clock}
+                          <UnitCard key={u.id} unit={u} clock={game.clock} flip={false}
                             stackClass={`uc-i${i}`}
                             selectable={isActive}
                             highlighted={previewUnitId === u.id && !isActive}
@@ -462,7 +464,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                   <div className={`slot-cards-stack ${fanClass} ${units.length > 1 ? 'stack-multi' : ''}`}>
                     <div className="stack-slotlabel" style={{ color: DIST_COLOR[label] }}>{label}</div>
                     {units.map((u, i) => (
-                        <UnitCard key={u.id} unit={u} clock={game.clock} isCurrentTurn={u.id === globalActiveId}
+                        <UnitCard key={u.id} unit={u} clock={game.clock} flip isCurrentTurn={u.id === globalActiveId}
                           stackClass={`uc-i${i}`}
                           isPreview
                           highlighted={previewUnitId === u.id}
@@ -642,14 +644,13 @@ function BattleEndDetails({ game, showLog, onOpenLog, onCloseLog }: {
   )
 }
 
-function UnitCard({ unit, clock, onClick, selectable, highlighted, isPreview, isCurrentTurn, stackClass }: {
-  unit: Unit; clock: number; onClick?: () => void; selectable?: boolean; highlighted?: boolean; isPreview?: boolean; isCurrentTurn?: boolean; stackClass?: string
+function UnitCard({ unit, clock, flip = false, onClick, selectable, highlighted, isPreview, isCurrentTurn, stackClass }: {
+  unit: Unit; clock: number; flip?: boolean; onClick?: () => void; selectable?: boolean; highlighted?: boolean; isPreview?: boolean; isCurrentTurn?: boolean; stackClass?: string
 }) {
   const pct     = unit.alive ? Math.max(0, (unit.hp / unit.maxHp) * 100) : 0
   const ticks   = Math.max(0, unit.nextActionAt - clock)
   const hpColor = pct > 50 ? '#22cc66' : pct > 20 ? '#ccaa22' : '#cc3333'
   const img     = getCharWideImg(unit.characterId) ?? getCharImg(unit.characterId)
-  const flip    = unit.side === 'B'
   const stateClass = selectable ? 'selectable' : (onClick && isPreview ? 'previewable' : (onClick ? 'targetable' : ''))
 
   return (
