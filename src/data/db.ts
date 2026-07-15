@@ -1063,7 +1063,7 @@ export const moves: Move[] = [
     "hitRate": null,
     "critRate": null,
     "cooldown": null,
-    "description": "命中率-100%",
+    "description": "機器人不得傷害人形角色；攻擊必定無法命中，且必中不能繞過此限制",
     "effectTrigger": "battleStart",
     "effectOps": [
       {

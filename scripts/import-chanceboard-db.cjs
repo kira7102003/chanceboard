@@ -99,7 +99,9 @@ const moves = [...source.moves]
     id: m.id, ownerId: m.ownerId, slot: m.slot, name: cleanName(m.name),
     condition: m.condition, rangeType: m.rangeType, scope: m.scope,
     powerRatio: m.powerRatio, hitRate: m.hitRate, critRate: m.critRate,
-    cooldown: m.cooldown, description: m.description,
+    cooldown: m.cooldown, description: m.id === '025'
+      ? '機器人不得傷害人形角色；攻擊必定無法命中，且必中不能繞過此限制'
+      : m.description,
     effectTrigger: m.effectTrigger, effectOps: (m.effectOps ?? []).map(convertOp),
     effectChance: m.effectChance ?? 1,
   }))
