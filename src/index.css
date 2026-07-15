@@ -2746,7 +2746,7 @@ h2 {
 .diag-summary span { margin-left:auto; font-size:11px; font-weight:500; color:#aab2cd; }
 .diag-summary.passed { color:#72e2a5; background:rgba(34,204,119,.11); border:1px solid rgba(34,204,119,.28); }
 .diag-summary.failed { color:#ff8585; background:rgba(238,68,68,.11); border:1px solid rgba(238,68,68,.28); }
-.diag-checklist { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+.diag-checklist { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:8px; }
 .diag-checklist > div { display:grid; grid-template-columns:24px 1fr; gap:2px 7px; align-items:center; padding:10px; border-radius:8px; background:#090d20; border:1px solid #252c4d; }
 .diag-checklist > div > span { grid-row:span 2; display:grid; place-items:center; width:24px; height:24px; border-radius:50%; font-weight:900; }
 .diag-checklist > div.ok > span { color:#04140c; background:#4bd58c; }

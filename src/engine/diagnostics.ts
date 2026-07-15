@@ -54,6 +54,7 @@ export async function runAllMoveTests(roster = characters): Promise<MoveTestRepo
   const verifiedActiveImages = new Set<string>()
   const verifiedPassiveImages = new Set<string>()
   let comboCheck = { ok: false, detail: '尚未執行' }
+  let stressCheck = { ok: false, detail: '尚未執行' }
   const slots: MoveSlot[] = ['劍', '槍', '法', '願', '被']
   const suitColor: Partial<Record<MoveSlot, string>> = { 劍: 'red', 槍: 'green', 法: 'blue', 願: 'yellow' }
   Math.random = () => 0
@@ -134,9 +135,9 @@ export async function runAllMoveTests(roster = characters): Promise<MoveTestRepo
     robot.statuses.push({ key: 'sureHit', mode: 'flat', value: 0, expiresAt: 500 })
     if (!resolveHit(robot, human, robot.moves['劍']).hit) throw new Error('機器人三定律：必中應可覆蓋被動')
 
-    // Full interaction matrix: every character × every flower card × every
-    // active move. This catches card/status/passive combinations selecting the
-    // wrong animation art. Twocolors + 鎖定 is one case in this matrix.
+    // Full interaction matrix: every attacker × flower card × active move ×
+    // defender. Besides artwork, this exercises defender passives/statuses and
+    // group targeting. Twocolors + 鎖定 is one case in this matrix.
     const flowerCards = cards.filter(card => !card.isSuitCard)
     let comboTotal = 0
     let comboPassed = 0
@@ -145,49 +146,84 @@ export async function runAllMoveTests(roster = characters): Promise<MoveTestRepo
       const activeMoves = moves.filter(move => move.ownerId === character.id && move.slot !== '被')
       for (const flowerCard of flowerCards) {
         for (const move of activeMoves) {
-          comboTotal++
-          try {
-            const opponentIds = ['001', '018', '002'].map(id => id === character.id ? '004' : id)
-            let comboState = initBattleState([character.id], opponentIds, 'pawn')
-            comboState.teamA[0].nextActionAt = comboState.clock
-            comboState.handA = [{ ...flowerCard }]
-            comboState = doPlayCard(comboState, 'A', flowerCard.id)
-            const comboActor = comboState.teamA[0]
-            if (!comboState.log.some(entry => entry.html.includes(flowerCard.name))) throw new Error('花牌沒有成功使用')
+          for (const defender of roster) {
+            comboTotal++
+            try {
+              let comboState = initBattleState([character.id], [defender.id, defender.id, defender.id], 'pawn')
+              comboState.teamA[0].nextActionAt = comboState.clock
+              comboState.handA = [{ ...flowerCard }]
+              comboState = doPlayCard(comboState, 'A', flowerCard.id)
+              const comboActor = comboState.teamA[0]
+              if (!comboState.log.some(entry => entry.html.includes(flowerCard.name))) throw new Error('花牌沒有成功使用')
 
-            const color = suitColor[move.slot]
-            const suitCard = cards.find(card => card.color === color)
-            if (!suitCard) throw new Error('找不到招式花色牌')
-            const need = comboActor.statuses.some(status => status.key === 'liberated') ? 1 : (move.condition ?? 1)
-            comboState.handA.push(...Array.from({ length: need }, () => ({ ...suitCard })))
-            const target = move.rangeType === '法' ? comboState.teamB[2] : comboState.teamB[0]
-            const hpBefore = target.hp
-            const comboResult = doExecuteMove(comboState, {
-              unitId: comboActor.id, moveSlot: move.slot, targetId: target.id, cardId: null,
-            })
-            const animation = [...comboResult.log].reverse().find(entry => entry.moveAnim)?.moveAnim
-            if (!animation || animation.moveId !== move.id || animation.moveName !== move.name) {
-              throw new Error(`動畫錯圖：預期 cb_move_img_${move.id} ${move.name}`)
-            }
-            if (!getMoveImg(move.id)) throw new Error(`缺少招式圖片 cb_move_img_${move.id}`)
+              const color = suitColor[move.slot]
+              const suitCard = cards.find(card => card.color === color)
+              if (!suitCard) throw new Error('找不到招式花色牌')
+              const need = comboActor.statuses.some(status => status.key === 'liberated') ? 1 : (move.condition ?? 1)
+              comboState.handA.push(...Array.from({ length: need }, () => ({ ...suitCard })))
+              const target = move.rangeType === '法' ? comboState.teamB[2] : comboState.teamB[0]
+              const hpBefore = target.hp
+              const comboResult = doExecuteMove(comboState, {
+                unitId: comboActor.id, moveSlot: move.slot, targetId: target.id, cardId: null,
+              })
+              const animation = [...comboResult.log].reverse().find(entry => entry.moveAnim)?.moveAnim
+              if (!animation || animation.moveId !== move.id || animation.moveName !== move.name) {
+                throw new Error(`動畫錯圖：預期 cb_move_img_${move.id} ${move.name}`)
+              }
+              if (!getMoveImg(move.id)) throw new Error(`缺少招式圖片 cb_move_img_${move.id}`)
+              if (!healthy(comboResult)) throw new Error('角色互動後產生無效 HP／ATB／狀態')
 
-            // Explicit rule assertion inside the general matrix.
-            if (character.id === '005' && flowerCard.id === '018' && move.slot === '劍') {
-              if (!comboActor.statuses.some(status => status.key === 'sureHit')) throw new Error('鎖定未套用必中')
-              if (animation.missed || comboResult.teamB[0].hp >= hpBefore) throw new Error('必中未蓋過機器人三定律')
+              // Explicit rule assertion inside the general matrix.
+              if (character.id === '005' && defender.id === '001' && flowerCard.id === '018' && move.slot === '劍') {
+                if (!comboActor.statuses.some(status => status.key === 'sureHit')) throw new Error('鎖定未套用必中')
+                if (animation.missed || comboResult.teamB[0].hp >= hpBefore) throw new Error('必中未蓋過機器人三定律')
+              }
+              comboPassed++
+            } catch (error) {
+              comboFailed++
+              lines.push({ ok: false, characterId: character.id, characterName: character.name,
+                item: `${flowerCard.name}＋${move.name} → ${defender.name}`,
+                message: error instanceof Error ? error.message : String(error) })
             }
-            comboPassed++
-          } catch (error) {
-            comboFailed++
-            lines.push({ ok: false, characterId: character.id, characterName: character.name,
-              item: `${flowerCard.name}＋${move.name}`,
-              message: error instanceof Error ? error.message : String(error) })
+            if (comboTotal % 100 === 0) await new Promise<void>(resolve => setTimeout(resolve, 0))
           }
-          if (comboTotal % 40 === 0) await new Promise<void>(resolve => setTimeout(resolve, 0))
         }
       }
     }
     comboCheck = { ok: comboFailed === 0, detail: `${comboPassed}/${comboTotal} 組通過${comboFailed ? `，失敗 ${comboFailed}` : ''}` }
+
+    // Deterministic 3v3 stress battles cover ally passives, AoE, death/revive,
+    // round transitions, cooldowns and winner resolution across mixed teams.
+    let stressPassed = 0
+    let stressFailed = 0
+    const stressTotal = Math.max(210, roster.length * 10)
+    let seed = 0x5eed1234
+    Math.random = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 0x100000000)
+    for (let test = 0; test < stressTotal; test++) {
+      const at = (offset: number) => roster[(test + offset) % roster.length].id
+      const teamA = [at(0), at(3), at(7)]
+      const teamB = [at(11), at(15), at(19)]
+      try {
+        let state = initBattleState(teamA, teamB, 'king')
+        let actions = 0
+        while (state.phase !== 'end' && actions++ < 700) {
+          state = fastForwardToNextReady(state)
+          if (!healthy(state)) throw new Error('產生無效 HP／ATB／狀態')
+          if (state.phase === 'end') break
+          const ready = getReadyUnits(state)
+          state = ready.length ? autoPlayUnit(state, ready[0]) : tickATB(state)
+        }
+        if (state.phase !== 'end' || !state.winner) throw new Error('戰鬥卡住或沒有勝負結果')
+        stressPassed++
+      } catch (error) {
+        stressFailed++
+        lines.push({ ok: false, characterId: 'TEAM', characterName: teamA.join('/'),
+          item: `3v3 vs ${teamB.join('/')}`, message: error instanceof Error ? error.message : String(error) })
+      }
+      if (test % 4 === 3) await new Promise<void>(resolve => setTimeout(resolve, 0))
+    }
+    Math.random = () => 0
+    stressCheck = { ok: stressFailed === 0, detail: `${stressPassed}/${stressTotal} 場完成${stressFailed ? `，失敗 ${stressFailed}` : ''}` }
   } catch (error) {
     lines.push({ ok: false, characterId: 'SYSTEM', characterName: '規則矩陣', item: '跨角色規則',
       message: error instanceof Error ? error.message : String(error) })
@@ -204,7 +240,8 @@ export async function runAllMoveTests(roster = characters): Promise<MoveTestRepo
     checklist: [
       { label: '招式圖片', ok: verifiedActiveImages.size === activeCount, detail: `${verifiedActiveImages.size}/${activeCount} 張已載入並對應` },
       { label: '被動圖片', ok: verifiedPassiveImages.size === passiveCount, detail: `${verifiedPassiveImages.size}/${passiveCount} 張已載入並對應` },
-      { label: '所有卡片＋所有招式', ...comboCheck },
+      { label: '卡片＋招式＋對手', ...comboCheck },
+      { label: '3v3 混戰壓力', ...stressCheck },
     ],
   }
 }
