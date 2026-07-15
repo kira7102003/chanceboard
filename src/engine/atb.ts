@@ -14,13 +14,16 @@ import type { PieceType } from '../types/piece'
 import { calcBAT, effectiveATK, effectiveDEF, effectiveSPD, resolveHit, applyDamage, elementMult } from './combat'
 import { runEffectOps, runCardEffects, tickStatuses } from './effects'
 import type { LogLine } from './effects'
+import { getChars } from '../utils/charStore'
 
 // ─── Unit factory ──────────────────────────────────────────────────────────────
 
 let _uid = 0
-export function makeUnit(charId: string, side: 'A' | 'B', slot: 1 | 2 | 3, startAt: number): Unit {
-  const char = characters.find(c => c.id === charId)!
+export function makeUnit(charId: string, side: 'A' | 'B', slot: 1 | 2 | 3, startAt: number, starLevel = 0): Unit {
+  const char = getChars().find(c => c.id === charId) ?? characters.find(c => c.id === charId)!
   const charMoves = allMoves.filter(m => m.ownerId === charId)
+  const starBonus = (char.starBonuses ?? []).slice(0, Math.max(0, Math.min(3, starLevel)))
+    .reduce((sum, bonus) => ({ hp: sum.hp + bonus.hp, atk: sum.atk + bonus.atk, def: sum.def + bonus.def, spd: sum.spd + bonus.spd }), { hp: 0, atk: 0, def: 0, spd: 0 })
 
   const moveMap = {} as Record<MoveSlot, Move>
   for (const m of charMoves) moveMap[m.slot] = m
@@ -54,11 +57,11 @@ export function makeUnit(charId: string, side: 'A' | 'B', slot: 1 | 2 | 3, start
     side,
     slot,
     element: char.element,
-    hp: char.hp,
-    maxHp: char.hp,
-    baseAtk: char.atk,
-    baseDef: char.def,
-    baseSpd: char.spd,
+    hp: char.hp + starBonus.hp,
+    maxHp: char.hp + starBonus.hp,
+    baseAtk: char.atk + starBonus.atk,
+    baseDef: char.def + starBonus.def,
+    baseSpd: char.spd + starBonus.spd,
     moves: moveMap,
     alive: true,
     nextActionAt: startAt,
@@ -135,12 +138,14 @@ export function initBattleState(
   piece: PieceType,
   deckAIds: string[] = [],
   deckBIds: string[] = [],
+  starLevelsA: Record<string, number> = {},
+  starLevelsB: Record<string, number> = {},
 ): GameState {
   const startClock = 0
   // SA: A front/mid/back = 3/2/1; B front/mid/back = 1/2/3.
   const slotOrderA: (1|2|3)[] = [3, 2, 1]
-  const teamA = charIdsA.map((id, i) => makeUnit(id, 'A', slotOrderA[i], startClock))
-  const teamB = charIdsB.map((id, i) => makeUnit(id, 'B', (i + 1) as 1 | 2 | 3, startClock))
+  const teamA = charIdsA.map((id, i) => makeUnit(id, 'A', slotOrderA[i], startClock, starLevelsA[id] ?? 0))
+  const teamB = charIdsB.map((id, i) => makeUnit(id, 'B', (i + 1) as 1 | 2 | 3, startClock, starLevelsB[id] ?? 0))
 
   // The first turn follows the same SPD → BAT rule as every later turn.
   // Previously every unit started at tick 0, so array order incorrectly won.

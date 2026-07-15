@@ -11,6 +11,8 @@ interface PlayerState {
   savedDecks: SavedDeck[]
   defaultDeckId: string | null
   dailyClaims: Record<string, string[]>
+  characterStars: Record<string, number>
+  cardInventory: Record<string, number>
 
   // Model mutations (Controller calls these)
   addCoins:   (n: number) => void
@@ -29,6 +31,8 @@ interface PlayerState {
   deleteDeck: (id: string) => void
   setDefaultDeck: (id: string | null) => void
   claimDailyReward: (userId: string, dateKey: string, coins: number, gems: number) => boolean
+  addCharacterStar: (id: string) => boolean
+  buyCard: (id: string, price: number) => boolean
 }
 
 export const usePlayerStore = create<PlayerState>()(
@@ -42,6 +46,8 @@ export const usePlayerStore = create<PlayerState>()(
       savedDecks: [],
       defaultDeckId: null,
       dailyClaims: {},
+      characterStars: {},
+      cardInventory: { '001': 10, '002': 10, '003': 10, '004': 10 },
 
       addCoins:   (n) => set(s => ({ coins: s.coins + n })),
       spendCoins: (n) => {
@@ -60,6 +66,18 @@ export const usePlayerStore = create<PlayerState>()(
           ? s.ownedCharIds
           : [...s.ownedCharIds, id],
       })),
+      addCharacterStar: (id) => {
+        const current = get().characterStars[id] ?? 0
+        if (current >= 3) return false
+        set(s => ({ characterStars: { ...s.characterStars, [id]: current + 1 } }))
+        return true
+      },
+      buyCard: (id, price) => {
+        const count = get().cardInventory[id] ?? 0
+        if (count >= 10 || get().coins < price) return false
+        set(s => ({ coins: s.coins - price, cardInventory: { ...s.cardInventory, [id]: count + 1 } }))
+        return true
+      },
       saveTeam: (team) => {
         if (get().savedTeams.length >= 5) return
         const id = `team_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`

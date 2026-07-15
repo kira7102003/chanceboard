@@ -14,7 +14,7 @@ interface PullResult { char: Character; isNew: boolean }
 interface Props { onClose: () => void }
 
 export default function Summon({ onClose }: Props) {
-  const { gems, ownedCharIds, spendGems, unlockChar, addCoins } = usePlayerStore()
+  const { gems, ownedCharIds, spendGems, unlockChar, addCoins, addCharacterStar } = usePlayerStore()
   const allChars = getChars().filter(c => c.enabled !== false)
 
   const [results,   setResults]   = useState<PullResult[] | null>(null)
@@ -32,7 +32,7 @@ export default function Summon({ onClose }: Props) {
       const isNew = !alreadyOwned.has(c.id)
       pulled.push({ char: c, isNew })
       if (isNew) { alreadyOwned.add(c.id); unlockChar(c.id) }
-      else         addCoins(DUP_COIN)
+      else if (!addCharacterStar(c.id)) addCoins(DUP_COIN)
     }
 
     setResults(null)
@@ -99,7 +99,7 @@ export default function Summon({ onClose }: Props) {
           </div>
 
           <div className="hint" style={{ textAlign: 'center', marginTop: 8 }}>
-            重複角色補償 🪙 {DUP_COIN} 金幣
+            重複角色提升星級；三星後再次取得補償 🪙 {DUP_COIN} 金幣
           </div>
         </div>
       )}

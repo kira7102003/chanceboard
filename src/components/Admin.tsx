@@ -484,6 +484,10 @@ function BasicTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<C
             <div className="adm-section-label">戰場寬幅圖</div>
             <ImageCrop storageKey={`cb_wide_img_${char.id}`} />
           </div>
+          <div className="adm-section">
+            <div className="adm-section-label">三星突破圖片</div>
+            <ImageCrop storageKey={`cb_star_img_${char.id}`} />
+          </div>
         </div>
 
         {/* ── Right: data ── */}
@@ -541,6 +545,26 @@ function BasicTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<C
                 </div>
               ))}
             </div>
+          </div>
+
+          <div className="adm-section">
+            <div className="adm-section-label">每星級能力提升（加算）</div>
+            {[1, 2, 3].map(star => {
+              const bonuses = char.starBonuses ?? Array.from({ length: 3 }, () => ({ hp: 0, atk: 0, def: 0, spd: 0 }))
+              const bonus = bonuses[star - 1] ?? { hp: 0, atk: 0, def: 0, spd: 0 }
+              return <div className="adm-field-grid" key={star} style={{ marginBottom: 8 }}>
+                <b style={{ color: '#e8bd55' }}>{'★'.repeat(star)}</b>
+                {(['hp', 'atk', 'def', 'spd'] as const).map(stat => <label className="adm-field" key={stat}>
+                  <span>{stat.toUpperCase()}</span>
+                  <input type="number" min={0} max={99} value={bonus[stat]}
+                    onChange={event => {
+                      const next = bonuses.map(item => ({ ...item }))
+                      next[star - 1][stat] = Math.max(0, Math.min(99, Number(event.target.value) || 0))
+                      onUpdate({ starBonuses: next })
+                    }} />
+                </label>)}
+              </div>
+            })}
           </div>
 
           <div className="adm-section">

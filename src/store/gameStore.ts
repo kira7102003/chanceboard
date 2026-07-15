@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { usePlayerStore } from './playerStore'
 import type { GameState } from '../types/game'
 import type { MoveSlot } from '../types/move'
 import type { PieceType } from '../types/piece'
@@ -127,7 +128,7 @@ export const useGameStore = create<Store>((set, get) => ({
   setOpponentDeck: (ids) => set({ opponentDeckIds: ids }),
 
   startBattle: () => {
-    const { selectedCharIds, opponentCharIds, mySide, myDeckIds, opponentDeckIds } = get()
+    const { selectedCharIds, opponentCharIds, mySide, myDeckIds, opponentDeckIds, isSolo } = get()
     const piece  = randomPiece()
     const charA  = mySide === 'A' ? selectedCharIds : opponentCharIds
     const charB  = mySide === 'A' ? opponentCharIds : selectedCharIds
@@ -135,7 +136,9 @@ export const useGameStore = create<Store>((set, get) => ({
     const deckBIds = mySide === 'A' ? opponentDeckIds : myDeckIds
     let game: GameState
     try {
-      game = initBattleState(charA, charB, piece, deckAIds, deckBIds)
+      const ownedStars = isSolo ? usePlayerStore.getState().characterStars : {}
+      game = initBattleState(charA, charB, piece, deckAIds, deckBIds,
+        mySide === 'A' ? ownedStars : {}, mySide === 'B' ? ownedStars : {})
     } catch (err) {
       console.error('[startBattle] initBattleState THREW:', err)
       return

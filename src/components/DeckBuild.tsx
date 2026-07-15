@@ -20,10 +20,11 @@ const flowerCards = allCards.filter(c => !c.isSuitCard)
 // ── CardRow: stable top-level component so hooks don't reset ──────────────────
 interface CardRowProps {
   card: Card; cnt: number; total: number
+  owned: number
   pulse?: boolean
   onAdd: () => void; onRemove: () => void
 }
-function CardRow({ card, cnt, total, pulse, onAdd, onRemove }: CardRowProps) {
+function CardRow({ card, cnt, total, owned, pulse, onAdd, onRemove }: CardRowProps) {
   const [showDesc, setShowDesc] = useState(false)
   const col    = SUIT_COLOR[card.color]
   const imgUrl = getCardImg(card.id)
@@ -49,9 +50,9 @@ function CardRow({ card, cnt, total, pulse, onAdd, onRemove }: CardRowProps) {
           <div className="deck-card-controls" onClick={e => e.stopPropagation()}>
             <button className="btn sm" onClick={onRemove} disabled={cnt === 0}>－</button>
             <span className="deck-card-count" style={{ color: cnt > 0 ? col : '#333355' }}>
-              {cnt > 0 ? cnt : '·'}
+              {cnt > 0 ? cnt : '·'} <small>/ {owned}</small>
             </span>
-            <button className="btn sm" onClick={onAdd} disabled={total >= DECK_SIZE}>＋</button>
+            <button className="btn sm" onClick={onAdd} disabled={total >= DECK_SIZE || cnt >= owned}>＋</button>
           </div>
         </div>
       </div>
@@ -64,7 +65,7 @@ interface Props { onConfirm: (deckIds: string[]) => void; onBack: () => void }
 
 export default function DeckBuild({ onConfirm, onBack }: Props) {
   const { mySide, isSolo } = useGameStore()
-  const { savedDecks, defaultDeckId, saveDeck, deleteDeck, setDefaultDeck } = usePlayerStore()
+  const { savedDecks, defaultDeckId, saveDeck, deleteDeck, setDefaultDeck, cardInventory } = usePlayerStore()
   const defaultDeck = savedDecks.find(deck => deck.id === defaultDeckId)
   const [selected, setSelected] = useState<string[]>(() => defaultDeck?.cardIds.slice(0, DECK_SIZE) ?? [])
   const [selectedPresetId, setSelectedPresetId] = useState(defaultDeck?.id ?? '')
@@ -77,7 +78,7 @@ export default function DeckBuild({ onConfirm, onBack }: Props) {
   useEffect(() => () => timersRef.current.forEach(clearTimeout), [])
 
   const countOf  = (id: string) => selected.filter(x => x === id).length
-  const add      = (id: string) => { if (selected.length < DECK_SIZE) { setSelectedPresetId(''); setSelected(s => [...s, id]) } }
+  const add      = (id: string) => { if (selected.length < DECK_SIZE && countOf(id) < (cardInventory[id] ?? 0)) { setSelectedPresetId(''); setSelected(s => [...s, id]) } }
   const remove   = (id: string) => {
     const idx = selected.lastIndexOf(id)
     if (idx !== -1) { setSelectedPresetId(''); setSelected(s => { const a = [...s]; a.splice(idx, 1); return a }) }
@@ -95,7 +96,7 @@ export default function DeckBuild({ onConfirm, onBack }: Props) {
   const randomize = () => {
     if (randomPhase) return
     setSelectedPresetId('')
-    const additions = randomDeck()
+    const additions = randomDeck(cardInventory)
 
     setDealTotal(additions.length)
     setRandomPhase('gather')
@@ -195,6 +196,7 @@ export default function DeckBuild({ onConfirm, onBack }: Props) {
             {suitCards.map(c => (
               <CardRow key={c.id} card={c}
                 cnt={countOf(c.id)} total={selected.length}
+                owned={cardInventory[c.id] ?? 0}
                 pulse={dealtCardId === c.id}
                 onAdd={() => add(c.id)} onRemove={() => remove(c.id)} />
             ))}
@@ -207,6 +209,7 @@ export default function DeckBuild({ onConfirm, onBack }: Props) {
             {flowerCards.map(c => (
               <CardRow key={c.id} card={c}
                 cnt={countOf(c.id)} total={selected.length}
+                owned={cardInventory[c.id] ?? 0}
                 pulse={dealtCardId === c.id}
                 onAdd={() => add(c.id)} onRemove={() => remove(c.id)} />
             ))}
