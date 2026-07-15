@@ -275,6 +275,15 @@ function CharacterDiagnostics({ chars }: { chars: Character[] }) {
         </div>
         {moveReport && (
           <>
+            <div className="diag-checklist">
+              {moveReport.checklist.map(check => (
+                <div key={check.label} className={check.ok ? 'ok' : 'error'}>
+                  <span>{check.ok ? '✓' : '✗'}</span>
+                  <b>{check.label}</b>
+                  <small>{check.detail}</small>
+                </div>
+              ))}
+            </div>
             <div className={`diag-summary ${moveReport.failed ? 'failed' : 'passed'}`}>
               {moveReport.failed ? '✗' : '✓'} PASS {moveReport.passed}/{moveReport.total}
               <span>失敗 {moveReport.failed} · {Math.round(moveReport.durationMs)}ms</span>

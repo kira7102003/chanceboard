@@ -3,7 +3,7 @@ import type { GameState } from '../types/game'
 import type { MoveSlot } from '../types/move'
 import {
   initBattleState, makeUnit, doExecuteMove, doPass, tickATB,
-  fastForwardToNextReady, getReadyUnits, autoPlayUnit,
+  fastForwardToNextReady, getReadyUnits, autoPlayUnit, doPlayCard,
 } from './atb'
 import { runEffectOps } from './effects'
 import { resolveHit } from './combat'
@@ -23,6 +23,7 @@ export interface MoveTestReport {
   total: number
   durationMs: number
   lines: DiagnosticLine[]
+  checklist: Array<{ label: string; ok: boolean; detail: string }>
 }
 
 function healthy(state: GameState): boolean {
@@ -50,6 +51,9 @@ export async function runAllMoveTests(roster = characters): Promise<MoveTestRepo
   const started = performance.now()
   const originalRandom = Math.random
   const lines: DiagnosticLine[] = []
+  const verifiedActiveImages = new Set<string>()
+  const verifiedPassiveImages = new Set<string>()
+  let comboCheck = { ok: false, detail: '尚未執行' }
   const slots: MoveSlot[] = ['劍', '槍', '法', '願', '被']
   const suitColor: Partial<Record<MoveSlot, string>> = { 劍: 'red', 槍: 'green', 法: 'blue', 願: 'yellow' }
   Math.random = () => 0
@@ -69,6 +73,7 @@ export async function runAllMoveTests(roster = characters): Promise<MoveTestRepo
             const passiveImage = getMoveImg(move.id)
             if (!passiveImage) throw new Error(`缺少被動圖片：cb_move_img_${move.id}`)
             await verifyImage(passiveImage)
+            verifiedPassiveImages.add(move.id)
             const actor = makeUnit(character.id, 'A', 3, 0)
             const opponentId = character.id === '001' ? '002' : '001'
             const state = initBattleState([character.id], [opponentId], 'pawn')
@@ -105,6 +110,7 @@ export async function runAllMoveTests(roster = characters): Promise<MoveTestRepo
             const moveImage = getMoveImg(move.id)
             if (!moveImage) throw new Error(`缺少招式圖片：cb_move_img_${move.id}`)
             await verifyImage(moveImage)
+            verifiedActiveImages.add(move.id)
             if (result.discardPublic.filter(entry => entry.id === card.id).length < need) throw new Error('沒有正確消耗手牌')
             if (move.cooldown) {
               const after = result.teamA.find(unit => unit.id === actor.id)!
@@ -127,6 +133,34 @@ export async function runAllMoveTests(roster = characters): Promise<MoveTestRepo
     if (!resolveHit(robot, heather, robot.moves['劍']).hit) throw new Error('機器人三定律：海瑟應可被命中')
     robot.statuses.push({ key: 'sureHit', mode: 'flat', value: 0, expiresAt: 500 })
     if (!resolveHit(robot, human, robot.moves['劍']).hit) throw new Error('機器人三定律：必中應可覆蓋被動')
+
+    // Full regression: play 鎖定 flower card, then execute Twocolors' sword
+    // move against a human and validate the resulting animation artwork.
+    try {
+      let comboState = initBattleState(['005'], ['001'], 'pawn')
+      comboState.teamA[0].nextActionAt = comboState.clock
+      const lockCard = cards.find(card => card.id === '018')!
+      const swordCard = cards.find(card => card.id === '001')!
+      comboState.handA = [{ ...lockCard }, { ...swordCard }]
+      comboState = doPlayCard(comboState, 'A', lockCard.id)
+      const comboActor = comboState.teamA[0]
+      if (!comboActor.statuses.some(status => status.key === 'sureHit')) throw new Error('使用鎖定後未取得必中')
+      const targetId = comboState.teamB[0].id
+      const hpBefore = comboState.teamB[0].hp
+      const comboResult = doExecuteMove(comboState, { unitId: comboActor.id, moveSlot: '劍', targetId, cardId: null })
+      if (comboResult.teamB[0].hp >= hpBefore) throw new Error('必中未蓋過機器人三定律，沒有造成傷害')
+      const animation = [...comboResult.log].reverse().find(entry => entry.moveAnim)?.moveAnim
+      if (!animation || animation.moveId !== '021' || animation.moveName !== '疼痛針' || animation.missed) {
+        throw new Error('鎖定後出招的動畫或 MISS 狀態錯誤')
+      }
+      const image = getMoveImg('021')
+      if (!image) throw new Error('疼痛針缺少招式圖片')
+      await verifyImage(image)
+      comboCheck = { ok: true, detail: '鎖定 → 必中 → 疼痛針命中人類 → 招式圖 cb_move_img_021 正確' }
+    } catch (error) {
+      comboCheck = { ok: false, detail: error instanceof Error ? error.message : String(error) }
+      lines.push({ ok: false, characterId: '005', characterName: '圖卡勒絲', item: '鎖定＋疼痛針連動', message: comboCheck.detail })
+    }
   } catch (error) {
     lines.push({ ok: false, characterId: 'SYSTEM', characterName: '規則矩陣', item: '跨角色規則',
       message: error instanceof Error ? error.message : String(error) })
@@ -135,7 +169,17 @@ export async function runAllMoveTests(roster = characters): Promise<MoveTestRepo
   }
 
   const passed = lines.filter(line => line.ok).length
-  return { passed, failed: lines.length - passed, total: lines.length, durationMs: performance.now() - started, lines }
+  const rosterIds = new Set(roster.map(character => character.id))
+  const activeCount = moves.filter(move => rosterIds.has(move.ownerId) && move.slot !== '被').length
+  const passiveCount = moves.filter(move => rosterIds.has(move.ownerId) && move.slot === '被').length
+  return {
+    passed, failed: lines.length - passed, total: lines.length, durationMs: performance.now() - started, lines,
+    checklist: [
+      { label: '招式圖片', ok: verifiedActiveImages.size === activeCount, detail: `${verifiedActiveImages.size}/${activeCount} 張已載入並對應` },
+      { label: '被動圖片', ok: verifiedPassiveImages.size === passiveCount, detail: `${verifiedPassiveImages.size}/${passiveCount} 張已載入並對應` },
+      { label: '卡片＋招式連動', ...comboCheck },
+    ],
+  }
 }
 
 export interface LadderRow {
