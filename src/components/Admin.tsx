@@ -203,7 +203,7 @@ export default function Admin({ onBack }: Props) {
           ) : selId === '__daily__' ? (
             <div className="adm-panel"><DailyRewardSettings /></div>
           ) : selId === '__tests__' ? (
-            <div className="adm-panel"><CharacterDiagnostics /></div>
+            <div className="adm-panel"><CharacterDiagnostics chars={chars} /></div>
           ) : char ? (
             <>
               <div className="adm-tabs">
@@ -227,7 +227,7 @@ export default function Admin({ onBack }: Props) {
   )
 }
 
-function CharacterDiagnostics() {
+function CharacterDiagnostics({ chars }: { chars: Character[] }) {
   const [moveReport, setMoveReport] = useState<MoveTestReport | null>(null)
   const [ladderReport, setLadderReport] = useState<LadderReport | null>(null)
   const [gamesPerPair, setGamesPerPair] = useState(2)
@@ -240,7 +240,7 @@ function CharacterDiagnostics() {
     setRunningMoves(true)
     setMoveReport(null)
     setTimeout(() => {
-      try { setMoveReport(runAllMoveTests()) }
+      try { setMoveReport(runAllMoveTests(chars)) }
       finally { setRunningMoves(false) }
     }, 0)
   }
@@ -250,7 +250,7 @@ function CharacterDiagnostics() {
     setLadderReport(null)
     setProgress({ done: 0, total: 0 })
     try {
-      const report = await runWinRateLadder(gamesPerPair, (done, total) => setProgress({ done, total }))
+      const report = await runWinRateLadder(gamesPerPair, (done, total) => setProgress({ done, total }), chars)
       setLadderReport(report)
     } finally {
       setRunningLadder(false)
@@ -268,9 +268,9 @@ function CharacterDiagnostics() {
 
       <section className="diag-card">
         <div className="diag-card-head">
-          <div><h3>全角色招式／被動測試</h3><p>21 名角色 × 5 項，共 105 項。</p></div>
+          <div><h3>全角色招式／被動測試</h3><p>{chars.length} 名角色 × 5 項，共 {chars.length * 5} 項；未來新增角色會自動加入。</p></div>
           <button className="btn primary" disabled={runningMoves || runningLadder} onClick={testMoves}>
-            {runningMoves ? '測試中…' : '開始測試 105 項'}
+            {runningMoves ? '測試中…' : `開始測試 ${chars.length * 5} 項`}
           </button>
         </div>
         {moveReport && (
@@ -314,8 +314,8 @@ function CharacterDiagnostics() {
         )}
         {ladderReport && (
           <>
-            <div className="diag-summary passed">✓ 完成 {ladderReport.totalMatches} 場
-              <span>每組 {ladderReport.gamesPerPair} 場 · {(ladderReport.durationMs / 1000).toFixed(2)}s</span>
+            <div className={`diag-summary ${ladderReport.errors ? 'failed' : 'passed'}`}>✓ 完成 {ladderReport.totalMatches} 場
+              <span>組合 {ladderReport.rows.length * (ladderReport.rows.length - 1) / 2} 組 · 錯誤 {ladderReport.errors} · 每組 {ladderReport.gamesPerPair} 場 · {(ladderReport.durationMs / 1000).toFixed(2)}s</span>
             </div>
             <div className="diag-table-wrap"><table className="diag-table">
               <thead><tr><th>排名</th><th>角色</th><th>積分</th><th>場次</th><th>勝</th><th>敗</th><th>和</th><th>勝率</th></tr></thead>

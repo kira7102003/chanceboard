@@ -148,10 +148,14 @@ export function getChars(): Character[] {
     const raw = localStorage.getItem(LS_CHARS)
     if (!raw) return defaultChars
     const saved: Character[] = JSON.parse(raw)
-    return defaultChars.map(dc => {
+    const merged = defaultChars.map(dc => {
       const override = saved.find(s => s.id === dc.id)
       return override ? { ...dc, ...override } : dc
     })
+    // Keep characters created in Data Management even when they do not exist
+    // in the bundled defaults yet. Previously they disappeared after reload.
+    const added = saved.filter(savedChar => !defaultChars.some(dc => dc.id === savedChar.id))
+    return [...merged, ...added]
   } catch { return defaultChars }
 }
 

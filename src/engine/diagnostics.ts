@@ -31,7 +31,7 @@ function healthy(state: GameState): boolean {
 }
 
 /** Browser-safe counterpart of scripts/test-all-moves.mjs for the admin UI. */
-export function runAllMoveTests(): MoveTestReport {
+export function runAllMoveTests(roster = characters): MoveTestReport {
   const started = performance.now()
   const originalRandom = Math.random
   const lines: DiagnosticLine[] = []
@@ -40,7 +40,7 @@ export function runAllMoveTests(): MoveTestReport {
   Math.random = () => 0
 
   try {
-    for (const character of characters) {
+    for (const character of roster) {
       const kit = moves.filter(move => move.ownerId === character.id)
       for (const slot of slots) {
         const move = kit.find(item => item.slot === slot)
@@ -130,6 +130,7 @@ export interface LadderReport {
   durationMs: number
   rows: LadderRow[]
   log: string[]
+  errors: number
 }
 
 function runAutoMatch(idA: string, idB: string): GameState {
@@ -148,36 +149,45 @@ function runAutoMatch(idA: string, idB: string): GameState {
 export async function runWinRateLadder(
   gamesPerPair = 2,
   onProgress?: (done: number, total: number) => void,
+  roster = characters,
 ): Promise<LadderReport> {
   const started = performance.now()
   const rounds = Math.max(2, Math.min(20, Math.floor(gamesPerPair)))
-  const total = characters.length * (characters.length - 1) / 2 * rounds
-  const stats = new Map(characters.map(character => [character.id,
+  const activeRoster = roster.filter(character => character.enabled !== false)
+  const total = activeRoster.length * (activeRoster.length - 1) / 2 * rounds
+  const stats = new Map(activeRoster.map(character => [character.id,
     { wins: 0, losses: 0, draws: 0, games: 0, points: 0 }]))
   const log: string[] = []
   let done = 0
+  let errors = 0
 
-  for (let i = 0; i < characters.length; i++) {
-    for (let j = i + 1; j < characters.length; j++) {
-      const first = characters[i]
-      const second = characters[j]
+  for (let i = 0; i < activeRoster.length; i++) {
+    for (let j = i + 1; j < activeRoster.length; j++) {
+      const first = activeRoster[i]
+      const second = activeRoster[j]
       for (let game = 0; game < rounds; game++) {
         const swapped = game % 2 === 1
         const idA = swapped ? second.id : first.id
         const idB = swapped ? first.id : second.id
-        const result = runAutoMatch(idA, idB)
         const statA = stats.get(idA)!
         const statB = stats.get(idB)!
         statA.games++; statB.games++
-        if (result.winner === 'draw' || !result.winner) {
-          statA.draws++; statB.draws++; statA.points++; statB.points++
-        } else {
-          const winnerId = result.winner === 'A' ? idA : idB
-          const loserId = result.winner === 'A' ? idB : idA
-          stats.get(winnerId)!.wins++; stats.get(winnerId)!.points += 3
-          stats.get(loserId)!.losses++
+        try {
+          const result = runAutoMatch(idA, idB)
+          if (result.winner === 'draw' || !result.winner) {
+            statA.draws++; statB.draws++; statA.points++; statB.points++
+          } else {
+            const winnerId = result.winner === 'A' ? idA : idB
+            const loserId = result.winner === 'A' ? idB : idA
+            stats.get(winnerId)!.wins++; stats.get(winnerId)!.points += 3
+            stats.get(loserId)!.losses++
+          }
+          log.push(`#${done + 1} ${first.name} vs ${second.name} → ${result.winner === 'draw' ? '平手' : result.winner === (swapped ? 'B' : 'A') ? first.name + ' 勝' : second.name + ' 勝'}（${result.winnerReason ?? '達行動上限'}）`)
+        } catch (error) {
+          errors++
+          statA.draws++; statB.draws++
+          log.push(`#${done + 1} ${first.name} vs ${second.name} → ERROR：${error instanceof Error ? error.message : String(error)}`)
         }
-        log.push(`#${done + 1} ${characters.find(c => c.id === idA)!.name} vs ${characters.find(c => c.id === idB)!.name} → ${result.winner === 'draw' ? '平手' : result.winner === 'A' ? '左方勝' : '右方勝'}（${result.winnerReason ?? '達行動上限'}）`)
         done++
         onProgress?.(done, total)
         if (done % 4 === 0) await new Promise<void>(resolve => setTimeout(resolve, 0))
@@ -185,12 +195,12 @@ export async function runWinRateLadder(
     }
   }
 
-  const rows = characters.map(character => {
+  const rows = activeRoster.map(character => {
     const stat = stats.get(character.id)!
     return { rank: 0, characterId: character.id, characterName: character.name, ...stat,
       winRate: stat.games ? stat.wins / stat.games * 100 : 0 }
   }).sort((a, b) => b.points - a.points || b.winRate - a.winRate || b.wins - a.wins)
     .map((row, index) => ({ ...row, rank: index + 1 }))
 
-  return { gamesPerPair: rounds, totalMatches: total, durationMs: performance.now() - started, rows, log }
+  return { gamesPerPair: rounds, totalMatches: total, durationMs: performance.now() - started, rows, log, errors }
 }

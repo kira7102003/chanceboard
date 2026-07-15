@@ -10,8 +10,7 @@ try {
   const { runEffectOps } = await server.ssrLoadModule('/src/engine/effects.ts')
 
   Math.random = () => 0
-  assert.equal(characters.length, 21, 'expected 21 characters')
-  assert.equal(moves.length, 105, 'expected 105 moves/passives')
+  assert.equal(moves.length, characters.length * 5, 'every character must have five moves/passives')
 
   const slots = ['劍', '槍', '法', '願', '被']
   const suitColor = { 劍: 'red', 槍: 'green', 法: 'blue', 願: 'yellow' }
@@ -103,7 +102,7 @@ try {
   robot.statuses.push({ key: 'sureHit', mode: 'flat', value: 0, expiresAt: 500 })
   assert.equal(resolveHit(robot, human, robot.moves['劍']).hit, true, 'sure-hit must override Robot Law')
 
-  console.log(`PASS: ${tested.length}/105 moves and passives executed successfully`)
+  console.log(`PASS: ${tested.length}/${characters.length * 5} moves and passives executed successfully`)
   for (const character of characters) console.log(`  ${character.id} ${character.name}: 5/5`)
 } finally {
   Math.random = originalRandom
