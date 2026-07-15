@@ -268,7 +268,7 @@ function CharacterDiagnostics({ chars }: { chars: Character[] }) {
 
       <section className="diag-card">
         <div className="diag-card-head">
-          <div><h3>全角色招式／被動測試</h3><p>{chars.length} 名角色 × 5 項，共 {chars.length * 5} 項；未來新增角色會自動加入。</p></div>
+          <div><h3>全角色招式／被動測試</h3><p>{chars.length} 名角色 × 5 項，並測試每張花牌與每個主動招式的所有連動組合；未來新增資料會自動加入。</p></div>
           <button className="btn primary" disabled={runningMoves || runningLadder} onClick={testMoves}>
             {runningMoves ? '測試中…' : `開始測試 ${chars.length * 5} 項`}
           </button>
