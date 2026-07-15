@@ -8,6 +8,8 @@ export type Phase = 'select' | 'deckbuild' | 'act' | 'end'
 export interface BattleLogEntry {
   type?: string
   html: string
+  /** Number of suit cards actually paid for this move. */
+  cardsSpent?: number
   moveAnim?: { moveId: string; moveName: string; moveSlot: string; charName: string; charId?: string; attackerSide?: 'A' | 'B'; targetSide?: 'A' | 'B'; targetName?: string; targetCharId?: string; targetUnitId?: string; groupTargets?: Array<{ name: string; charId?: string }>; dealsDamage?: boolean; hasTarget?: boolean; selfTargetOnly?: boolean; missed?: boolean }
 }
 

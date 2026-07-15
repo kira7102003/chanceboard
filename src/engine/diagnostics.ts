@@ -267,6 +267,8 @@ export interface LadderReport {
   log: string[]
   errors: number
   flowerCardsPlayed: number
+  movesExecuted: number
+  suitCardsSpent: number
 }
 
 function runAutoMatch(idsA: string[], idsB: string[]): GameState {
@@ -298,6 +300,8 @@ export async function runWinRateLadder(
   let done = 0
   let errors = 0
   let flowerCardsPlayed = 0
+  let movesExecuted = 0
+  let suitCardsSpent = 0
 
   const recordMatch = (idsA: string[], idsB: string[], result: GameState | null, error?: unknown) => {
     const participants = [...idsA, ...idsB]
@@ -308,6 +312,9 @@ export async function runWinRateLadder(
       return
     }
     flowerCardsPlayed += result.log.filter(entry => entry.html.includes('打出')).length
+    const moveEntries = result.log.filter(entry => entry.moveAnim)
+    movesExecuted += moveEntries.length
+    suitCardsSpent += moveEntries.reduce((sum, entry) => sum + (entry.cardsSpent ?? 0), 0)
     if (result.winner === 'draw' || !result.winner) {
       for (const id of participants) { stats.get(id)!.draws++; stats.get(id)!.points++ }
       return
@@ -392,5 +399,5 @@ export async function runWinRateLadder(
   }).sort((a, b) => b.points - a.points || b.winRate - a.winRate || b.wins - a.wins)
     .map((row, index) => ({ ...row, rank: index + 1 }))
 
-  return { mode, gamesPerPair: rounds, totalMatches: total, durationMs: performance.now() - started, rows, log, errors, flowerCardsPlayed }
+  return { mode, gamesPerPair: rounds, totalMatches: total, durationMs: performance.now() - started, rows, log, errors, flowerCardsPlayed, movesExecuted, suitCardsSpent }
 }

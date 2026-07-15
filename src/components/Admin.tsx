@@ -329,7 +329,7 @@ function CharacterDiagnostics({ chars }: { chars: Character[] }) {
         {ladderReport && (
           <>
             <div className={`diag-summary ${ladderReport.errors ? 'failed' : 'passed'}`}>✓ {ladderReport.mode} 完成 {ladderReport.totalMatches} 場
-              <span>花牌使用 {ladderReport.flowerCardsPlayed} 次 · 錯誤 {ladderReport.errors} · 每組 {ladderReport.gamesPerPair} 場 · {(ladderReport.durationMs / 1000).toFixed(2)}s</span>
+              <span>招式出手 {ladderReport.movesExecuted} 次 · 劍槍法願牌消耗 {ladderReport.suitCardsSpent} 張 · 花牌使用 {ladderReport.flowerCardsPlayed} 次 · 錯誤 {ladderReport.errors} · 每組 {ladderReport.gamesPerPair} 場 · {(ladderReport.durationMs / 1000).toFixed(2)}s</span>
             </div>
             <div className="diag-table-wrap"><table className="diag-table">
               <thead><tr><th>排名</th><th>角色</th><th>積分</th><th>場次</th><th>勝</th><th>敗</th><th>和</th><th>勝率</th></tr></thead>

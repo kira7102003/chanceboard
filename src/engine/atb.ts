@@ -446,7 +446,7 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
     : targets.length > 0
       ? `→ <b>${targets[0].name}</b>`
       : '（無目標）'
-  s.log.push({ html: `${moveLabel} <b>${u.name}</b> ${targetDesc}`, moveAnim })
+  s.log.push({ html: `${moveLabel} <b>${u.name}</b> ${targetDesc}`, moveAnim, cardsSpent: suitColor ? needed : 0 })
 
   if (move.effectTrigger === 'preHit') {
     for (const t of targets) runEffectOps(move.effectOps, u, t, s, s.clock, 1, log)
