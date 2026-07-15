@@ -117,7 +117,11 @@ export function applyDamage(target: Unit, rawDamage: number): { absorbed: number
 
   const before = target.hp
   target.hp = Math.max(0, target.hp - dmg)
+  if (target.hp <= 0 && target.flags.miracleSurvivalChance && Math.random() < target.flags.miracleSurvivalChance) {
+    target.hp = 1
+  }
   const hpLost = before - target.hp
   if (target.hp <= 0) target.alive = false
+  else target.alive = true
   return { absorbed, hpLost }
 }

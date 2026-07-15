@@ -1335,7 +1335,7 @@ export const moves: Move[] = [
       {
         "op": "staticFlag",
         "value": 0.5,
-        "flag": "powerRatioBonusPct"
+        "flag": "powerRatioBonus"
       }
     ],
     "effectChance": 1
@@ -2217,7 +2217,7 @@ export const moves: Move[] = [
     "effectOps": [
       {
         "op": "staticFlag",
-        "flag": "repeatMoveResist25",
+        "flag": "sameMoveDamageReduction",
         "value": true
       }
     ],
@@ -2749,7 +2749,13 @@ export const moves: Move[] = [
     "cooldown": null,
     "description": "受到致命傷害時，50%機率奇蹟生還，剩餘1點血量而不會陣亡",
     "effectTrigger": "battleStart",
-    "effectOps": [],
+    "effectOps": [
+      {
+        "op": "staticFlag",
+        "flag": "miracleSurvivalChance",
+        "value": 0.5
+      }
+    ],
     "effectChance": 1
   },
   {

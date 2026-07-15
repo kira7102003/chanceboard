@@ -26,6 +26,10 @@ const targets = {
   enemyTeam: 'enemyAll', ownTeam: 'allyAll',
 }
 const distances = { near: 1, mid: 2, far: 3 }
+const staticFlags = {
+  powerRatioBonusPct: 'powerRatioBonus',
+  repeatMoveResist25: 'sameMoveDamageReduction',
+}
 // Game-rule classification (not inferred from title/species): only Heather is
 // currently a non-human target for Twocolors' Robot Law passive.
 const nonHumanCharacterIds = new Set(['018'])
@@ -67,7 +71,7 @@ function convertOp(input) {
     delete op.from; delete op.to; delete op.alsoDamage
   }
   if (op.op === 'staticFlag') {
-    op.flag = op.key
+    op.flag = staticFlags[op.key] ?? op.key
     delete op.key
     if (op.value == null) op.value = true
   }
@@ -106,7 +110,10 @@ const moves = [...source.moves]
     cooldown: m.cooldown, description: m.id === '025'
       ? '機器人不得傷害人類角色；非人類可正常命中，且必中或血腥機關期間可蓋過此限制'
       : m.description,
-    effectTrigger: m.effectTrigger, effectOps: (m.effectOps ?? []).map(convertOp),
+    effectTrigger: m.effectTrigger,
+    effectOps: m.id === '090'
+      ? [{ op: 'staticFlag', flag: 'miracleSurvivalChance', value: 0.5 }]
+      : (m.effectOps ?? []).map(convertOp),
     effectChance: m.effectChance ?? 1,
   }))
 

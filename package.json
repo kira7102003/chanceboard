@@ -8,6 +8,7 @@
     "dev:party": "partykit dev",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "test:moves": "node scripts/test-all-moves.mjs",
     "preview": "vite preview",
     "party:deploy": "partykit deploy"
   },

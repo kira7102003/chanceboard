@@ -13,6 +13,7 @@ export interface UnitFlags {
   nextMoveEffectMult?: number
   statusDurationExtend?: number
   lightSourceAura?: boolean
+  miracleSurvivalChance?: number
 }
 
 export interface Unit {

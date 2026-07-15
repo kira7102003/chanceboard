@@ -536,6 +536,13 @@ export function doExecuteMove(gs: GameState, action: MoveAction): GameState {
         if (Math.random() < chance) runEffectOps(move.effectOps, u, t, s, s.clock, 1, log)
       }
 
+      // Attacker passives that trigger whenever one of their moves lands.
+      const hitPassive = u.moves['被']
+      if (hitPassive?.effectTrigger === 'onHit') {
+        const chance = hitPassive.effectChance ?? 1
+        if (Math.random() < chance) runEffectOps(hitPassive.effectOps, u, t, s, s.clock, 1, log)
+      }
+
       // onCrit effects
       if (crit && move.effectTrigger === 'onCrit') {
         runEffectOps(move.effectOps, u, t, s, s.clock, 1, log)
