@@ -11,6 +11,7 @@ import { useAIBattle }           from './hooks/useAIBattle'
 import { supabase }               from './utils/supabase'
 import type { User }              from '@supabase/supabase-js'
 import { initDailyRewards } from './utils/dailyRewards'
+import { getLogisticsBusyCharacterIds } from './utils/logisticsStore'
 
 const CharSelect = lazy(() => import('./components/CharSelect'))
 const DeckBuild = lazy(() => import('./components/DeckBuild'))
@@ -154,7 +155,10 @@ export default function App() {
     store.setSolo(true)
     store.setRoom('SOLO', 'A', true)
     store.setPlayerCount(2)   // skip "等待對手" in CharSelect
-    if (defaultTeam) store.loadTeam(defaultTeam.charIds)
+    if (defaultTeam) {
+      const busyIds = getLogisticsBusyCharacterIds()
+      store.loadTeam(defaultTeam.charIds.filter(id => !busyIds.includes(id)))
+    }
     store.setAppPhase('charSelect')
   }
 

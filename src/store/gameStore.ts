@@ -12,6 +12,7 @@ import {
   doExecuteMove, doPass, doToggleAuto, autoPlayUnit, getReadyUnits, doDiscardCard,
 } from '../engine/atb'
 import { calcScore } from '../engine/score'
+import { getLogisticsBusyCharacterIds } from '../utils/logisticsStore'
 
 export type AppPhase = 'lobby' | 'charSelect' | 'deckBuild' | 'battle' | 'end'
 
@@ -112,11 +113,12 @@ export const useGameStore = create<Store>((set, get) => ({
   setScore:    r => set({ soloScore: r }),
 
   toggleCharSelect: (id) => {
+    if (getLogisticsBusyCharacterIds().includes(id)) return
     const cur = get().selectedCharIds
     if (cur.includes(id)) set({ selectedCharIds: cur.filter(x => x !== id) })
     else if (cur.length < 3) set({ selectedCharIds: [...cur, id] })
   },
-  loadTeam: (ids) => set({ selectedCharIds: ids.slice(0, 3) }),
+  loadTeam: (ids) => { const busyIds = getLogisticsBusyCharacterIds(); set({ selectedCharIds: ids.filter(id => !busyIds.includes(id)).slice(0, 3) }) },
   confirmCharSelect: () => {
     set({ appPhase: 'deckBuild' })
   },

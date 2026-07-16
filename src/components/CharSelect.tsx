@@ -6,6 +6,7 @@ import { CharPortrait } from './Admin'
 import { moves as allMoves } from '../data/db'
 import type { Character } from '../types/character'
 import type { MoveSlot } from '../types/move'
+import { getLogisticsBusyCharacterIds } from '../utils/logisticsStore'
 
 type ElFilter = '劍' | '槍' | '法' | 'all'
 
@@ -117,7 +118,8 @@ function CharGallery({ char, selectedIds, onToggle, onClose }: {
 // ── Main component ─────────────────────────────────────────────
 export default function CharSelect({ onConfirm, onToggle, onBack }: Props) {
   const allChars   = getChars()
-  const characters = allChars.filter(c => c.enabled !== false)
+  const logisticsBusyIds = getLogisticsBusyCharacterIds()
+  const characters = allChars.filter(c => c.enabled !== false && !logisticsBusyIds.includes(c.id))
   const { selectedCharIds, isSolo, loadTeam } = useGameStore()
   const { savedTeams, defaultTeamId, setDefaultTeam } = usePlayerStore()
   const ready = selectedCharIds.length === 3
@@ -293,7 +295,7 @@ export default function CharSelect({ onConfirm, onToggle, onBack }: Props) {
                 const team = savedTeams.find(t => t.id === e.target.value)
                 if (!team) return
                 setDefaultTeam(team.id)
-                loadTeam(team.charIds)
+                loadTeam(team.charIds.filter(id => !logisticsBusyIds.includes(id)))
               }}>
               <option value="">自選</option>
               {savedTeams.map(team => <option key={team.id} value={team.id}>{team.name}</option>)}
