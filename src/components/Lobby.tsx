@@ -45,8 +45,9 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
   const configuredChars = (desktopCharIds ?? []).map(id => ownedChars.find(c => c.id === id)).filter((c): c is NonNullable<typeof c> => !!c)
   const chars = configuredChars.length ? configuredChars : ownedChars
   const activeLogistics = getActiveLogistics()
-  const savedId  = localStorage.getItem(LOBBY_CHAR_KEY)
-  const initIdx  = Math.max(0, chars.findIndex(c => c.id === savedId))
+  const savedId = localStorage.getItem(LOBBY_CHAR_KEY)
+  const savedIdx = chars.findIndex(c => c.id === savedId)
+  const initIdx = chars.length && savedIdx >= 0 ? (savedIdx + 1) % chars.length : 0
   const [charIdx, setCharIdx] = useState(initIdx)
 
   // 有些角色沒上傳過立繪（getUrlByKey 為 null）——顯示與切換都要跳過它們，
@@ -62,7 +63,7 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
   const activeImageKey = activeChar ? imageKeyFor(activeChar.id) : null
   const charImgUrl = activeImageKey ? getUrlByKey(activeImageKey) : null
 
-  const cycleChar = () => {
+  const advanceChar = () => {
     if (chars.length === 0) return
     imgErrCount.current = 0
     let next = (dispIdx + 1) % chars.length
@@ -71,6 +72,15 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
     setImgFailed(false)
     localStorage.setItem(LOBBY_CHAR_KEY, chars[next].id)
   }
+
+  const returnToLobby = () => {
+    advanceChar()
+    setPanel(null)
+  }
+
+  useEffect(() => {
+    if (activeChar) localStorage.setItem(LOBBY_CHAR_KEY, activeChar.id)
+  }, [activeChar])
 
   const handleImgError = () => {
     // Clear stale '1' flag so this URL isn't tried again next session
@@ -123,19 +133,19 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
     <>
       {/* ── Overlay panels ── */}
       <Suspense fallback={<div className="route-loading">載入畫面中…</div>}>
-      {panel === 'summon'     && <Summon     onClose={() => setPanel(null)} />}
-      {panel === 'collection' && <Collection onClose={() => setPanel(null)} />}
-      {panel === 'shop'       && <Shop       onClose={() => setPanel(null)} />}
-      {panel === 'settings'   && <Settings onClose={() => setPanel(null)} />}
-      {panel === 'story'      && <StoryMode onClose={() => setPanel(null)} onComplete={chapter => { addExperience(100); usePlayerStore.getState().claimStoryReward(chapter.id, chapter.rewards ?? {}) }} />}
-      {panel === 'profile'    && <PlayerProfile onClose={() => setPanel(null)} />}
-      {panel === 'logistics'  && <Logistics onClose={() => setPanel(null)} />}
-      {panel === 'explore'    && <Explore onClose={() => setPanel(null)} />}
-      {panel === 'duel'       && <DuelMenu onClose={() => setPanel(null)} onJoin={onJoin} onSolo={onSolo}
+      {panel === 'summon'     && <Summon     onClose={returnToLobby} />}
+      {panel === 'collection' && <Collection onClose={returnToLobby} />}
+      {panel === 'shop'       && <Shop       onClose={returnToLobby} />}
+      {panel === 'settings'   && <Settings onClose={returnToLobby} />}
+      {panel === 'story'      && <StoryMode onClose={returnToLobby} onComplete={chapter => { addExperience(100); usePlayerStore.getState().claimStoryReward(chapter.id, chapter.rewards ?? {}) }} />}
+      {panel === 'profile'    && <PlayerProfile onClose={returnToLobby} />}
+      {panel === 'logistics'  && <Logistics onClose={returnToLobby} />}
+      {panel === 'explore'    && <Explore onClose={returnToLobby} />}
+      {panel === 'duel'       && <DuelMenu onClose={returnToLobby} onJoin={onJoin} onSolo={onSolo}
         onAIBattle={onAIBattle} savedSession={savedSession} onRejoin={onRejoin} />}
-      {panel && ['pieces','tasks','mail','achievements','announcements','friends'].includes(panel) && <FeaturePanel mode={panel as FeatureMode} onClose={() => setPanel(null)} />}
+      {panel && ['pieces','tasks','mail','achievements','announcements','friends'].includes(panel) && <FeaturePanel mode={panel as FeatureMode} onClose={returnToLobby} />}
       {panel === 'teams'      && (
-        <Teams onClose={() => setPanel(null)} />
+        <Teams onClose={returnToLobby} />
       )}
       </Suspense>
 
@@ -147,7 +157,7 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
 
         {/* ── Character portrait ── */}
         {charImgUrl && !imgFailed && (
-          <div className="lv2-char" onClick={cycleChar} style={{ cursor: 'pointer' }} title="點擊切換角色">
+          <div className="lv2-char">
             <img src={charImgUrl} alt="" className="lv2-char-img"
               onError={handleImgError} />
           </div>
