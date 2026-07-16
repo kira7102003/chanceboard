@@ -3418,13 +3418,24 @@ h2 {
 .dk-random-btn { display: flex; }
 
 .flow-back-lobby {
-  position: absolute; right: 14px; bottom: 10px; z-index: 20;
+  position: absolute; left: 14px; top: 10px; right: auto; bottom: auto; z-index: 20;
   padding: 8px 16px; color: #ffe39a; font-weight: 900;
   background: linear-gradient(145deg, rgba(48,37,14,.96), rgba(8,10,22,.98));
   border-color: rgba(232,204,136,.75);
   box-shadow: 0 5px 18px rgba(0,0,0,.65), inset 0 0 12px rgba(200,161,90,.1);
   text-shadow: 0 2px 4px #000;
 }
+
+.interface-back-top {
+  position: absolute; z-index: 30; left: 14px; top: 12px;
+  padding: 7px 13px; color: var(--text); font-weight: 700;
+  background: rgba(7,9,20,.92); border-color: var(--border);
+  box-shadow: 0 5px 18px rgba(0,0,0,.55);
+}
+.interface-back-top:hover { color: var(--gold); border-color: var(--gold); }
+.battle-end,.score-panel { position: relative; }
+.score-actions .btn:not(.primary),.battle-end-actions .btn:not(.primary) { display: none; }
+.story-back { top: 14px; left: 14px; }
 
 /* Keep every control below the portraits readable over detailed battle art. */
 .battle-act-row {

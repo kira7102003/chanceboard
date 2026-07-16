@@ -268,10 +268,11 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
         game.winner === 'B' ? '🤖 B 方勝利！' : '⚖ 平局'
       return (
         <div className="battle-end">
+          <button className="btn interface-back-top" onClick={onEnd}>← 返回大廳</button>
           <h2 style={{ fontSize: '2rem' }}>{label}</h2>
           <p>{game.winnerReason}</p>
           <BattleEndDetails game={game} showLog={showEndLog} onOpenLog={() => setShowEndLog(true)} onCloseLog={() => setShowEndLog(false)} />
-          <div style={{ display: 'flex', gap: 12 }}>
+          <div className="battle-end-actions" style={{ display: 'flex', gap: 12 }}>
             <button className="btn primary" onClick={onSoloReplay ?? onEnd}>再看一局</button>
             <button className="btn"         onClick={onEnd}>返回大廳</button>
           </div>

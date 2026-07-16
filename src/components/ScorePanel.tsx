@@ -25,6 +25,7 @@ export default function ScorePanel({ result, onReplay, onBack, children }: Props
 
   return (
     <div className="score-panel">
+      <button className="btn interface-back-top" onClick={onBack}>← 返回大廳</button>
       <div className="score-grade" style={{ color: gs.color, textShadow: gs.shadow }}>
         {result.grade}
       </div>
