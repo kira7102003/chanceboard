@@ -1,3 +1,5 @@
+import { PAWN_STORY_FLOW } from './pawnStory'
+
 export type StoryChapterId = 'pawn' | 'knight' | 'rook' | 'bishop' | 'queen' | 'king'
 
 export interface StorySegment {
@@ -32,6 +34,8 @@ export interface StoryChapter {
 }
 
 const KEY = 'cb_story_chapters'
+const PAWN_IMPORT_VERSION_KEY = 'cb_story_pawn_import_version'
+const PAWN_IMPORT_VERSION = '2026-07-17-v1'
 
 export const DEFAULT_STORY_CHAPTERS: StoryChapter[] = [
   { id: 'pawn', order: 1, piece: '兵', title: '初心荒野', subtitle: '所有願望，皆從最弱小的一步開始。', unlocked: true, story: `【開場 CG】\n無數人從天空墜落，棋盤從中央裂開。\n\n小黑：「新的棋局開始了。歡迎來到棋盤。」\n\n【第一節　初心荒野】\n打倒荒野魔物，學會棋盤沒有新手保護。\n\n【第二節　另一位玩家】\n親眼看見玩家為了勝利捨棄自己的棋子。\n\n【第三節　命運分歧】\n執黑將遇見圖卡勒絲；執白將遇見守護村莊的梅朵。你的選擇會累積求生意志或守護之心。\n\n【第四節　Boss：無名戰士】\n擊敗已經勝利九十九次、只想回家的無名戰士。\n\n【第一章　完】` },
@@ -45,8 +49,13 @@ export const DEFAULT_STORY_CHAPTERS: StoryChapter[] = [
 export function getStoryChapters(): StoryChapter[] {
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) ?? 'null') as StoryChapter[] | null
-    if (!saved) return DEFAULT_STORY_CHAPTERS
-    return DEFAULT_STORY_CHAPTERS.map(base => ({ ...base, ...saved.find(chapter => chapter.id === base.id) }))
+    const needsPawnImport = localStorage.getItem(PAWN_IMPORT_VERSION_KEY) !== PAWN_IMPORT_VERSION
+    if (needsPawnImport) localStorage.setItem(PAWN_IMPORT_VERSION_KEY, PAWN_IMPORT_VERSION)
+    if (!saved) return DEFAULT_STORY_CHAPTERS.map(chapter => chapter.id === 'pawn' ? { ...chapter, flow: PAWN_STORY_FLOW } : chapter)
+    return DEFAULT_STORY_CHAPTERS.map(base => {
+      const merged = { ...base, ...saved.find(chapter => chapter.id === base.id) }
+      return merged.id === 'pawn' && (needsPawnImport || !merged.flow?.length) ? { ...merged, flow: PAWN_STORY_FLOW } : merged
+    })
   } catch { return DEFAULT_STORY_CHAPTERS }
 }
 
