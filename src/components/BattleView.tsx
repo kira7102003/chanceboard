@@ -6,7 +6,7 @@ import type { Card } from '../types/card'
 import type { Move, MoveSlot } from '../types/move'
 import type { GameState } from '../types/game'
 import { getReadyUnits } from '../engine/atb'
-import { effectiveATK, effectiveDEF, effectiveSPD } from '../engine/combat'
+import { calcBAT, effectiveATK, effectiveDEF, effectiveSPD } from '../engine/combat'
 import ScorePanel from './ScorePanel'
 import { getCharImg, getCharWideImg, getMoveImg, getCardImg, getMoveImageFacing, getCharacterBImage, getCharacterBImageFacing } from '../utils/charStore'
 import BattleLog from './battle/BattleLog'
@@ -209,6 +209,12 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
   const enemySlotOrder = (oppSide === 'A' ? [3, 2, 1] : [1, 2, 3]) as Array<1 | 2 | 3>
 
   const readyUnits = getReadyUnits(game).filter(u => u.side === mySide)
+  const nextOwnUnit = myTeam.filter(u => u.alive)
+    .sort((a, b) => a.nextActionAt - b.nextActionAt || effectiveSPD(b) - effectiveSPD(a))[0]
+  const ownWaitRemaining = nextOwnUnit ? Math.max(0, nextOwnUnit.nextActionAt - game.clock) : 0
+  const ownWaitProgress = nextOwnUnit
+    ? Math.max(0, Math.min(100, (1 - ownWaitRemaining / Math.max(1, calcBAT(nextOwnUnit))) * 100))
+    : 0
   const isAutoMe  = mySide === 'A' ? game.autoBattleA : game.autoBattleB
   const currentActionKey = readyUnits[0]
     ? `${readyUnits[0].id}:${readyUnits[0].nextActionAt}`
@@ -577,11 +583,14 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                         )
                       })}
                     </div>
-                    {au && !previewing && (
+                    {!previewing && (
                       <div className="act-confirm-col">
                         <button className="btn primary act-confirm"
-                          onClick={() => confirmAct(au)}>
-                          出手 ▸
+                          disabled={!au}
+                          onClick={() => au && confirmAct(au)}>
+                          <span className="act-confirm-progress" style={{ width: `${au ? 100 : ownWaitProgress}%` }} />
+                          <span className="act-confirm-label">OK</span>
+                          {!au && nextOwnUnit && <small>{Math.ceil(ownWaitRemaining / 10)}s</small>}
                         </button>
                       </div>
                     )}

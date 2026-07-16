@@ -36,7 +36,7 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
   // Re-evaluate charImgUrl after cloud data loads (desktop fresh-session fix)
   useEffect(() => onCloudSynced(() => { imgErrCount.current = 0; setImgFailed(false); forceUpdate(n => n + 1) }), [])
 
-  const { coins, gems, ownedCharIds } = usePlayerStore()
+  const { username, coins, gems, ownedCharIds } = usePlayerStore()
 
   const chars  = getChars().filter(c => ownedCharIds.includes(c.id))
   const savedId  = localStorage.getItem(LOBBY_CHAR_KEY)
@@ -147,6 +147,7 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
 
         {/* ── Resources (top-right) ── */}
         <div className="lv2-resources">
+          <span className="lv2-res">👤 <b>{username}</b></span>
           <span className="lv2-res">🪙 <b>{coins.toLocaleString()}</b></span>
           <span className="lv2-res">💎 <b>{gems}</b></span>
         </div>

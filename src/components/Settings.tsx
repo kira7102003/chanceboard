@@ -8,17 +8,20 @@ interface Props {
 
 export default function Settings({ onClose }: Props) {
   const {
-    coins, gems, ownedCharIds,
-    setCoins, setGems, removeOwnedChar, clearCollection,
+    username, coins, gems, ownedCharIds,
+    setUsername, setCoins, setGems, removeOwnedChar, clearCollection,
   } = usePlayerStore()
+  const [usernameInput, setUsernameInput] = useState(username)
   const [coinInput, setCoinInput] = useState(String(coins))
   const [gemInput, setGemInput] = useState(String(gems))
   const chars = getChars()
 
+  useEffect(() => setUsernameInput(username), [username])
   useEffect(() => setCoinInput(String(coins)), [coins])
   useEffect(() => setGemInput(String(gems)), [gems])
 
   const saveCurrency = () => {
+    setUsername(usernameInput)
     setCoins(Number(coinInput) || 0)
     setGems(Number(gemInput) || 0)
   }
@@ -32,6 +35,11 @@ export default function Settings({ onClose }: Props) {
       <div className="settings-body">
         <section className="settings-section">
           <h3>帳號資源</h3>
+          <label className="settings-username">
+            <span>👤 使用者名稱</span>
+            <input maxLength={20} value={usernameInput}
+              onChange={e => setUsernameInput(e.target.value)} placeholder="玩家" />
+          </label>
           <div className="settings-currency-grid">
             <label>
               <span>🪙 金幣</span>
@@ -44,7 +52,7 @@ export default function Settings({ onClose }: Props) {
                 onChange={e => setGemInput(e.target.value)} />
             </label>
           </div>
-          <button className="btn primary" onClick={saveCurrency}>儲存資源</button>
+          <button className="btn primary" onClick={saveCurrency}>儲存帳號設定</button>
         </section>
 
         <section className="settings-section">

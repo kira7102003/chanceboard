@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware'
 import type { SavedDeck, SavedTeam } from '../types/player'
 
 interface PlayerState {
+  username: string
   coins: number
   gems:  number
   ownedCharIds: string[]
@@ -18,6 +19,7 @@ interface PlayerState {
   friends: string[]
 
   // Model mutations (Controller calls these)
+  setUsername: (name: string) => void
   addCoins:   (n: number) => void
   spendCoins: (n: number) => boolean
   addGems:    (n: number) => void
@@ -45,6 +47,7 @@ interface PlayerState {
 export const usePlayerStore = create<PlayerState>()(
   persist(
     (set, get) => ({
+      username: '玩家',
       coins: 1320,
       gems:  395,
       ownedCharIds: [],
@@ -59,6 +62,7 @@ export const usePlayerStore = create<PlayerState>()(
       claimedRewards: [],
       friends: [],
 
+      setUsername: (name) => set({ username: name.trim().slice(0, 20) || '玩家' }),
       addCoins:   (n) => set(s => ({ coins: s.coins + n })),
       spendCoins: (n) => {
         if (get().coins < n) return false
