@@ -450,10 +450,7 @@ body { margin: 0; }
 }
 .lv2-support-panel {
   position: absolute; z-index: 10; left: 20%; right: 24px; bottom: 16px;
-  display: flex; flex-direction: row; align-items: stretch; gap: 8px; padding: 9px;
-  border: 1px solid rgba(200,161,90,.3); border-radius: 14px;
-  background: linear-gradient(145deg, rgba(9,12,27,.86), rgba(4,6,17,.92));
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.035), 0 10px 28px rgba(0,0,0,.3);
+  display: flex; flex-direction: row; align-items: stretch; gap: 8px;
 }
 .lv2-support-panel .lv2-grid-secondary { flex: 7 1 0; }
 .lv2-bottom-actions { flex: 3 1 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
