@@ -7,8 +7,9 @@ export interface StorySegment {
   side: 'left' | 'right'
   /** Legacy 1=front, 2=side. */
   portrait?: 1 | 2
-  boardCharacter?: 'black' | 'white'
+  boardCharacter?: string
   pose?: 'front' | 'side'
+  section?: string
 }
 
 export interface StoryChapter {
@@ -20,6 +21,7 @@ export interface StoryChapter {
   unlocked: boolean
   story: string
   segments?: StorySegment[]
+  backgroundKey?: string
 }
 
 const KEY = 'cb_story_chapters'

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { getChapterSegments, getStoryChapters, type StoryChapter } from '../utils/storyStore'
 import { getUrlByKey } from '../utils/charStore'
+import { getBoardCharacters } from '../utils/boardCharacters'
 
 interface Props { onClose: () => void }
 
@@ -10,32 +11,36 @@ export default function StoryMode({ onClose }: Props) {
   const [line, setLine] = useState(0)
   const [route, setRoute] = useState<'black' | 'white' | null>(null)
   const segments = chapter ? getChapterSegments(chapter) : []
+  const boardCharacters = useMemo(getBoardCharacters, [])
 
   if (chapter) {
     const segment = segments[line]
     const boardFacing = (() => { try { return JSON.parse(localStorage.getItem('cb_board_facing') ?? '{}') } catch { return {} } })() as Record<string, string>
-    const portrait = (side: 'left' | 'right', boardCharacter: 'black' | 'white', pose: 'front' | 'side') => {
+    const portrait = (side: 'left' | 'right', boardCharacter: string, pose: 'front' | 'side') => {
       const facingKey = `${boardCharacter}_${pose}`
       const sourceRight = boardFacing[facingKey] === 'right'
       const flip = (side === 'right') !== sourceRight
       const legacyIndex = pose === 'front' ? 1 : 2
       const image = getUrlByKey(`cb_board_${boardCharacter}_${pose}`) ?? getUrlByKey(`cb_board_portrait_${legacyIndex}`) ?? ''
       return <img className={`story-board-char story-board-${side} ${segment?.side === side ? 'speaking' : ''}`}
-        src={image} alt={boardCharacter === 'black' ? '小黑' : '小白'} style={{ transform: flip ? 'scaleX(-1)' : undefined }} />
+        src={image} alt={boardCharacters.find(character => character.id === boardCharacter)?.name ?? boardCharacter} style={{ transform: flip ? 'scaleX(-1)' : undefined }} />
     }
-    return <div className="story-stage" style={{ backgroundImage: `linear-gradient(180deg,rgba(2,3,12,.2),#03040e 95%),url(${getUrlByKey(`cb_story_map_${chapter.id}`) ?? ''})` }}>
+    const leftDefault = boardCharacters[0]?.id ?? 'black'
+    const rightDefault = boardCharacters[1]?.id ?? leftDefault
+    const background = getUrlByKey(chapter.backgroundKey || `cb_story_map_${chapter.id}`) ?? ''
+    return <div className="story-stage" style={{ backgroundImage: `linear-gradient(180deg,rgba(2,3,12,.2),#03040e 95%),url(${background})` }}>
       <div className="story-cinematic-bars" />
       <button className="panel-back story-back" onClick={() => { setChapter(null); setLine(0); setRoute(null) }}>← 章節地圖</button>
       <div className="story-chapter-mark">CHAPTER {chapter.order} · {chapter.piece}</div>
       {(route || chapter.id !== 'pawn') && <>
-        {portrait('left', segment?.side === 'left' ? (segment.boardCharacter ?? 'black') : 'black', segment?.side === 'left' ? (segment.pose ?? (segment.portrait === 2 ? 'side' : 'front')) : 'front')}
-        {portrait('right', segment?.side === 'right' ? (segment.boardCharacter ?? 'white') : 'white', segment?.side === 'right' ? (segment.pose ?? (segment.portrait === 2 ? 'side' : 'front')) : 'front')}
+        {portrait('left', segment?.side === 'left' ? (segment.boardCharacter ?? leftDefault) : leftDefault, segment?.side === 'left' ? (segment.pose ?? (segment.portrait === 2 ? 'side' : 'front')) : 'front')}
+        {portrait('right', segment?.side === 'right' ? (segment.boardCharacter ?? rightDefault) : rightDefault, segment?.side === 'right' ? (segment.pose ?? (segment.portrait === 2 ? 'side' : 'front')) : 'front')}
       </>}
       {!route && chapter.id === 'pawn' ? <div className="story-dialogue story-route-pick">
         <small>請選擇你的棋盤立場</small><h2>執黑，或執白？</h2>
         <div><button onClick={() => setRoute('black')}>♟ 執黑</button><button onClick={() => setRoute('white')}>♙ 執白</button></div>
       </div> : <button className="story-dialogue" onClick={() => setLine(value => Math.min(segments.length, value + 1))}>
-        <span>{segment?.speaker || (route === 'black' ? '小黑' : route === 'white' ? '小白' : chapter.title)}</span>
+        <span>{segment?.section && <em style={{ marginRight: 10, opacity: .55 }}>{segment.section}</em>}{segment?.speaker || (route === 'black' ? '小黑' : route === 'white' ? '小白' : chapter.title)}</span>
         <p>{segment?.text ?? '【章節結束】'}</p><small>{line >= segments.length ? '點擊返回章節地圖' : '點擊繼續　▶'}</small>
       </button>}
       {line >= segments.length && <button className="btn primary story-finish" onClick={() => { setChapter(null); setLine(0); setRoute(null) }}>完成章節</button>}

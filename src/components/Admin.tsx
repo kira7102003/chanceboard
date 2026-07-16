@@ -9,6 +9,7 @@ import type { DailyReward } from '../utils/dailyRewards'
 import { runAllMoveTests, runWinRateLadder } from '../engine/diagnostics'
 import type { MoveTestReport, LadderReport } from '../engine/diagnostics'
 import { getChapterSegments, getStoryChapters, saveStoryChapters, type StorySegment } from '../utils/storyStore'
+import { getBattleBackgroundNames, getBoardCharacters, saveBoardCharacters } from '../utils/boardCharacters'
 
 const EL_COLOR: Record<string, string>   = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee' }
 const SLOT_COLOR: Record<string, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee', '願': '#ddaa22', '被': '#666688' }
@@ -884,6 +885,7 @@ function StoryTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<C
 // ─── BgSettings ──────────────────────────────────────────────────────────────
 
 function BgSettings() {
+  const [boardCharacters, setBoardCharacters] = useState(getBoardCharacters)
   const [facing, setFacing] = useState<Record<string, 'left' | 'right'>>(() => {
     try { return JSON.parse(localStorage.getItem('cb_board_facing') ?? '{}') } catch { return {} }
   })
@@ -891,12 +893,7 @@ function BgSettings() {
     const next = { ...facing, [key]: value }
     setFacing(next); localStorage.setItem('cb_board_facing', JSON.stringify(next))
   }
-  const [battleBgNames, setBattleBgNames] = useState<string[]>(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('cb_battle_bg_names') ?? 'null') as string[] | null
-      return Array.from({ length: 6 }, (_, index) => saved?.[index] || `戰鬥背景 ${index + 1}`)
-    } catch { return Array.from({ length: 6 }, (_, index) => `戰鬥背景 ${index + 1}`) }
-  })
+  const [battleBgNames, setBattleBgNames] = useState<string[]>(getBattleBackgroundNames)
   const updateBattleBgName = (index: number, name: string) => {
     const next = battleBgNames.map((value, i) => i === index ? name : value)
     setBattleBgNames(next)
@@ -910,16 +907,30 @@ function BgSettings() {
       </div>
       <div className="adm-section" style={{ borderTop: '1px solid #1a1f3e', paddingTop: 16 }}>
         <div className="adm-section-label" style={{ marginBottom: 12 }}>看板角色圖片設定</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          {(['black', 'white'] as const).flatMap(character => (['front', 'side'] as const).map(pose => {
-            const key = `${character}_${pose}`
-            return <div key={key}>
-              <div style={{ fontSize: 11, color: '#8f91ad', marginBottom: 6 }}>{character === 'black' ? '小黑' : '小白'} · {pose === 'front' ? '正面' : '側面'}立繪（768×1376）</div>
-              <ImageCrop storageKey={`cb_board_${key}`} cropW={768} cropH={1376} />
-              <FacingSelect value={facing[key] ?? 'left'} onChange={value => updateFacing(key, value)} />
-            </div>
-          }))}
-        </div>
+        {boardCharacters.map((character, characterIndex) => <div className="adm-section" key={character.id} style={{ marginBottom: 14 }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'end', marginBottom: 10 }}>
+            <label className="adm-field" style={{ flex: 1 }}><span>看板角色名稱</span><input value={character.name} maxLength={30} onChange={event => {
+              const next = boardCharacters.map((item, index) => index === characterIndex ? { ...item, name: event.target.value } : item)
+              setBoardCharacters(next); saveBoardCharacters(next)
+            }} /></label>
+            <button className="btn sm danger" disabled={boardCharacters.length <= 1} onClick={() => {
+              const next = boardCharacters.filter((_, index) => index !== characterIndex)
+              setBoardCharacters(next); saveBoardCharacters(next)
+            }}>刪除角色</button>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            {(['front', 'side'] as const).map(pose => {
+              const key = `${character.id}_${pose}`
+              return <div key={key}><div style={{ fontSize: 11, color: '#8f91ad', marginBottom: 6 }}>{character.name || '未命名'} · {pose === 'front' ? '正面' : '側面'}立繪（768×1376）</div>
+                <ImageCrop storageKey={`cb_board_${key}`} cropW={768} cropH={1376} />
+                <FacingSelect value={facing[key] ?? 'left'} onChange={value => updateFacing(key, value)} /></div>
+            })}
+          </div>
+        </div>)}
+        <button className="btn" onClick={() => {
+          const next = [...boardCharacters, { id: `board_${Date.now()}`, name: `看板角色 ${boardCharacters.length + 1}` }]
+          setBoardCharacters(next); saveBoardCharacters(next)
+        }}>＋ 新增看板角色</button>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 14 }}>
           {[1, 2].map(index => <div key={`full-${index}`}>
             <div style={{ fontSize: 11, color: '#8f91ad', marginBottom: 6 }}>全圖立繪 {index}（1536×1024）</div>
@@ -949,6 +960,8 @@ function BgSettings() {
 
 function StorySettings() {
   const [chapters, setChapters] = useState(getStoryChapters)
+  const boardCharacters = getBoardCharacters()
+  const battleBackgroundNames = getBattleBackgroundNames()
   const update = (index: number, patch: Partial<(typeof chapters)[number]>) => {
     const next = chapters.map((chapter, i) => i === index ? { ...chapter, ...patch } : chapter)
     setChapters(next)
@@ -965,6 +978,10 @@ function StorySettings() {
             <Field label="章節標題" value={chapter.title} onChange={value => update(index, { title: value })} />
             <Field label="章節副標" value={chapter.subtitle} onChange={value => update(index, { subtitle: value })} />
             <label className="adm-field"><span>開放章節</span><input type="checkbox" checked={chapter.unlocked} onChange={event => update(index, { unlocked: event.target.checked })} /></label>
+            <label className="adm-field"><span>故事背景</span><select className="adm-select" value={chapter.backgroundKey ?? ''} onChange={event => update(index, { backgroundKey: event.target.value || undefined })}>
+              <option value="">章節專用地圖圖片</option>
+              {battleBackgroundNames.map((name, bgIndex) => <option value={`cb_bg_battle_${bgIndex + 1}`} key={bgIndex}>{name}</option>)}
+            </select></label>
           </div>
           <div className="adm-section-label" style={{ marginTop: 12 }}>故事段落編輯</div>
           {getChapterSegments(chapter).map((segment, segmentIndex, allSegments) => {
@@ -985,16 +1002,21 @@ function StorySettings() {
                 <button className="btn sm danger" onClick={() => update(index, { segments: allSegments.filter((_, i) => i !== segmentIndex) })}>刪除</button>
               </div>
               <div className="adm-field-grid">
+                <Field label="流程區段" value={segment.section ?? (segmentIndex === 0 ? '開頭' : '主線')} onChange={section => changeSegment({ section })} />
                 <Field label="說話者" value={segment.speaker} onChange={speaker => changeSegment({ speaker })} />
                 <label className="adm-field"><span>角色位置</span><select className="adm-select" value={segment.side} onChange={event => changeSegment({ side: event.target.value as 'left' | 'right' })}><option value="left">左邊</option><option value="right">右邊</option></select></label>
-                <label className="adm-field"><span>看板角色</span><select className="adm-select" value={segment.boardCharacter ?? (segment.speaker === '小白' ? 'white' : 'black')} onChange={event => changeSegment({ boardCharacter: event.target.value as 'black' | 'white' })}><option value="black">小黑</option><option value="white">小白</option></select></label>
+                <label className="adm-field"><span>看板角色</span><select className="adm-select" value={segment.boardCharacter ?? (segment.speaker === '小白' ? 'white' : 'black')} onChange={event => {
+                  const boardCharacter = event.target.value
+                  const selected = boardCharacters.find(character => character.id === boardCharacter)
+                  changeSegment({ boardCharacter, speaker: selected?.name ?? segment.speaker })
+                }}>{boardCharacters.map(character => <option key={character.id} value={character.id}>{character.name}</option>)}</select></label>
                 <label className="adm-field"><span>看板立繪</span><select className="adm-select" value={segment.pose ?? (segment.portrait === 2 ? 'side' : 'front')} onChange={event => changeSegment({ pose: event.target.value as 'front' | 'side' })}><option value="front">正面</option><option value="side">側面</option></select></label>
               </div>
               <textarea className="adm-story-textarea" value={segment.text} onChange={event => changeSegment({ text: event.target.value })} />
             </div>
           })}
           <button className="btn" onClick={() => update(index, { segments: [...getChapterSegments(chapter), {
-            id: `segment_${Date.now()}`, speaker: '小黑', text: '新段落', side: 'left', boardCharacter: 'black', pose: 'front',
+            id: `segment_${Date.now()}`, speaker: boardCharacters[0]?.name ?? '旁白', text: '新段落', side: 'left', boardCharacter: boardCharacters[0]?.id ?? 'black', pose: 'front', section: '主線',
           }] })}>＋ 新增段落</button>
         </div>
       </div>
