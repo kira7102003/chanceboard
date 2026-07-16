@@ -32,7 +32,7 @@ export default function FeaturePanel({ mode, onClose }: Props) {
     { id: 'mail-welcome-v1', title: '歡迎來到奇蹟之盤', body: '感謝加入棋局，這份物資能協助你培養第一批棋子。', reward: [500, 20, 2] },
     { id: 'mail-story-preview-v1', title: '故事模式開發紀念', body: '初心荒野的棋局已經揭開序幕。', reward: [300, 10, 1] },
   ] as const
-  const rewardText = (reward: readonly number[]) => `🪙 ${reward[0]}　💎 ${reward[1]}　🧩 ${reward[2]}`
+  const rewardText = (reward: readonly number[]) => `🪙 ${reward[0]}　💎 ${reward[1]}　棋子 ${reward[2]}`
   const RewardList = ({ rows }: { rows: ReadonlyArray<{ id: string; name: string; detail: string; done: boolean; reward: readonly number[] }> }) => <div className="feature-list">
     {rows.map(row => { const claimed = player.claimedRewards.includes(row.id); return <div className={`feature-row ${row.done ? 'done' : ''}`} key={row.id}>
       <div><b>{row.name}</b><p>{row.detail}</p><small>{rewardText(row.reward)}</small></div>
@@ -40,9 +40,9 @@ export default function FeaturePanel({ mode, onClose }: Props) {
     </div> })}
   </div>
 
-  return <div className="panel-overlay feature-panel"><div className="panel-header"><button className="panel-back" onClick={onClose}>← 返回</button><span className="panel-title">{mode === 'pieces' && <img className="panel-piece-icon" src="/chess-piece.svg" alt="" />}{TITLE[mode]}</span>{mode === 'pieces' && <span className="panel-meta">升星道具 🧩 {player.upgradeItems}</span>}{mode === 'friends' && <span className="panel-meta">{player.friends.length} / 50</span>}</div>
+  return <div className="panel-overlay feature-panel"><div className="panel-header"><button className="panel-back" onClick={onClose}>← 返回</button><span className="panel-title">{mode === 'pieces' && <img className="panel-piece-icon" src="/chess-piece.svg" alt="" />}{TITLE[mode]}</span>{mode === 'pieces' && <span className="panel-meta"><img className="panel-piece-icon sm" src="/chess-piece.svg" alt="" /> 棋子 {player.upgradeItems}</span>}{mode === 'friends' && <span className="panel-meta">{player.friends.length} / 50</span>}</div>
     <div className="panel-body">
-      {mode === 'pieces' && <div className="feature-piece-grid">{chars.length ? chars.map(char => { const star = player.characterStars[char.id] ?? 0; const fragments = player.characterFragments?.[char.id] ?? 0; const img = getCharImg(char.id); return <div className="feature-piece" key={char.id}>{img && <img src={img} alt="" />}<div><b>{char.name}</b><p>{star ? '★'.repeat(star) : '無星'} · 最高五星</p><small>角色碎片 🧩 {fragments}　下一星：HP／ATK／DEF／SPD 依角色設定提升</small></div><button className="btn primary" disabled={star >= 5 || player.upgradeItems <= 0} onClick={() => player.upgradeCharacterWithItem(char.id)}>{star >= 5 ? '已五星' : '使用升星道具'}</button></div> }) : <div className="settings-empty">尚未擁有角色</div>}</div>}
+      {mode === 'pieces' && <div className="feature-piece-grid">{chars.length ? chars.map(char => { const star = player.characterStars[char.id] ?? 0; const fragments = player.characterFragments?.[char.id] ?? 0; const img = getCharImg(char.id); return <div className="feature-piece" key={char.id}>{img && <img src={img} alt="" />}<div><b>{char.name}</b><p>{star ? '★'.repeat(star) : '無星'} · 最高五星</p><small>角色碎片 {fragments}　下一星：HP／ATK／DEF／SPD 依角色設定提升</small></div><button className="btn primary" disabled={star >= 5 || player.upgradeItems <= 0} onClick={() => player.upgradeCharacterWithItem(char.id)}>{star >= 5 ? '已五星' : '使用棋子'}</button></div> }) : <div className="settings-empty">尚未擁有角色</div>}</div>}
       {mode === 'tasks' && <RewardList rows={tasks} />}
       {mode === 'achievements' && <RewardList rows={achievements} />}
       {mode === 'mail' && <div className="feature-list">{mails.map(mail => { const claimed = player.claimedRewards.includes(mail.id); return <div className="feature-row" key={mail.id}><div><b>{mail.title}</b><p>{mail.body}</p><small>{rewardText(mail.reward)}</small></div><button className="btn primary" disabled={claimed} onClick={() => player.claimReward(mail.id, mail.reward[0], mail.reward[1], mail.reward[2])}>{claimed ? '已領取' : '領取附件'}</button></div> })}</div>}

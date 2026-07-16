@@ -239,6 +239,8 @@ body { margin: 0; }
 .lv2-btn-primary .lv2-menu-icon-img { width: 31px; height: 31px; }
 .panel-title { display: inline-flex; align-items: center; gap: 8px; }
 .panel-piece-icon { width: 26px; height: 26px; object-fit: contain; }
+.panel-piece-icon.sm { width: 18px; height: 18px; }
+.panel-meta { display: inline-flex; align-items: center; gap: 5px; }
 .lv2-btn-grid:hover { border-color: rgba(200,161,90,.3); background: rgba(12,14,32,.9); }
 .lv2-btn-grid.disabled { opacity: .3; cursor: default; pointer-events: none; }
 .lv2-btn-grid small{font-size:8px;color:#7b7f9c}

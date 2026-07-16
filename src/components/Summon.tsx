@@ -137,7 +137,7 @@ export default function Summon({ onClose }: Props) {
                     }
                   </div>
                   <div className="summon-result-name" style={{ color: col }}>{c.name}</div>
-                  {!isNew && <div className="summon-dup-label">🧩 角色碎片 +{fragments}</div>}
+                  {!isNew && <div className="summon-dup-label">角色碎片 +{fragments}</div>}
                 </div>
               )
             })}
