@@ -19,6 +19,9 @@ interface PlayerState {
   upgradeItems: number
   claimedRewards: string[]
   friends: string[]
+  level: number
+  experience: number
+  desktopCharIds: string[]
 
   // Model mutations (Controller calls these)
   setUsername: (name: string) => void
@@ -45,6 +48,8 @@ interface PlayerState {
   claimReward: (id: string, coins: number, gems: number, upgradeItems: number) => boolean
   addFriend: (playerId: string) => boolean
   removeFriend: (playerId: string) => void
+  addExperience: (amount: number) => void
+  setDesktopCharacters: (ids: string[]) => void
 }
 
 export const usePlayerStore = create<PlayerState>()(
@@ -66,6 +71,9 @@ export const usePlayerStore = create<PlayerState>()(
       upgradeItems: 0,
       claimedRewards: [],
       friends: [],
+      level: 1,
+      experience: 0,
+      desktopCharIds: [],
 
       setUsername: (name) => set({ username: name.trim().slice(0, 20) || '玩家' }),
       addCoins:   (n) => set(s => ({ coins: s.coins + n })),
@@ -123,6 +131,18 @@ export const usePlayerStore = create<PlayerState>()(
         return true
       },
       removeFriend: (playerId) => set(s => ({ friends: s.friends.filter(id => id !== playerId) })),
+      addExperience: (amount) => set(s => {
+        let level = Math.max(1, s.level || 1)
+        let experience = Math.max(0, s.experience || 0) + Math.max(0, Math.floor(amount))
+        while (experience >= level * 100) {
+          experience -= level * 100
+          level++
+        }
+        return { level, experience }
+      }),
+      setDesktopCharacters: (ids) => set(s => ({
+        desktopCharIds: [...new Set(ids)].filter(id => s.ownedCharIds.includes(id)).slice(0, 5),
+      })),
       saveTeam: (team) => {
         if (get().savedTeams.length >= 10) return
         const id = `team_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`

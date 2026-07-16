@@ -3,9 +3,9 @@ import { getChapterFlow, getStoryChapters, type StoryChapter, type StoryFlowNode
 import { getUrlByKey } from '../utils/charStore'
 import { getBoardCharacters } from '../utils/boardCharacters'
 
-interface Props { onClose: () => void }
+interface Props { onClose: () => void; onComplete?: () => void }
 
-export default function StoryMode({ onClose }: Props) {
+export default function StoryMode({ onClose, onComplete }: Props) {
   const chapters = useMemo(getStoryChapters, [])
   const boardCharacters = useMemo(getBoardCharacters, [])
   const [chapter, setChapter] = useState<StoryChapter | null>(null)
@@ -50,7 +50,7 @@ export default function StoryMode({ onClose }: Props) {
         <span>{segment?.section && <em style={{ marginRight: 10, opacity: .65 }}>{segment.section}</em>}{segment?.speaker || chapter.title}</span>
         <p>{segment?.text}</p><small>點擊繼續</small>
       </button> : null}
-      {cursor >= nodes.length && <button className="btn primary story-finish" onClick={leaveChapter}>完成章節</button>}
+      {cursor >= nodes.length && <button className="btn primary story-finish" onClick={() => { onComplete?.(); leaveChapter() }}>完成章節 ＋100 EXP</button>}
     </div>
   }
 

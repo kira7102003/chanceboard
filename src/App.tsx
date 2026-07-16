@@ -166,6 +166,11 @@ export default function App() {
   // ── End handlers ──────────────────────────────────────────────────────────────
 
   const handleEnd = () => {
+    const { game, mySide: resultSide } = useGameStore.getState()
+    if (game?.phase === 'end') {
+      const won = !!game.winner && game.winner !== 'draw' && game.winner === resultSide
+      usePlayerStore.getState().addExperience(won ? 200 : 120)
+    }
     clearSession()
     setOnlineRoomId('')
     setBattleBgUrl(null)

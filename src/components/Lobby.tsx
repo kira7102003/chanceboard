@@ -12,8 +12,9 @@ const Settings = lazy(() => import('./Settings'))
 const StoryMode = lazy(() => import('./StoryMode'))
 const FeaturePanel = lazy(() => import('./FeaturePanel'))
 const DuelMenu = lazy(() => import('./DuelMenu'))
+const PlayerProfile = lazy(() => import('./PlayerProfile'))
 
-type Panel = 'duel' | 'summon' | 'collection' | 'shop' | 'teams' | 'settings' | 'story' | 'pieces' | 'tasks' | 'mail' | 'achievements' | 'announcements' | 'friends' | null
+type Panel = 'profile' | 'duel' | 'summon' | 'collection' | 'shop' | 'teams' | 'settings' | 'story' | 'pieces' | 'tasks' | 'mail' | 'achievements' | 'announcements' | 'friends' | null
 
 interface Props {
   onJoin:        (roomId: string) => void
@@ -35,9 +36,11 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
   // Re-evaluate charImgUrl after cloud data loads (desktop fresh-session fix)
   useEffect(() => onCloudSynced(() => { imgErrCount.current = 0; setImgFailed(false); forceUpdate(n => n + 1) }), [])
 
-  const { username, coins, gems, materials, ownedCharIds } = usePlayerStore()
+  const { username, coins, gems, materials, ownedCharIds, level, experience, desktopCharIds, addExperience } = usePlayerStore()
 
-  const chars  = getChars().filter(c => ownedCharIds.includes(c.id))
+  const ownedChars = getChars().filter(c => ownedCharIds.includes(c.id))
+  const configuredChars = (desktopCharIds ?? []).map(id => ownedChars.find(c => c.id === id)).filter((c): c is NonNullable<typeof c> => !!c)
+  const chars = configuredChars.length ? configuredChars : ownedChars
   const savedId  = localStorage.getItem(LOBBY_CHAR_KEY)
   const initIdx  = Math.max(0, chars.findIndex(c => c.id === savedId))
   const [charIdx, setCharIdx] = useState(initIdx)
@@ -118,7 +121,8 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
       {panel === 'collection' && <Collection onClose={() => setPanel(null)} />}
       {panel === 'shop'       && <Shop       onClose={() => setPanel(null)} />}
       {panel === 'settings'   && <Settings onClose={() => setPanel(null)} />}
-      {panel === 'story'      && <StoryMode onClose={() => setPanel(null)} />}
+      {panel === 'story'      && <StoryMode onClose={() => setPanel(null)} onComplete={() => addExperience(100)} />}
+      {panel === 'profile'    && <PlayerProfile onClose={() => setPanel(null)} />}
       {panel === 'duel'       && <DuelMenu onClose={() => setPanel(null)} onJoin={onJoin} onSolo={onSolo}
         onAIBattle={onAIBattle} savedSession={savedSession} onRejoin={onRejoin} />}
       {panel && ['pieces','tasks','mail','achievements','announcements','friends'].includes(panel) && <FeaturePanel mode={panel as FeatureMode} onClose={() => setPanel(null)} />}
@@ -128,6 +132,10 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
       </Suspense>
 
       <div className="lobby-v2">
+
+        <button className="lv2-level-entry" onClick={() => setPanel('profile')} title="玩家等級與桌面立繪設定">
+          <span>LV</span><b>{level}</b><i><em style={{ width: `${Math.min(100, experience / (Math.max(1, level) * 100) * 100)}%` }} /></i>
+        </button>
 
         {/* ── Character portrait ── */}
         {charImgUrl && !imgFailed && (
