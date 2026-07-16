@@ -24,6 +24,7 @@ export interface MoveTestReport {
   durationMs: number
   lines: DiagnosticLine[]
   checklist: Array<{ label: string; ok: boolean; detail: string }>
+  testedAt?: string
 }
 
 function healthy(state: GameState): boolean {
@@ -272,6 +273,7 @@ export interface LadderReport {
   movesExecuted: number
   suitCardsSpent: number
   topTeams: TeamLadderRow[]
+  testedAt?: string
 }
 
 export interface TeamLadderRow {

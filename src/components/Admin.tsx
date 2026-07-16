@@ -241,8 +241,12 @@ export default function Admin({ onBack }: Props) {
 }
 
 function CharacterDiagnostics({ chars }: { chars: Character[] }) {
-  const [moveReport, setMoveReport] = useState<MoveTestReport | null>(null)
-  const [ladderReport, setLadderReport] = useState<LadderReport | null>(null)
+  const [moveReport, setMoveReport] = useState<MoveTestReport | null>(() => {
+    try { return JSON.parse(localStorage.getItem('cb_last_move_test_report') ?? 'null') } catch { return null }
+  })
+  const [ladderReport, setLadderReport] = useState<LadderReport | null>(() => {
+    try { return JSON.parse(localStorage.getItem('cb_last_ladder_report') ?? 'null') } catch { return null }
+  })
   const [gamesPerPair, setGamesPerPair] = useState(2)
   const [ladderMode, setLadderMode] = useState<'1v1' | '3v3'>('3v3')
   const [testPassiveImages, setTestPassiveImages] = useState(false)
@@ -255,7 +259,12 @@ function CharacterDiagnostics({ chars }: { chars: Character[] }) {
     setRunningMoves(true)
     setMoveReport(null)
     setTimeout(async () => {
-      try { setMoveReport(await runAllMoveTests(chars, testPassiveImages)) }
+      try {
+        const report = { ...(await runAllMoveTests(chars, testPassiveImages)), testedAt: new Date().toISOString() }
+        try { localStorage.setItem('cb_last_move_test_report', JSON.stringify(report)) }
+        catch (error) { console.warn('[diagnostics] 無法儲存招式測試 LOG', error) }
+        setMoveReport(report)
+      }
       finally { setRunningMoves(false) }
     }, 0)
   }
@@ -266,7 +275,10 @@ function CharacterDiagnostics({ chars }: { chars: Character[] }) {
     setProgress({ done: 0, total: 0 })
     try {
       const report = await runWinRateLadder(gamesPerPair, (done, total) => setProgress({ done, total }), chars, ladderMode)
-      setLadderReport(report)
+      const savedReport = { ...report, testedAt: new Date().toISOString() }
+      try { localStorage.setItem('cb_last_ladder_report', JSON.stringify(savedReport)) }
+      catch (error) { console.warn('[diagnostics] 無法儲存天梯測試 LOG', error) }
+      setLadderReport(savedReport)
     } finally {
       setRunningLadder(false)
     }
@@ -305,7 +317,7 @@ function CharacterDiagnostics({ chars }: { chars: Character[] }) {
             </div>
             <div className={`diag-summary ${moveReport.failed ? 'failed' : 'passed'}`}>
               {moveReport.failed ? '✗' : '✓'} PASS {moveReport.passed}/{moveReport.total}
-              <span>失敗 {moveReport.failed} · {Math.round(moveReport.durationMs)}ms</span>
+              <span>失敗 {moveReport.failed} · {Math.round(moveReport.durationMs)}ms{moveReport.testedAt ? ` · 最後測試 ${new Date(moveReport.testedAt).toLocaleString('zh-TW')}` : ''}</span>
             </div>
             <div className="diag-log">
               {moveReport.lines.map((line, index) => (
@@ -347,7 +359,7 @@ function CharacterDiagnostics({ chars }: { chars: Character[] }) {
         {ladderReport && (
           <>
             <div className={`diag-summary ${ladderReport.errors ? 'failed' : 'passed'}`}>✓ {ladderReport.mode} 完成 {ladderReport.totalMatches} 場
-              <span>招式出手 {ladderReport.movesExecuted} 次 · 劍槍法願牌消耗 {ladderReport.suitCardsSpent} 張 · 花牌使用 {ladderReport.flowerCardsPlayed} 次 · 錯誤 {ladderReport.errors} · 每組 {ladderReport.gamesPerPair} 場 · {(ladderReport.durationMs / 1000).toFixed(2)}s</span>
+              <span>招式出手 {ladderReport.movesExecuted} 次 · 劍槍法願牌消耗 {ladderReport.suitCardsSpent} 張 · 花牌使用 {ladderReport.flowerCardsPlayed} 次 · 錯誤 {ladderReport.errors} · 每組 {ladderReport.gamesPerPair} 場 · {(ladderReport.durationMs / 1000).toFixed(2)}s{ladderReport.testedAt ? ` · 最後測試 ${new Date(ladderReport.testedAt).toLocaleString('zh-TW')}` : ''}</span>
             </div>
             <div className="diag-table-wrap"><table className="diag-table">
               <thead><tr><th>排名</th><th>角色</th><th>積分</th><th>場次</th><th>勝</th><th>敗</th><th>和</th><th>勝率</th></tr></thead>
