@@ -13,8 +13,8 @@ interface FitBattleLayoutRefs {
 // generic 307:458 card shape — see .slot-cards-stack in index.css.
 const CARD_ASPECT = 24 / 43
 
-// 六個角色欄位優先：先讓格子吃到最大（同時受「寬度÷比例」與
-// 「下方面板最低高度」限制），剩餘高度才分給下方面板。
+// 戰場與操作區固定採參考畫面的 62:38 視覺比例；六個角色欄位
+// 同時受「寬度÷立繪比例」限制，窄螢幕只會等比縮小、不改變構圖。
 // 面板底線 = 手牌列自然高度（整排最寬、不縮放不裁切）+ 訊息/招式區底線；
 // 訊息/招式區塞不下時用 transform:scale 縮進去，而不是反過來壓縮人物。
 const ACT_TOP_MIN_H = 60
@@ -24,6 +24,7 @@ const SCALE_FLOOR_SHORT_H = 500
 const SCALE_FLOOR_TALL_H = 800
 const ARENA_CHROME_V = 16 // .battle-arena vertical padding
 const SAFETY = 3
+const ARENA_RATIO = 0.62
 
 export function useFitBattleLayout(refs: FitBattleLayoutRefs) {
   const rafRef = useRef<number | null>(null)
@@ -58,7 +59,9 @@ export function useFitBattleLayout(refs: FitBattleLayoutRefs) {
       const cardsRowH = cardsRowEl?.offsetHeight ?? 0
       const minTopH = mainH < SHORT_MAIN_H ? ACT_TOP_MIN_H_SHORT : ACT_TOP_MIN_H
       const minActRowH = cardsRowH + minTopH
-      let cellH = Math.max(100, Math.round(mainH - minActRowH - ARENA_CHROME_V - SAFETY))
+      const ratioCellH = Math.round(mainH * ARENA_RATIO - ARENA_CHROME_V)
+      const availableCellH = mainH - minActRowH - ARENA_CHROME_V - SAFETY
+      let cellH = Math.max(100, Math.min(ratioCellH, availableCellH))
       if (slotColW > 0) {
         // 寬度上限：六欄均分後，卡片高不能超過 欄寬÷(24/43)，比例才固定
         cellH = Math.min(cellH, Math.floor(slotColW / CARD_ASPECT))
