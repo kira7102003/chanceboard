@@ -1,5 +1,13 @@
 export type StoryChapterId = 'pawn' | 'knight' | 'rook' | 'bishop' | 'queen' | 'king'
 
+export interface StorySegment {
+  id: string
+  speaker: string
+  text: string
+  side: 'left' | 'right'
+  portrait: 1 | 2
+}
+
 export interface StoryChapter {
   id: StoryChapterId
   order: number
@@ -8,6 +16,7 @@ export interface StoryChapter {
   subtitle: string
   unlocked: boolean
   story: string
+  segments?: StorySegment[]
 }
 
 const KEY = 'cb_story_chapters'
@@ -27,6 +36,17 @@ export function getStoryChapters(): StoryChapter[] {
     if (!saved) return DEFAULT_STORY_CHAPTERS
     return DEFAULT_STORY_CHAPTERS.map(base => ({ ...base, ...saved.find(chapter => chapter.id === base.id) }))
   } catch { return DEFAULT_STORY_CHAPTERS }
+}
+
+export function getChapterSegments(chapter: StoryChapter): StorySegment[] {
+  if (chapter.segments?.length) return chapter.segments
+  return chapter.story.split(/\n\s*\n/).map<StorySegment>((text, index) => ({
+    id: `legacy_${chapter.id}_${index}`,
+    speaker: text.trim().startsWith('小白') ? '小白' : text.trim().startsWith('小黑') ? '小黑' : '旁白',
+    text: text.trim(),
+    side: index % 2 === 0 ? 'left' : 'right',
+    portrait: index % 2 === 0 ? 1 : 2,
+  })).filter(segment => segment.text)
 }
 
 export function saveStoryChapters(chapters: StoryChapter[]): void {

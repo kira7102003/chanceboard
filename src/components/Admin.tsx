@@ -8,7 +8,7 @@ import { DEFAULT_DAILY_REWARD, getDailyRewards, localDateKey, saveDailyRewardSet
 import type { DailyReward } from '../utils/dailyRewards'
 import { runAllMoveTests, runWinRateLadder } from '../engine/diagnostics'
 import type { MoveTestReport, LadderReport } from '../engine/diagnostics'
-import { getStoryChapters, saveStoryChapters } from '../utils/storyStore'
+import { getChapterSegments, getStoryChapters, saveStoryChapters, type StorySegment } from '../utils/storyStore'
 
 const EL_COLOR: Record<string, string>   = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee' }
 const SLOT_COLOR: Record<string, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee', '願': '#ddaa22', '被': '#666688' }
@@ -948,9 +948,35 @@ function StorySettings() {
             <Field label="章節副標" value={chapter.subtitle} onChange={value => update(index, { subtitle: value })} />
             <label className="adm-field"><span>開放章節</span><input type="checkbox" checked={chapter.unlocked} onChange={event => update(index, { unlocked: event.target.checked })} /></label>
           </div>
-          <label className="adm-field"><span>故事腳本（空行會自動分段）</span>
-            <textarea className="adm-story-textarea" value={chapter.story} onChange={event => update(index, { story: event.target.value })} />
-          </label>
+          <div className="adm-section-label" style={{ marginTop: 12 }}>故事段落編輯</div>
+          {getChapterSegments(chapter).map((segment, segmentIndex, allSegments) => {
+            const changeSegment = (patch: Partial<StorySegment>) => update(index, {
+              segments: allSegments.map((item, i) => i === segmentIndex ? { ...item, ...patch } : item),
+            })
+            const moveSegment = (direction: -1 | 1) => {
+              const target = segmentIndex + direction
+              if (target < 0 || target >= allSegments.length) return
+              const next = [...allSegments]; [next[segmentIndex], next[target]] = [next[target], next[segmentIndex]]
+              update(index, { segments: next })
+            }
+            return <div key={segment.id} style={{ border: '1px solid #292d4b', borderRadius: 8, padding: 10, marginBottom: 9, background: '#090b1b' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                <b style={{ color: '#d7ad55' }}>第 {segmentIndex + 1} 段</b>
+                <button className="btn sm" disabled={segmentIndex === 0} onClick={() => moveSegment(-1)}>↑</button>
+                <button className="btn sm" disabled={segmentIndex === allSegments.length - 1} onClick={() => moveSegment(1)}>↓</button>
+                <button className="btn sm danger" onClick={() => update(index, { segments: allSegments.filter((_, i) => i !== segmentIndex) })}>刪除</button>
+              </div>
+              <div className="adm-field-grid">
+                <Field label="說話者" value={segment.speaker} onChange={speaker => changeSegment({ speaker })} />
+                <label className="adm-field"><span>角色位置</span><select className="adm-select" value={segment.side} onChange={event => changeSegment({ side: event.target.value as 'left' | 'right' })}><option value="left">左邊</option><option value="right">右邊</option></select></label>
+                <label className="adm-field"><span>看板立繪</span><select className="adm-select" value={segment.portrait} onChange={event => changeSegment({ portrait: Number(event.target.value) as 1 | 2 })}><option value={1}>正面</option><option value={2}>側面</option></select></label>
+              </div>
+              <textarea className="adm-story-textarea" value={segment.text} onChange={event => changeSegment({ text: event.target.value })} />
+            </div>
+          })}
+          <button className="btn" onClick={() => update(index, { segments: [...getChapterSegments(chapter), {
+            id: `segment_${Date.now()}`, speaker: '旁白', text: '新段落', side: 'left', portrait: 1,
+          }] })}>＋ 新增段落</button>
         </div>
       </div>
     </div>)}
