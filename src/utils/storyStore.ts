@@ -5,7 +5,10 @@ export interface StorySegment {
   speaker: string
   text: string
   side: 'left' | 'right'
-  portrait: 1 | 2
+  /** Legacy 1=front, 2=side. */
+  portrait?: 1 | 2
+  boardCharacter?: 'black' | 'white'
+  pose?: 'front' | 'side'
 }
 
 export interface StoryChapter {
@@ -45,7 +48,8 @@ export function getChapterSegments(chapter: StoryChapter): StorySegment[] {
     speaker: text.trim().startsWith('小白') ? '小白' : text.trim().startsWith('小黑') ? '小黑' : '旁白',
     text: text.trim(),
     side: index % 2 === 0 ? 'left' : 'right',
-    portrait: index % 2 === 0 ? 1 : 2,
+    boardCharacter: text.trim().startsWith('小白') ? 'white' : 'black',
+    pose: index % 2 === 0 ? 'front' : 'side',
   })).filter(segment => segment.text)
 }
 

@@ -14,17 +14,23 @@ export default function StoryMode({ onClose }: Props) {
   if (chapter) {
     const segment = segments[line]
     const boardFacing = (() => { try { return JSON.parse(localStorage.getItem('cb_board_facing') ?? '{}') } catch { return {} } })() as Record<string, string>
-    const portrait = (side: 'left' | 'right', index: 1 | 2) => {
-      const sourceRight = boardFacing[`portrait_${index}`] === 'right'
+    const portrait = (side: 'left' | 'right', boardCharacter: 'black' | 'white', pose: 'front' | 'side') => {
+      const facingKey = `${boardCharacter}_${pose}`
+      const sourceRight = boardFacing[facingKey] === 'right'
       const flip = (side === 'right') !== sourceRight
+      const legacyIndex = pose === 'front' ? 1 : 2
+      const image = getUrlByKey(`cb_board_${boardCharacter}_${pose}`) ?? getUrlByKey(`cb_board_portrait_${legacyIndex}`) ?? ''
       return <img className={`story-board-char story-board-${side} ${segment?.side === side ? 'speaking' : ''}`}
-        src={getUrlByKey(`cb_board_portrait_${index}`) ?? ''} alt="" style={{ transform: flip ? 'scaleX(-1)' : undefined }} />
+        src={image} alt={boardCharacter === 'black' ? '小黑' : '小白'} style={{ transform: flip ? 'scaleX(-1)' : undefined }} />
     }
     return <div className="story-stage" style={{ backgroundImage: `linear-gradient(180deg,rgba(2,3,12,.2),#03040e 95%),url(${getUrlByKey(`cb_story_map_${chapter.id}`) ?? ''})` }}>
       <div className="story-cinematic-bars" />
       <button className="panel-back story-back" onClick={() => { setChapter(null); setLine(0); setRoute(null) }}>← 章節地圖</button>
       <div className="story-chapter-mark">CHAPTER {chapter.order} · {chapter.piece}</div>
-      {(route || chapter.id !== 'pawn') && <>{portrait('left', segment?.side === 'left' ? segment.portrait : 1)}{portrait('right', segment?.side === 'right' ? segment.portrait : 2)}</>}
+      {(route || chapter.id !== 'pawn') && <>
+        {portrait('left', segment?.side === 'left' ? (segment.boardCharacter ?? 'black') : 'black', segment?.side === 'left' ? (segment.pose ?? (segment.portrait === 2 ? 'side' : 'front')) : 'front')}
+        {portrait('right', segment?.side === 'right' ? (segment.boardCharacter ?? 'white') : 'white', segment?.side === 'right' ? (segment.pose ?? (segment.portrait === 2 ? 'side' : 'front')) : 'front')}
+      </>}
       {!route && chapter.id === 'pawn' ? <div className="story-dialogue story-route-pick">
         <small>請選擇你的棋盤立場</small><h2>執黑，或執白？</h2>
         <div><button onClick={() => setRoute('black')}>♟ 執黑</button><button onClick={() => setRoute('white')}>♙ 執白</button></div>

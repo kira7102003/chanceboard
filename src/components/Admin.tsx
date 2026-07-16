@@ -900,11 +900,14 @@ function BgSettings() {
       <div className="adm-section" style={{ borderTop: '1px solid #1a1f3e', paddingTop: 16 }}>
         <div className="adm-section-label" style={{ marginBottom: 12 }}>看板角色圖片設定</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          {[1, 2].map(index => <div key={`portrait-${index}`}>
-            <div style={{ fontSize: 11, color: '#8f91ad', marginBottom: 6 }}>看板角色{index === 1 ? '正面' : '側面'}立繪（768×1376）</div>
-            <ImageCrop storageKey={`cb_board_portrait_${index}`} cropW={768} cropH={1376} />
-            <FacingSelect value={facing[`portrait_${index}`] ?? 'left'} onChange={value => updateFacing(`portrait_${index}`, value)} />
-          </div>)}
+          {(['black', 'white'] as const).flatMap(character => (['front', 'side'] as const).map(pose => {
+            const key = `${character}_${pose}`
+            return <div key={key}>
+              <div style={{ fontSize: 11, color: '#8f91ad', marginBottom: 6 }}>{character === 'black' ? '小黑' : '小白'} · {pose === 'front' ? '正面' : '側面'}立繪（768×1376）</div>
+              <ImageCrop storageKey={`cb_board_${key}`} cropW={768} cropH={1376} />
+              <FacingSelect value={facing[key] ?? 'left'} onChange={value => updateFacing(key, value)} />
+            </div>
+          }))}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 14 }}>
           {[1, 2].map(index => <div key={`full-${index}`}>
@@ -970,13 +973,14 @@ function StorySettings() {
               <div className="adm-field-grid">
                 <Field label="說話者" value={segment.speaker} onChange={speaker => changeSegment({ speaker })} />
                 <label className="adm-field"><span>角色位置</span><select className="adm-select" value={segment.side} onChange={event => changeSegment({ side: event.target.value as 'left' | 'right' })}><option value="left">左邊</option><option value="right">右邊</option></select></label>
-                <label className="adm-field"><span>看板立繪</span><select className="adm-select" value={segment.portrait} onChange={event => changeSegment({ portrait: Number(event.target.value) as 1 | 2 })}><option value={1}>正面</option><option value={2}>側面</option></select></label>
+                <label className="adm-field"><span>看板角色</span><select className="adm-select" value={segment.boardCharacter ?? (segment.speaker === '小白' ? 'white' : 'black')} onChange={event => changeSegment({ boardCharacter: event.target.value as 'black' | 'white' })}><option value="black">小黑</option><option value="white">小白</option></select></label>
+                <label className="adm-field"><span>看板立繪</span><select className="adm-select" value={segment.pose ?? (segment.portrait === 2 ? 'side' : 'front')} onChange={event => changeSegment({ pose: event.target.value as 'front' | 'side' })}><option value="front">正面</option><option value="side">側面</option></select></label>
               </div>
               <textarea className="adm-story-textarea" value={segment.text} onChange={event => changeSegment({ text: event.target.value })} />
             </div>
           })}
           <button className="btn" onClick={() => update(index, { segments: [...getChapterSegments(chapter), {
-            id: `segment_${Date.now()}`, speaker: '旁白', text: '新段落', side: 'left', portrait: 1,
+            id: `segment_${Date.now()}`, speaker: '小黑', text: '新段落', side: 'left', boardCharacter: 'black', pose: 'front',
           }] })}>＋ 新增段落</button>
         </div>
       </div>
