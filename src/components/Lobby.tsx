@@ -97,11 +97,11 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
     if (id.length >= 4) onJoin(id)
   }
 
-  type MenuItem = { icon: string; label: string; panelKey?: Panel; action?: () => void; enabled: boolean }
+  type MenuItem = { icon: string; iconImage?: string; label: string; panelKey?: Panel; action?: () => void; enabled: boolean }
   const MAIN_BTNS: MenuItem[] = [
     { icon: '⚔️', label: '決鬥', enabled: true, action: () => setShowOnline(value => !value) },
     { icon: '👥', label: '隊伍', enabled: true, panelKey: 'teams' },
-    { icon: '🧩', label: '棋子', enabled: true, panelKey: 'pieces' },
+    { icon: '', iconImage: '/chess-piece.svg', label: '棋子', enabled: true, panelKey: 'pieces' },
     { icon: '✨', label: '召喚', enabled: true, panelKey: 'summon' },
   ]
   const SECONDARY_BTNS: MenuItem[] = [
@@ -113,10 +113,10 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
   ]
 
   const MenuGrid = ({ items, secondary = false }: { items: MenuItem[]; secondary?: boolean }) => <div className={`lv2-grid${secondary ? ' lv2-grid-secondary' : ''}`}>
-    {items.map(({ icon, label, panelKey, action, enabled }) => <button key={label} disabled={!enabled}
+    {items.map(({ icon, iconImage, label, panelKey, action, enabled }) => <button key={label} disabled={!enabled}
       title={enabled ? label : `${label}（尚未開放）`} className={`lv2-btn-grid${enabled ? '' : ' disabled'}`}
       onClick={enabled ? (panelKey ? () => setPanel(panelKey) : action) : undefined}>
-      <span>{icon}</span><span>{label}</span>{!enabled && <small>尚未開放</small>}
+      <span>{iconImage ? <img className="lv2-menu-icon-img" src={iconImage} alt="" /> : icon}</span><span>{label}</span>{!enabled && <small>尚未開放</small>}
     </button>)}
   </div>
 

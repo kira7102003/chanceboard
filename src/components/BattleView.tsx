@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import type { CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { useGameStore } from '../store/gameStore'
 import type { Unit } from '../types/unit'
@@ -132,6 +133,9 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
   const [previewUnitId, setPreviewUnitId] = useState<string | null>(null)
   // pick-then-confirm (照抄參考版：點招式/花牌先選取，按「出手」才執行)
   const [pickedMove,   setPickedMove]   = useState<MoveSlot | null>(null)
+  const [actionSeconds, setActionSeconds] = useState(30)
+  const actionDeadlineRef = useRef(0)
+  const timedOutActionRef = useRef<string | null>(null)
   // 順序條 chip 精簡後，完整資訊改滑鼠移入（手機點一下）浮窗顯示
   const [atbPop, setAtbPop] = useState<{ id: string; rect: DOMRect } | null>(null)
 
@@ -145,10 +149,36 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
 
   // Clear picks whenever the acting unit changes (same as the reference's
   // per-turn actMovePicked/actPending reset in nextTurn()).
-  const activeReadyId = game ? getReadyUnits(game).filter(u => u.side === mySide)[0]?.id : undefined
+  const activeReadyUnit = game ? getReadyUnits(game).filter(u => u.side === mySide)[0] : undefined
+  const activeReadyId = activeReadyUnit?.id
+  const currentActionKey = activeReadyUnit ? `${activeReadyUnit.id}:${activeReadyUnit.nextActionAt}` : null
+  const isAutoMe = game ? (mySide === 'A' ? game.autoBattleA : game.autoBattleB) : false
   useEffect(() => {
     setPickedMove(null)
   }, [activeReadyId])
+
+  useEffect(() => {
+    if (!currentActionKey || isAIBattle || isAutoMe) {
+      actionDeadlineRef.current = 0
+      setActionSeconds(30)
+      return
+    }
+    actionDeadlineRef.current = Date.now() + 30_000
+    timedOutActionRef.current = null
+    setActionSeconds(30)
+    const timer = window.setInterval(() => {
+      const remaining = Math.max(0, Math.ceil((actionDeadlineRef.current - Date.now()) / 1000))
+      setActionSeconds(remaining)
+      if (remaining === 0 && timedOutActionRef.current !== currentActionKey) {
+        timedOutActionRef.current = currentActionKey
+        const unitId = currentActionKey.split(':')[0]
+        setPickedMove(null)
+        setPendingSlots(prev => { const next = { ...prev }; delete next[unitId]; return next })
+        onPass(unitId)
+      }
+    }, 200)
+    return () => window.clearInterval(timer)
+  }, [currentActionKey, isAIBattle, isAutoMe, onPass])
 
   // Watch log for moveAnim entries (triggers for ALL moves incl. AI)
   // Scan all NEW entries (not just the last) because a single tick can push many log lines
@@ -215,10 +245,6 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
   const ownWaitProgress = nextOwnUnit
     ? Math.max(0, Math.min(100, (1 - ownWaitRemaining / Math.max(1, calcBAT(nextOwnUnit))) * 100))
     : 0
-  const isAutoMe  = mySide === 'A' ? game.autoBattleA : game.autoBattleB
-  const currentActionKey = readyUnits[0]
-    ? `${readyUnits[0].id}:${readyUnits[0].nextActionAt}`
-    : null
   const flowerUsedThisAction = !!mySide && !!currentActionKey && game.flowerActionUsed?.[mySide] === currentActionKey
   const discardedThisAction = !!mySide && !!currentActionKey && game.discardActionUsed?.[mySide] === currentActionKey
 
@@ -587,10 +613,12 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                       <div className="act-confirm-col">
                         <button className="btn primary act-confirm"
                           disabled={!au}
+                          data-time-tone={au ? (actionSeconds > 15 ? 'green' : actionSeconds > 5 ? 'yellow' : 'red') : 'waiting'}
+                          style={au ? { '--action-progress': `${(actionSeconds / 30) * 100}%` } as CSSProperties : undefined}
                           onClick={() => au && confirmAct(au)}>
                           <span className="act-confirm-progress" style={{ width: `${au ? 100 : ownWaitProgress}%` }} />
                           <span className="act-confirm-label">OK</span>
-                          {!au && nextOwnUnit && <small>{Math.ceil(ownWaitRemaining / 10)}s</small>}
+                          <small>{au ? `${actionSeconds}s` : nextOwnUnit ? `${Math.ceil(ownWaitRemaining / 10)}s` : ''}</small>
                         </button>
                       </div>
                     )}
