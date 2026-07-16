@@ -8,7 +8,7 @@ import type { GameState } from '../types/game'
 import { getReadyUnits } from '../engine/atb'
 import { effectiveATK, effectiveDEF, effectiveSPD } from '../engine/combat'
 import ScorePanel from './ScorePanel'
-import { getCharImg, getCharWideImg, getMoveImg, getCardImg, getMoveImageFacing } from '../utils/charStore'
+import { getCharImg, getCharWideImg, getMoveImg, getCardImg, getMoveImageFacing, getCharacterBImage, getCharacterBImageFacing } from '../utils/charStore'
 import BattleLog from './battle/BattleLog'
 import { useFitBattleLayout } from '../hooks/useFitBattleLayout'
 
@@ -99,9 +99,10 @@ interface MoveAnim {
   targetSide: 'A' | 'B'
   targetName: string | null
   targetCharImg: string | null
+  targetFacing: 'left' | 'right'
   targetUnitId: string | null
   isGroup: boolean
-  groupTargets: Array<{ name: string; charImg: string | null }>
+  groupTargets: Array<{ name: string; charImg: string | null; facing: 'left' | 'right' }>
   color: string
   dealsDamage: boolean
   hasTarget: boolean
@@ -161,10 +162,12 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
       const { moveId, moveName, moveSlot, charName, charId, attackerSide, targetSide, targetName, targetCharId, targetUnitId, groupTargets, dealsDamage, hasTarget, selfTargetOnly, missed } = entry.moveAnim
       const img = getMoveImg(moveId)
       const charImg = charId ? (getCharWideImg(charId) ?? getCharImg(charId)) : null
-      const targetCharImg = targetCharId ? (getCharWideImg(targetCharId) ?? getCharImg(targetCharId)) : null
+      const targetCharImg = targetCharId ? getCharacterBImage(targetCharId) : null
+      const targetFacing = targetCharId ? getCharacterBImageFacing(targetCharId) : 'left'
       const resolvedGroupTargets = groupTargets?.map(t => ({
         name: t.name,
-        charImg: t.charId ? (getCharWideImg(t.charId) ?? getCharImg(t.charId)) : null,
+        charImg: t.charId ? getCharacterBImage(t.charId) : null,
+        facing: t.charId ? getCharacterBImageFacing(t.charId) : 'left' as const,
       })) ?? []
       if (animTimer.current) clearTimeout(animTimer.current)
       setMoveAnim({
@@ -173,6 +176,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
         attackerSide: attackerSide ?? 'A',
         targetSide: targetSide ?? (attackerSide === 'A' ? 'B' : 'A'),
         targetName: targetName ?? null, targetCharImg,
+        targetFacing,
         targetUnitId: targetUnitId ?? null,
         isGroup: !targetName,
         groupTargets: resolvedGroupTargets,
@@ -300,7 +304,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
         // inverts the old side rule, so the animation remains viewer-correct.
         const mirrorSkill = (!attackFromLeft) !== (getMoveImageFacing(moveAnim.moveId) === 'right')
         const targetOnRight = moveAnim.targetSide !== mySide
-        const mirrorTarget = targetOnRight
+        const mirrorTarget = targetOnRight !== (moveAnim.targetFacing === 'right')
         const sideIsAuto = moveAnim.attackerSide === 'A' ? game.autoBattleA : game.autoBattleB
         const manualAnimation = !isAIBattle && !sideIsAuto && !(isSolo && moveAnim.attackerSide === 'B')
 
@@ -322,7 +326,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                 <div className="ma-group-row">
                   {moveAnim.groupTargets.map((t, i) => (
                     <div key={i}>
-                      <Portrait img={t.charImg} name={t.name} flip={mirrorTarget} showName={false} />
+                      <Portrait img={t.charImg} name={t.name} flip={targetOnRight !== (t.facing === 'right')} showName={false} />
                     </div>
                   ))}
                   <div className="ma-char-name ma-group-name">群體</div>

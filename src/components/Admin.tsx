@@ -520,7 +520,7 @@ function BasicTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<C
             <ImageCrop storageKey={`cb_wide_img_${char.id}`} />
           </div>
           <div className="adm-section">
-            <div className="adm-section-label">三星突破圖片</div>
+            <div className="adm-section-label">四星以上突破圖片</div>
             <ImageCrop storageKey={`cb_star_img_${char.id}`} />
           </div>
           <div className="adm-section">
@@ -592,18 +592,19 @@ function BasicTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<C
           </div>
 
           <div className="adm-section">
-            <div className="adm-section-label">每星級能力提升（加算）</div>
-            {[1, 2, 3].map(star => {
-              const bonuses = char.starBonuses ?? Array.from({ length: 3 }, () => ({ hp: 0, atk: 0, def: 0, spd: 0 }))
-              const bonus = bonuses[star - 1] ?? { hp: 0, atk: 0, def: 0, spd: 0 }
+            <div className="adm-section-label">每星級能力提升（百分比，預設各 5%）</div>
+            {[1, 2, 3, 4, 5].map(star => {
+              const bonuses = (char.starBonuses ?? Array.from({ length: 5 }, () => ({ hp: 5, atk: 5, def: 5, spd: 5 }))).map(item => ({ ...item }))
+              while (bonuses.length < 5) bonuses.push({ hp: 5, atk: 5, def: 5, spd: 5 })
+              const bonus = bonuses[star - 1] ?? { hp: 5, atk: 5, def: 5, spd: 5 }
               return <div className="adm-field-grid" key={star} style={{ marginBottom: 8 }}>
                 <b style={{ color: '#e8bd55' }}>{'★'.repeat(star)}</b>
                 {(['hp', 'atk', 'def', 'spd'] as const).map(stat => <label className="adm-field" key={stat}>
-                  <span>{stat.toUpperCase()}</span>
-                  <input type="number" min={0} max={99} value={bonus[stat]}
+                  <span>{stat.toUpperCase()} %</span>
+                  <input type="number" min={0} max={100} value={bonus[stat]}
                     onChange={event => {
                       const next = bonuses.map(item => ({ ...item }))
-                      next[star - 1][stat] = Math.max(0, Math.min(99, Number(event.target.value) || 0))
+                      next[star - 1][stat] = Math.max(0, Math.min(100, Number(event.target.value) || 0))
                       onUpdate({ starBonuses: next })
                     }} />
                 </label>)}

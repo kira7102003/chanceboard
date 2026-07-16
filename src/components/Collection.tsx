@@ -30,7 +30,7 @@ export default function Collection({ onClose }: Props) {
           {chars.map(c => {
             const owned  = ownedCharIds.includes(c.id)
             const stars = characterStars[c.id] ?? 0
-            const starKey = stars >= 3 && getUrlByKey(`cb_star_img_${c.id}`) ? `cb_star_img_${c.id}` : `cb_img_${c.id}`
+            const starKey = stars > 3 && getUrlByKey(`cb_star_img_${c.id}`) ? `cb_star_img_${c.id}` : `cb_img_${c.id}`
             const imgUrl = getUrlByKey(starKey)
             const col    = EL_COLOR[c.element]
             return (

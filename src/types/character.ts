@@ -20,7 +20,7 @@ export interface Character {
   isHuman?: boolean
   story?: string
   enabled?: boolean   // undefined / true = shown in CharSelect; false = hidden
-  /** Per-star additive stats. Index 0 is one-star, index 2 is three-star. */
+  /** Per-star percentage stat bonuses. Index 0 is one-star, index 4 is five-star. */
   starBonuses?: Array<{ hp: number; atk: number; def: number; spd: number }>
   extraBImageFacing?: 'left' | 'right'
 }

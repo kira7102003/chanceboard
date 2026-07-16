@@ -185,6 +185,14 @@ export function getMoveImageFacing(moveId: string): 'left' | 'right' {
   return getMoveOverrides()[moveId]?.imageFacing === 'right' ? 'right' : 'left'
 }
 
+export function getCharacterBImage(charId: string): string | null {
+  return getUrlByKey(`cb_extra_b_img_${charId}`) ?? getCharWideImg(charId) ?? getCharImg(charId)
+}
+
+export function getCharacterBImageFacing(charId: string): 'left' | 'right' {
+  return getChars().find(character => character.id === charId)?.extraBImageFacing === 'right' ? 'right' : 'left'
+}
+
 let _mvSyncTimer: ReturnType<typeof setTimeout> | null = null
 export function saveMoveOverride(id: string, patch: Record<string, unknown>): void {
   const overrides = getMoveOverrides()

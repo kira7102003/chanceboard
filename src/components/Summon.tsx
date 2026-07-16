@@ -99,7 +99,7 @@ export default function Summon({ onClose }: Props) {
           </div>
 
           <div className="hint" style={{ textAlign: 'center', marginTop: 8 }}>
-            重複角色提升星級；三星後再次取得補償 🪙 {DUP_COIN} 金幣
+            重複角色提升星級；五星後再次取得補償 🪙 {DUP_COIN} 金幣
           </div>
         </div>
       )}

@@ -68,7 +68,7 @@ export const usePlayerStore = create<PlayerState>()(
       })),
       addCharacterStar: (id) => {
         const current = get().characterStars[id] ?? 0
-        if (current >= 3) return false
+        if (current >= 5) return false
         set(s => ({ characterStars: { ...s.characterStars, [id]: current + 1 } }))
         return true
       },

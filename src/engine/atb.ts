@@ -22,7 +22,9 @@ let _uid = 0
 export function makeUnit(charId: string, side: 'A' | 'B', slot: 1 | 2 | 3, startAt: number, starLevel = 0): Unit {
   const char = getChars().find(c => c.id === charId) ?? characters.find(c => c.id === charId)!
   const charMoves = allMoves.filter(m => m.ownerId === charId)
-  const starBonus = (char.starBonuses ?? []).slice(0, Math.max(0, Math.min(3, starLevel)))
+  const configuredStarBonuses = Array.from({ length: 5 }, (_, index) =>
+    char.starBonuses?.[index] ?? { hp: 5, atk: 5, def: 5, spd: 5 })
+  const starBonus = configuredStarBonuses.slice(0, Math.max(0, Math.min(5, starLevel)))
     .reduce((sum, bonus) => ({ hp: sum.hp + bonus.hp, atk: sum.atk + bonus.atk, def: sum.def + bonus.def, spd: sum.spd + bonus.spd }), { hp: 0, atk: 0, def: 0, spd: 0 })
 
   const moveMap = {} as Record<MoveSlot, Move>
@@ -57,11 +59,11 @@ export function makeUnit(charId: string, side: 'A' | 'B', slot: 1 | 2 | 3, start
     side,
     slot,
     element: char.element,
-    hp: char.hp + starBonus.hp,
-    maxHp: char.hp + starBonus.hp,
-    baseAtk: char.atk + starBonus.atk,
-    baseDef: char.def + starBonus.def,
-    baseSpd: char.spd + starBonus.spd,
+    hp: Math.max(1, Math.round(char.hp * (1 + starBonus.hp / 100))),
+    maxHp: Math.max(1, Math.round(char.hp * (1 + starBonus.hp / 100))),
+    baseAtk: Math.max(1, Math.round(char.atk * (1 + starBonus.atk / 100))),
+    baseDef: Math.max(1, Math.round(char.def * (1 + starBonus.def / 100))),
+    baseSpd: Math.max(1, Math.round(char.spd * (1 + starBonus.spd / 100))),
     moves: moveMap,
     alive: true,
     nextActionAt: startAt,
