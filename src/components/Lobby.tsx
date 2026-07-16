@@ -93,15 +93,25 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
     if (id.length >= 4) onJoin(id)
   }
 
-  const GRID_BTNS: { icon: string; label: string; panelKey?: Panel; action?: () => void }[] = [
-    { icon: '✨', label: '招喚',     panelKey: 'summon' },
-    { icon: '📚', label: '收藏',     panelKey: 'collection' },
-    { icon: '🛒', label: '商店',     panelKey: 'shop' },
-    { icon: '🤝', label: '雙人對戰', action: () => setShowOnline(v => !v) },
-    { icon: '🛡', label: '隊伍',     panelKey: 'teams' },
-    { icon: '🗂', label: '資料管理', action: onAdmin },
-    { icon: '♟', label: '故事模式', panelKey: 'story' },
+  type MenuItem = { icon: string; label: string; panelKey?: Panel; action?: () => void; enabled: boolean }
+  const MAIN_BTNS: MenuItem[] = [
+    { icon: '⚔️', label: '決鬥', enabled: true, action: () => setShowOnline(value => !value) },
+    { icon: '👥', label: '隊伍', enabled: true, panelKey: 'teams' },
+    { icon: '✨', label: '召喚', enabled: true, panelKey: 'summon' },
   ]
+  const SECONDARY_BTNS: MenuItem[] = [
+    { icon: '🛒', label: '商店', enabled: true, panelKey: 'shop' }, { icon: '📚', label: '收藏', enabled: true, panelKey: 'collection' },
+    { icon: '🤝', label: '好友', enabled: true, action: () => setShowOnline(value => !value) },
+    { icon: '⚙️', label: '設定', enabled: true, panelKey: 'settings' },
+  ]
+
+  const MenuGrid = ({ items, secondary = false }: { items: MenuItem[]; secondary?: boolean }) => <div className={`lv2-grid${secondary ? ' lv2-grid-secondary' : ''}`}>
+    {items.map(({ icon, label, panelKey, action, enabled }) => <button key={label} disabled={!enabled}
+      title={enabled ? label : `${label}（尚未開放）`} className={`lv2-btn-grid${enabled ? '' : ' disabled'}`}
+      onClick={enabled ? (panelKey ? () => setPanel(panelKey) : action) : undefined}>
+      <span>{icon}</span><span>{label}</span>{!enabled && <small>尚未開放</small>}
+    </button>)}
+  </div>
 
   return (
     <>
@@ -136,31 +146,13 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
         {/* ── Menu panel (right) ── */}
         <div className="lv2-panel">
 
-          {/* Primary button */}
-          <button className="lv2-btn-main" onClick={onSolo}>
-            <span className="lv2-btn-icon">⚔</span>
-            <div>
-              <div className="lv2-btn-title">單人對戰</div>
-            </div>
-          </button>
-
-          {/* 2×3 grid */}
-          <div className="lv2-grid">
-            {GRID_BTNS.map(({ icon, label, panelKey, action }) => (
-              <button
-                key={label}
-                className={`lv2-btn-grid${panelKey || action ? '' : ' disabled'}`}
-                onClick={panelKey ? () => setPanel(panelKey) : action}
-              >
-                <span>{icon}</span>
-                <span>{label}</span>
-              </button>
-            ))}
-          </div>
+          <div className="lv2-menu-label">主功能</div>
+          <MenuGrid items={MAIN_BTNS} />
 
           {/* Online submenu */}
           {showOnline && (
             <div className="lv2-online">
+              <button className="lv2-btn-sm" onClick={onSolo}>⚔️ 單人決鬥</button>
               <button className="lv2-btn-sm" onClick={create}>建立多人房間</button>
               <div style={{ display: 'flex', gap: 6 }}>
                 <input className="input" style={{ flex: 1, fontSize: 12 }}
@@ -181,8 +173,14 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
             </div>
           )}
 
+          <div className="lv2-menu-label">次功能</div>
+          <MenuGrid items={SECONDARY_BTNS} secondary />
+
           {/* Bottom row */}
           <div style={{ display: 'flex', gap: 8 }}>
+            <button className="lv2-btn-settings" style={{ flex: 1 }} onClick={onAdmin}>
+              <span>🗂</span><span>資料管理</span>
+            </button>
             <button className="lv2-btn-settings" style={{ flex: 1 }} onClick={() => setPanel('settings')}>
               <span>⚙</span><span>設定</span>
             </button>
