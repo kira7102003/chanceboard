@@ -17,7 +17,7 @@ const CARD_ASPECT = 24 / 43
 // 「下方面板最低高度」限制），剩餘高度才分給下方面板。
 // 面板底線 = 手牌列自然高度（整排最寬、不縮放不裁切）+ 訊息/招式區底線；
 // 訊息/招式區塞不下時用 transform:scale 縮進去，而不是反過來壓縮人物。
-const ACT_TOP_MIN_H = 110
+const ACT_TOP_MIN_H = 60
 const ACT_TOP_MIN_H_SHORT = 60 // 手機橫向等矮螢幕：上半底線再低，多留給人物
 const SHORT_MAIN_H = 520
 const SCALE_FLOOR_SHORT_H = 500

@@ -136,6 +136,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
   const [actionSeconds, setActionSeconds] = useState(30)
   const actionDeadlineRef = useRef(0)
   const timedOutActionRef = useRef<string | null>(null)
+  const onPassRef = useRef(onPass)
   // 順序條 chip 精簡後，完整資訊改滑鼠移入（手機點一下）浮窗顯示
   const [atbPop, setAtbPop] = useState<{ id: string; rect: DOMRect } | null>(null)
 
@@ -157,6 +158,8 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
     setPickedMove(null)
   }, [activeReadyId])
 
+  useEffect(() => { onPassRef.current = onPass }, [onPass])
+
   useEffect(() => {
     if (!currentActionKey || isAIBattle || isAutoMe) {
       actionDeadlineRef.current = 0
@@ -174,11 +177,11 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
         const unitId = currentActionKey.split(':')[0]
         setPickedMove(null)
         setPendingSlots(prev => { const next = { ...prev }; delete next[unitId]; return next })
-        onPass(unitId)
+        onPassRef.current(unitId)
       }
     }, 200)
     return () => window.clearInterval(timer)
-  }, [currentActionKey, isAIBattle, isAutoMe, onPass])
+  }, [currentActionKey, isAIBattle, isAutoMe])
 
   // Watch log for moveAnim entries (triggers for ALL moves incl. AI)
   // Scan all NEW entries (not just the last) because a single tick can push many log lines
