@@ -45,14 +45,16 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
 
   // 有些角色沒上傳過立繪（getUrlByKey 為 null）——顯示與切換都要跳過它們，
   // 否則輪到沒圖的角色時整個立繪消失、也點不到它切回來（cb_lobby_char 又記住了它）。
-  const hasImg = (i: number) => !!chars[i] && !!getUrlByKey(`cb_img_${chars[i].id}`)
+  const imageKeyFor = (id: string) => getUrlByKey(`cb_wide_img_${id}`) ? `cb_wide_img_${id}` : `cb_img_${id}`
+  const hasImg = (i: number) => !!chars[i] && !!getUrlByKey(imageKeyFor(chars[i].id))
   let dispIdx = charIdx
   for (let i = 0; i < chars.length; i++) {
     const idx = (charIdx + i) % chars.length
     if (hasImg(idx)) { dispIdx = idx; break }
   }
   const activeChar = chars[dispIdx]
-  const charImgUrl = activeChar ? getUrlByKey(`cb_img_${activeChar.id}`) : null
+  const activeImageKey = activeChar ? imageKeyFor(activeChar.id) : null
+  const charImgUrl = activeImageKey ? getUrlByKey(activeImageKey) : null
 
   const cycleChar = () => {
     if (chars.length === 0) return
@@ -67,7 +69,7 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
   const handleImgError = () => {
     // Clear stale '1' flag so this URL isn't tried again next session
     if (activeChar) {
-      const flagKey = `cb_img_${activeChar.id}_sb`
+      const flagKey = `${activeImageKey ?? `cb_wide_img_${activeChar.id}`}_sb`
       if (localStorage.getItem(flagKey) === '1') localStorage.removeItem(flagKey)
     }
     imgErrCount.current += 1

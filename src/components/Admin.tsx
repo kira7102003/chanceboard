@@ -513,11 +513,11 @@ function BasicTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<C
         {/* ── Left: images ── */}
         <div className="adm-basic-imgs">
           <div className="adm-section">
-            <div className="adm-section-label">頭像</div>
+            <div className="adm-section-label">正面（僅選角畫面）</div>
             <ImageCrop storageKey={`cb_img_${char.id}`} />
           </div>
           <div className="adm-section">
-            <div className="adm-section-label">戰場寬幅圖</div>
+            <div className="adm-section-label">側面（戰場立繪與大廳）</div>
             <ImageCrop storageKey={`cb_wide_img_${char.id}`} />
           </div>
           <div className="adm-section">

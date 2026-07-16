@@ -34,7 +34,7 @@ function CharGallery({ char, selectedIds, onToggle, onClose }: {
   const isSel    = selectedIds.includes(char.id)
   const selIdx   = selectedIds.indexOf(char.id)
   const moves    = allMoves.filter(m => m.ownerId === char.id)
-  const imgUrl   = getUrlByKey(`cb_img_${char.id}`) ?? getUrlByKey(`cb_wide_img_${char.id}`)
+  const imgUrl   = getUrlByKey(`cb_img_${char.id}`)
 
   return (
     <div className="cs-gallery-overlay" onClick={onClose}>
