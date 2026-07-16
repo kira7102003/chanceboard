@@ -3,6 +3,8 @@ import type { SavedSession } from '../hooks/useRoom'
 import { getChars, getUrlByKey, onCloudSynced } from '../utils/charStore'
 import { usePlayerStore } from '../store/playerStore'
 import type { FeatureMode } from './FeaturePanel'
+import LobbyLogisticsShowcase from './LobbyLogisticsShowcase'
+import { getActiveLogistics } from '../utils/logisticsStore'
 const Collection = lazy(() => import('./Collection'))
 const Shop = lazy(() => import('./Shop'))
 const Summon = lazy(() => import('./Summon'))
@@ -42,6 +44,7 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
   const ownedChars = getChars().filter(c => ownedCharIds.includes(c.id))
   const configuredChars = (desktopCharIds ?? []).map(id => ownedChars.find(c => c.id === id)).filter((c): c is NonNullable<typeof c> => !!c)
   const chars = configuredChars.length ? configuredChars : ownedChars
+  const activeLogistics = getActiveLogistics()
   const savedId  = localStorage.getItem(LOBBY_CHAR_KEY)
   const initIdx  = Math.max(0, chars.findIndex(c => c.id === savedId))
   const [charIdx, setCharIdx] = useState(initIdx)
@@ -143,7 +146,7 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
         </button>
 
         {/* ── Character portrait ── */}
-        {charImgUrl && !imgFailed && (
+        {activeLogistics ? <LobbyLogisticsShowcase /> : charImgUrl && !imgFailed && (
           <div className="lv2-char" onClick={cycleChar} style={{ cursor: 'pointer' }} title="點擊切換角色">
             <img src={charImgUrl} alt="" className="lv2-char-img"
               onError={handleImgError} />

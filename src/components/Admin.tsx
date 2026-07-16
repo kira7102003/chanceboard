@@ -972,7 +972,7 @@ function LogisticsSettings() {
   return <div className="adm-basic logistics-admin"><div className="diag-head"><div><h2>後勤工作設定</h2><p>設定工作時間、8-bit 動畫圖與完成後可取得的資源。</p></div></div>
     <div className="logistics-admin-grid">{jobs.map((job, index) => <section className="adm-section" key={job.id}><div className="adm-section-label">{job.icon} {job.name}</div>
       <AnimatedAssetUpload storageKey={`cb_logistics_anim_${job.id}`} />
-      <div className="adm-field-grid"><Field label="工作名稱" value={job.name} onChange={name => update(index, { name })} /><label className="adm-field"><span>工作秒數</span><input type="number" min="1" value={job.durationSeconds} onChange={event => update(index, { durationSeconds: Math.max(1, Math.floor(Number(event.target.value) || 1)) })} /></label></div>
+      <div className="adm-field-grid"><Field label="工作名稱" value={job.name} onChange={name => update(index, { name })} /><label className="adm-field"><span>工作時間（小時，最少 2）</span><input type="number" min="2" step="0.5" value={job.durationSeconds / 3600} onChange={event => update(index, { durationSeconds: Math.max(7200, Math.round((Number(event.target.value) || 2) * 3600)) })} /></label></div>
       <div className="adm-field-grid">{([['gems', '鑽石'], ['coins', '金幣'], ['silver', '銀'], ['copper', '銅'], ['iron', '鐵'], ['wood', '木']] as const).map(([key, label]) => <label className="adm-field" key={key}><span>{label}</span><input type="number" min="0" value={job.rewards[key]} onChange={event => update(index, { rewards: { ...job.rewards, [key]: Math.max(0, Math.floor(Number(event.target.value) || 0)) } })} /></label>)}</div>
     </section>)}</div>
   </div>
