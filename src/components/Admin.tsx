@@ -10,6 +10,7 @@ import { runAllMoveTests, runWinRateLadder } from '../engine/diagnostics'
 import type { MoveTestReport, LadderReport } from '../engine/diagnostics'
 import { getChapterFlow, getChapterSegments, getStoryChapters, saveStoryChapters, type StoryChapter, type StoryFlowNode, type StorySegment } from '../utils/storyStore'
 import { getBattleBackgroundNames, getBoardCharacters, saveBoardCharacters } from '../utils/boardCharacters'
+import StoryFlowDesigner from './StoryFlowDesigner'
 
 const EL_COLOR: Record<string, string>   = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee' }
 const SLOT_COLOR: Record<string, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee', '願': '#ddaa22', '被': '#666688' }
@@ -960,6 +961,7 @@ function BgSettings() {
 
 function StorySettings() {
   const [chapters, setChapters] = useState(getStoryChapters)
+  const [designerIndex, setDesignerIndex] = useState<number | null>(null)
   const boardCharacters = getBoardCharacters()
   const rewardCharacters = getChars()
   const battleBackgroundNames = getBattleBackgroundNames()
@@ -968,6 +970,8 @@ function StorySettings() {
     setChapters(next)
     saveStoryChapters(next)
   }
+  if (designerIndex !== null) return <StoryFlowDesigner chapter={chapters[designerIndex]} boardCharacters={boardCharacters}
+    onChange={flow => update(designerIndex, { flow })} onClose={() => setDesignerIndex(null)} />
   return <div className="adm-basic" style={{ overflowY: 'auto' }}>
     <div className="diag-head"><div><h2>♟ 故事模式設定</h2><p>設定兵、騎士、城堡、主教、皇后、國王六張章節地圖與故事內容。</p></div></div>
     {chapters.map((chapter, index) => <div className="adm-section" key={chapter.id}>
@@ -992,7 +996,7 @@ function StorySettings() {
             {([['gems', '鑽石'], ['coins', '金幣'], ['silver', '銀'], ['copper', '銅'], ['iron', '鐵'], ['wood', '木']] as const).map(([key, label]) => <label className="adm-field" key={key}><span>{label}</span><input type="number" min="0" value={chapter.rewards?.[key] ?? 0} onChange={event => update(index, { rewards: { ...chapter.rewards, [key]: Math.max(0, Math.floor(Number(event.target.value) || 0)) } })} /></label>)}
           </div>
           <small style={{ color: '#858daa' }}>每個帳號每章只能領取一次；重複角色會自動轉為 10 個角色碎片。</small>
-          <StoryFlowEditor chapter={chapter} boardCharacters={boardCharacters} onChange={flow => update(index, { flow })} />
+          <button className="story-open-designer" onClick={() => setDesignerIndex(index)}><span>◆</span><div><b>開啟獨立故事流程編輯器</b><small>使用節點、連線與分支卡片編排本章故事</small></div><i>進入全畫面 →</i></button>
           <div hidden>
           <div className="adm-section-label" style={{ marginTop: 12 }}>故事段落編輯</div>
           {getChapterSegments(chapter).map((segment, segmentIndex, allSegments) => {
@@ -1089,6 +1093,8 @@ function StoryFlowList({ nodes, onChange, boardCharacters, chapter, depth, newCo
 }
 
 // ─── ImageCrop — visual crop-box UI ──────────────────────────────────────────
+
+void StoryFlowEditor
 
 const PORTRAIT_W = 768
 const PORTRAIT_H = 1376
