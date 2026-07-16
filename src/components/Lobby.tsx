@@ -148,8 +148,8 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
         {/* ── Resources (top-right) ── */}
         <div className="lv2-resources">
           <span className="lv2-res">👤 <b>{username}</b></span>
-          <span className="lv2-res">🪙 金 <b>{coins.toLocaleString()}</b></span>
           <span className="lv2-res">💎 <b>{gems}</b></span>
+          <span className="lv2-res">🪙 金 <b>{coins.toLocaleString()}</b></span>
           <span className="lv2-res resource-silver">銀 <b>{materials?.silver ?? 0}</b></span>
           <span className="lv2-res resource-copper">銅 <b>{materials?.copper ?? 0}</b></span>
           <span className="lv2-res resource-iron">鐵 <b>{materials?.iron ?? 0}</b></span>
