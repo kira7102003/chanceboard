@@ -128,12 +128,15 @@ function StoryDesignerPreview({ chapter, flow, boardCharacters, onClose }: { cha
   const node = nodes[cursor]
   const segment = node?.type === 'common' ? node.segment : undefined
   const speaker = segment?.speaker ?? chapter.title
+  const speakerCharacter = getChars().find(character => character.name === speaker || character.name.includes(speaker) || speaker.includes(character.name))
+  const previewColors: Record<string, string> = { '劍': '#ef704d', '槍': '#29d889', '法': '#a86cff' }
+  const previewColor = speakerCharacter ? (previewColors[speakerCharacter.element] ?? '#d9bd72') : segment?.boardCharacter === 'black' ? '#a86cff' : segment?.boardCharacter === 'white' ? '#55c9ef' : '#d9bd72'
   const image = segment?.boardCharacter ? getUrlByKey(`cb_board_${segment.boardCharacter}_front`) : null
   const background = getUrlByKey(chapter.backgroundKey || `cb_story_map_${chapter.id}`) ?? ''
   return <div className="story-designer-preview" style={{ backgroundImage: `linear-gradient(#03051155,#030511dd),url(${background})` }}>
     <button className="story-preview-close" onClick={onClose}>× 關閉預覽</button><div className="story-preview-badge">PREVIEW　{chapter.title}</div>
     {node?.type === 'branch' ? <div className="story-preview-choice"><small>玩家選項</small><h2>{node.title}</h2><div>{node.branches.map(branch => <button key={branch.id} onClick={() => setNodes(current => [...current.slice(0, cursor), ...branch.nodes, ...current.slice(cursor + 1)])}>{branch.label}</button>)}</div></div>
-      : node ? <button className={`story-preview-dialogue ${segment?.side === 'right' ? 'right' : ''}`} onClick={() => setCursor(value => value + 1)}>
+      : node ? <button className={`story-preview-dialogue ${segment?.side === 'right' ? 'right' : ''}`} style={{ '--story-accent': previewColor } as React.CSSProperties} onClick={() => setCursor(value => value + 1)}>
         <div className="story-preview-avatar">{image ? <img src={image} alt="" /> : <b>{speaker.slice(0, 1)}</b>}</div><div><span>{speaker}</span>{segment?.section && <small>{segment.section}</small>}<p>{segment?.text}</p><em>點擊繼續 ›</em></div>
       </button> : <div className="story-preview-choice"><h2>預覽結束</h2><button onClick={() => { setNodes(flow); setCursor(0) }}>重新播放</button><button onClick={onClose}>返回編輯</button></div>}
     <div className="story-preview-cast">{boardCharacters.slice(0, 2).map(character => { const portrait = getUrlByKey(`cb_board_${character.id}_front`); return portrait ? <img key={character.id} src={portrait} alt={character.name} /> : null })}</div>
