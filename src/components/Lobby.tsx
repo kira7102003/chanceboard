@@ -145,9 +145,13 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
           </div>
         )}
 
+        {/* ── User identity (top-left information zone) ── */}
+        <div className="lv2-user-info">
+          <span className="lv2-res">👤 <b>{username}</b></span>
+        </div>
+
         {/* ── Resources (top-right) ── */}
         <div className="lv2-resources">
-          <span className="lv2-res">👤 <b>{username}</b></span>
           <span className="lv2-res">💎 <b>{gems}</b></span>
           <span className="lv2-res">🪙 金 <b>{coins.toLocaleString()}</b></span>
           <span className="lv2-res resource-silver">銀 <b>{materials?.silver ?? 0}</b></span>
@@ -184,24 +188,19 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
               )}
             </div>
           )}
+        </div>
 
-          <div className="lv2-support-panel">
-            <MenuGrid items={SECONDARY_BTNS} secondary />
+        {/* Reserved mission-status zone; content will be connected later. */}
+        <div className="lv2-task-status" aria-hidden="true" />
 
-            {/* Bottom row */}
-            <div className="lv2-bottom-actions">
-              <button className="lv2-btn-settings" onClick={onAdmin}>
-                <span>🗂</span><span>資料管理</span>
-              </button>
-              <button className="lv2-btn-settings" onClick={() => setPanel('settings')}>
-                <span>⚙</span><span>設定</span>
-              </button>
-              <button className="lv2-btn-settings" onClick={() => supabase.auth.signOut()}>
-                <span>🚪</span><span>登出</span>
-              </button>
-            </div>
+        {/* ── Secondary actions: fixed bottom strip ── */}
+        <div className="lv2-support-panel">
+          <MenuGrid items={SECONDARY_BTNS} secondary />
+          <div className="lv2-bottom-actions">
+            <button className="lv2-btn-settings" onClick={onAdmin}><span>🗂</span><span>資料管理</span></button>
+            <button className="lv2-btn-settings" onClick={() => setPanel('settings')}><span>⚙</span><span>設定</span></button>
+            <button className="lv2-btn-settings" onClick={() => supabase.auth.signOut()}><span>🚪</span><span>登出</span></button>
           </div>
-
         </div>
       </div>
     </>
