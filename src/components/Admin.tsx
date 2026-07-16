@@ -971,7 +971,7 @@ function StorySettings() {
     saveStoryChapters(next)
   }
   if (designerIndex !== null) return <StoryFlowDesigner chapter={chapters[designerIndex]} boardCharacters={boardCharacters}
-    onChange={flow => update(designerIndex, { flow })} onClose={() => setDesignerIndex(null)} />
+    onSave={(flow, rewards) => update(designerIndex, { flow, rewards })} onClose={() => setDesignerIndex(null)} />
   return <div className="adm-basic" style={{ overflowY: 'auto' }}>
     <div className="diag-head"><div><h2>♟ 故事模式設定</h2><p>設定兵、騎士、城堡、主教、皇后、國王六張章節地圖與故事內容。</p></div></div>
     {chapters.map((chapter, index) => <div className="adm-section" key={chapter.id}>
