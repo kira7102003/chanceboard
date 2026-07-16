@@ -186,21 +186,22 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
             </div>
           )}
 
-          <div className="lv2-menu-label">次功能</div>
-          <MenuGrid items={SECONDARY_BTNS} secondary />
+          <div className="lv2-support-panel">
+            <div className="lv2-menu-label">次功能</div>
+            <MenuGrid items={SECONDARY_BTNS} secondary />
 
-          {/* Bottom row */}
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="lv2-btn-settings" style={{ flex: 1 }} onClick={onAdmin}>
-              <span>🗂</span><span>資料管理</span>
-            </button>
-            <button className="lv2-btn-settings" style={{ flex: 1 }} onClick={() => setPanel('settings')}>
-              <span>⚙</span><span>設定</span>
-            </button>
-            <button className="lv2-btn-settings" style={{ flex: 'none', gap: 6 }}
-              onClick={() => supabase.auth.signOut()}>
-              <span>🚪</span><span>登出</span>
-            </button>
+            {/* Bottom row */}
+            <div className="lv2-bottom-actions">
+              <button className="lv2-btn-settings" onClick={onAdmin}>
+                <span>🗂</span><span>資料管理</span>
+              </button>
+              <button className="lv2-btn-settings" onClick={() => setPanel('settings')}>
+                <span>⚙</span><span>設定</span>
+              </button>
+              <button className="lv2-btn-settings" onClick={() => supabase.auth.signOut()}>
+                <span>🚪</span><span>登出</span>
+              </button>
+            </div>
           </div>
 
         </div>
