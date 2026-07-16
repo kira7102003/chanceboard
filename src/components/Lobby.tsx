@@ -8,8 +8,9 @@ const Shop = lazy(() => import('./Shop'))
 const Summon = lazy(() => import('./Summon'))
 const Teams = lazy(() => import('./Teams'))
 const Settings = lazy(() => import('./Settings'))
+const StoryMode = lazy(() => import('./StoryMode'))
 
-type Panel = 'summon' | 'collection' | 'shop' | 'teams' | 'settings' | null
+type Panel = 'summon' | 'collection' | 'shop' | 'teams' | 'settings' | 'story' | null
 
 interface Props {
   onJoin:        (roomId: string) => void
@@ -99,6 +100,7 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
     { icon: '🤝', label: '雙人對戰', action: () => setShowOnline(v => !v) },
     { icon: '🛡', label: '隊伍',     panelKey: 'teams' },
     { icon: '🗂', label: '資料管理', action: onAdmin },
+    { icon: '♟', label: '故事模式', panelKey: 'story' },
   ]
 
   return (
@@ -109,6 +111,7 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
       {panel === 'collection' && <Collection onClose={() => setPanel(null)} />}
       {panel === 'shop'       && <Shop       onClose={() => setPanel(null)} />}
       {panel === 'settings'   && <Settings onClose={() => setPanel(null)} />}
+      {panel === 'story'      && <StoryMode onClose={() => setPanel(null)} />}
       {panel === 'teams'      && (
         <Teams onClose={() => setPanel(null)} />
       )}

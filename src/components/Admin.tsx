@@ -8,6 +8,7 @@ import { DEFAULT_DAILY_REWARD, getDailyRewards, localDateKey, saveDailyRewardSet
 import type { DailyReward } from '../utils/dailyRewards'
 import { runAllMoveTests, runWinRateLadder } from '../engine/diagnostics'
 import type { MoveTestReport, LadderReport } from '../engine/diagnostics'
+import { getStoryChapters, saveStoryChapters } from '../utils/storyStore'
 
 const EL_COLOR: Record<string, string>   = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee' }
 const SLOT_COLOR: Record<string, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee', '願': '#ddaa22', '被': '#666688' }
@@ -119,6 +120,16 @@ export default function Admin({ onBack }: Props) {
               <div className="adm-list-sub">大廳 · 戰鬥</div>
             </div>
           </div>
+          <div
+            className={`adm-list-item ${selId === '__story__' ? 'active' : ''}`}
+            onClick={() => { setSelId('__story__'); setTab('basic') }}
+          >
+            <div className="adm-list-tool-icon">♟</div>
+            <div className="adm-list-text">
+              <div className="adm-list-name" style={{ color: '#c8a15a' }}>故事模式設定</div>
+              <div className="adm-list-sub">兵～國王 · 六章地圖</div>
+            </div>
+          </div>
           {/* Card images entry */}
           <div
             className={`adm-list-item ${selId === '__cards__' ? 'active' : ''}`}
@@ -198,6 +209,8 @@ export default function Admin({ onBack }: Props) {
         <div className="adm-editor">
           {selId === '__bg__' ? (
             <BgSettings />
+          ) : selId === '__story__' ? (
+            <div className="adm-panel"><StorySettings /></div>
           ) : selId === '__cards__' ? (
             <div className="adm-panel"><CardImgSettings /></div>
           ) : selId === '__daily__' ? (
@@ -880,6 +893,34 @@ function BgSettings() {
       </div>
     </div>
   )
+}
+
+function StorySettings() {
+  const [chapters, setChapters] = useState(getStoryChapters)
+  const update = (index: number, patch: Partial<(typeof chapters)[number]>) => {
+    const next = chapters.map((chapter, i) => i === index ? { ...chapter, ...patch } : chapter)
+    setChapters(next)
+    saveStoryChapters(next)
+  }
+  return <div className="adm-basic" style={{ overflowY: 'auto' }}>
+    <div className="diag-head"><div><h2>♟ 故事模式設定</h2><p>設定兵、騎士、城堡、主教、皇后、國王六張章節地圖與故事內容。</p></div></div>
+    {chapters.map((chapter, index) => <div className="adm-section" key={chapter.id}>
+      <div className="adm-section-label">第 {chapter.order} 章 · {chapter.piece}</div>
+      <div className="adm-basic-cols">
+        <div><ImageCrop storageKey={`cb_story_map_${chapter.id}`} cropW={1536} cropH={1024} /></div>
+        <div className="adm-basic-data">
+          <div className="adm-field-grid">
+            <Field label="章節標題" value={chapter.title} onChange={value => update(index, { title: value })} />
+            <Field label="章節副標" value={chapter.subtitle} onChange={value => update(index, { subtitle: value })} />
+            <label className="adm-field"><span>開放章節</span><input type="checkbox" checked={chapter.unlocked} onChange={event => update(index, { unlocked: event.target.checked })} /></label>
+          </div>
+          <label className="adm-field"><span>故事腳本（空行會自動分段）</span>
+            <textarea className="adm-story-textarea" value={chapter.story} onChange={event => update(index, { story: event.target.value })} />
+          </label>
+        </div>
+      </div>
+    </div>)}
+  </div>
 }
 
 // ─── ImageCrop — visual crop-box UI ──────────────────────────────────────────
