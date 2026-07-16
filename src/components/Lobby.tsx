@@ -12,8 +12,10 @@ const StoryMode = lazy(() => import('./StoryMode'))
 const FeaturePanel = lazy(() => import('./FeaturePanel'))
 const DuelMenu = lazy(() => import('./DuelMenu'))
 const PlayerProfile = lazy(() => import('./PlayerProfile'))
+const Logistics = lazy(() => import('./Logistics'))
+const Explore = lazy(() => import('./Explore'))
 
-type Panel = 'profile' | 'duel' | 'summon' | 'collection' | 'shop' | 'teams' | 'settings' | 'story' | 'pieces' | 'tasks' | 'mail' | 'achievements' | 'announcements' | 'friends' | null
+type Panel = 'profile' | 'logistics' | 'explore' | 'duel' | 'summon' | 'collection' | 'shop' | 'teams' | 'settings' | 'story' | 'pieces' | 'tasks' | 'mail' | 'achievements' | 'announcements' | 'friends' | null
 
 interface Props {
   onJoin:        (roomId: string) => void
@@ -96,6 +98,8 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
     { icon: '👥', label: '隊伍', enabled: true, panelKey: 'teams' },
     { icon: '', iconImage: '/chess-piece.svg', label: '棋子', enabled: true, panelKey: 'pieces' },
     { icon: '✨', label: '召喚', enabled: true, panelKey: 'summon' },
+    { icon: '🧰', label: '後勤', enabled: true, panelKey: 'logistics' },
+    { icon: '🧭', label: '探索', enabled: true, panelKey: 'explore' },
   ]
   const SECONDARY_BTNS: MenuItem[] = [
     { icon: '🎯', label: '任務', enabled: true, panelKey: 'tasks' }, { icon: '📬', label: '信箱', enabled: true, panelKey: 'mail' },
@@ -122,6 +126,8 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
       {panel === 'settings'   && <Settings onClose={() => setPanel(null)} />}
       {panel === 'story'      && <StoryMode onClose={() => setPanel(null)} onComplete={chapter => { addExperience(100); usePlayerStore.getState().claimStoryReward(chapter.id, chapter.rewards ?? {}) }} />}
       {panel === 'profile'    && <PlayerProfile onClose={() => setPanel(null)} />}
+      {panel === 'logistics'  && <Logistics onClose={() => setPanel(null)} />}
+      {panel === 'explore'    && <Explore onClose={() => setPanel(null)} />}
       {panel === 'duel'       && <DuelMenu onClose={() => setPanel(null)} onJoin={onJoin} onSolo={onSolo}
         onAIBattle={onAIBattle} savedSession={savedSession} onRejoin={onRejoin} />}
       {panel && ['pieces','tasks','mail','achievements','announcements','friends'].includes(panel) && <FeaturePanel mode={panel as FeatureMode} onClose={() => setPanel(null)} />}

@@ -57,6 +57,7 @@ interface PlayerState {
   claimStoryReward: (chapterId: string, reward: { characterId?: string; coins?: number; gems?: number; silver?: number; copper?: number; iron?: number; wood?: number }) => boolean
   setMusicSettings: (enabled: boolean, volume: number) => void
   setSoundSettings: (enabled: boolean, volume: number) => void
+  addResourceRewards: (reward: { gems?: number; coins?: number; silver?: number; copper?: number; iron?: number; wood?: number }) => void
 }
 
 export const usePlayerStore = create<PlayerState>()(
@@ -179,6 +180,10 @@ export const usePlayerStore = create<PlayerState>()(
       },
       setMusicSettings: (enabled, volume) => set({ musicEnabled: enabled, musicVolume: Math.max(0, Math.min(100, Math.round(volume))) }),
       setSoundSettings: (enabled, volume) => set({ soundEnabled: enabled, soundVolume: Math.max(0, Math.min(100, Math.round(volume))) }),
+      addResourceRewards: (reward) => set(s => ({
+        gems: s.gems + Math.max(0, Math.floor(reward.gems ?? 0)), coins: s.coins + Math.max(0, Math.floor(reward.coins ?? 0)),
+        materials: { silver: s.materials.silver + Math.max(0, Math.floor(reward.silver ?? 0)), copper: s.materials.copper + Math.max(0, Math.floor(reward.copper ?? 0)), iron: s.materials.iron + Math.max(0, Math.floor(reward.iron ?? 0)), wood: s.materials.wood + Math.max(0, Math.floor(reward.wood ?? 0)) },
+      })),
       saveTeam: (team) => {
         if (get().savedTeams.length >= 10) return
         const id = `team_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`

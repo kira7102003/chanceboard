@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import './Logistics.css'
 import { moves as defaultMoves, cards as allCards } from '../data/db'
 import { getChars, saveChars, resetChars, getCharImg, getUrlByKey, uploadByKey, removeByKey, onCloudSynced, onCloudSave, getMoveOverrides, saveMoveOverride, resetMoveOverride } from '../utils/charStore'
 import { CARD_ICON } from '../data/cardIcons'
@@ -11,6 +12,7 @@ import type { MoveTestReport, LadderReport } from '../engine/diagnostics'
 import { getChapterFlow, getChapterSegments, getStoryChapters, saveStoryChapters, type StoryChapter, type StoryFlowNode, type StorySegment } from '../utils/storyStore'
 import { getBattleBackgroundNames, getBoardCharacters, saveBoardCharacters } from '../utils/boardCharacters'
 import StoryFlowDesigner from './StoryFlowDesigner'
+import { getLogisticsJobs, saveLogisticsJobs } from '../utils/logisticsStore'
 
 const EL_COLOR: Record<string, string>   = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee' }
 const SLOT_COLOR: Record<string, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee', '願': '#ddaa22', '被': '#666688' }
@@ -132,6 +134,9 @@ export default function Admin({ onBack }: Props) {
               <div className="adm-list-sub">兵～國王 · 六章地圖</div>
             </div>
           </div>
+          <div className={`adm-list-item ${selId === '__logistics__' ? 'active' : ''}`} onClick={() => { setSelId('__logistics__'); setTab('basic') }}>
+            <div className="adm-list-tool-icon">🧰</div><div className="adm-list-text"><div className="adm-list-name" style={{ color: '#c8a15a' }}>後勤設定</div><div className="adm-list-sub">工作 · 動畫 · 資源</div></div>
+          </div>
           {/* Card images entry */}
           <div
             className={`adm-list-item ${selId === '__cards__' ? 'active' : ''}`}
@@ -213,6 +218,8 @@ export default function Admin({ onBack }: Props) {
             <BgSettings />
           ) : selId === '__story__' ? (
             <div className="adm-panel"><StorySettings /></div>
+          ) : selId === '__logistics__' ? (
+            <div className="adm-panel"><LogisticsSettings /></div>
           ) : selId === '__cards__' ? (
             <div className="adm-panel"><CardImgSettings /></div>
           ) : selId === '__daily__' ? (
@@ -957,6 +964,25 @@ function BgSettings() {
       </div>
     </div>
   )
+}
+
+function LogisticsSettings() {
+  const [jobs, setJobs] = useState(getLogisticsJobs)
+  const update = (index: number, patch: Partial<(typeof jobs)[number]>) => { const next = jobs.map((job, i) => i === index ? { ...job, ...patch } : job); setJobs(next); saveLogisticsJobs(next) }
+  return <div className="adm-basic logistics-admin"><div className="diag-head"><div><h2>後勤工作設定</h2><p>設定工作時間、8-bit 動畫圖與完成後可取得的資源。</p></div></div>
+    <div className="logistics-admin-grid">{jobs.map((job, index) => <section className="adm-section" key={job.id}><div className="adm-section-label">{job.icon} {job.name}</div>
+      <AnimatedAssetUpload storageKey={`cb_logistics_anim_${job.id}`} />
+      <div className="adm-field-grid"><Field label="工作名稱" value={job.name} onChange={name => update(index, { name })} /><label className="adm-field"><span>工作秒數</span><input type="number" min="1" value={job.durationSeconds} onChange={event => update(index, { durationSeconds: Math.max(1, Math.floor(Number(event.target.value) || 1)) })} /></label></div>
+      <div className="adm-field-grid">{([['gems', '鑽石'], ['coins', '金幣'], ['silver', '銀'], ['copper', '銅'], ['iron', '鐵'], ['wood', '木']] as const).map(([key, label]) => <label className="adm-field" key={key}><span>{label}</span><input type="number" min="0" value={job.rewards[key]} onChange={event => update(index, { rewards: { ...job.rewards, [key]: Math.max(0, Math.floor(Number(event.target.value) || 0)) } })} /></label>)}</div>
+    </section>)}</div>
+  </div>
+}
+
+function AnimatedAssetUpload({ storageKey }: { storageKey: string }) {
+  const [url, setUrl] = useState(() => getUrlByKey(storageKey))
+  const [busy, setBusy] = useState(false)
+  const upload = (event: React.ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; if (!file) return; const reader = new FileReader(); setBusy(true); reader.onload = async () => { try { await uploadByKey(storageKey, String(reader.result)); setUrl(getUrlByKey(storageKey)) } finally { setBusy(false) } }; reader.readAsDataURL(file); event.target.value = '' }
+  return <div className="animated-asset-upload"><div>{url ? <img src={url} alt="8-bit animation" /> : <span>8 BIT</span>}</div><label className="btn sm">{busy ? '上傳中…' : '上傳動畫圖'}<input type="file" accept="image/gif,image/webp,image/png" hidden disabled={busy} onChange={upload} /></label>{url && <button className="btn sm danger" onClick={() => { removeByKey(storageKey); setUrl(null) }}>移除</button>}<small>支援 GIF、動態 WebP、PNG；建議透明背景並使用像素風格。</small></div>
 }
 
 function StorySettings() {
