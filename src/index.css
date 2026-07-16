@@ -241,7 +241,17 @@ body { margin: 0; }
 .panel-piece-icon { width: 26px; height: 26px; object-fit: contain; }
 .lv2-btn-grid:hover { border-color: rgba(200,161,90,.3); background: rgba(12,14,32,.9); }
 .lv2-btn-grid.disabled { opacity: .3; cursor: default; pointer-events: none; }
-.lv2-btn-grid small{font-size:8px;color:#7b7f9c}.lv2-grid-secondary .lv2-btn-grid{padding:9px 4px;gap:3px}.lv2-grid-secondary .lv2-btn-grid span:first-child{font-size:16px}
+.lv2-btn-grid small{font-size:8px;color:#7b7f9c}
+.lv2-grid-secondary {
+  display: flex; flex-wrap: nowrap; gap: 6px;
+  overflow-x: auto; padding: 2px 1px 5px;
+  scrollbar-width: thin; scrollbar-color: rgba(200,161,90,.28) transparent;
+}
+.lv2-grid-secondary .lv2-btn-grid {
+  flex: 1 0 48px; min-width: 48px; padding: 9px 3px; gap: 3px;
+  white-space: nowrap;
+}
+.lv2-grid-secondary .lv2-btn-grid span:first-child{font-size:16px}
 .lv2-btn-settings {
   display: flex; align-items: center; gap: 8px; width: 100%;
   background: rgba(8,10,24,.65); backdrop-filter: blur(8px);
