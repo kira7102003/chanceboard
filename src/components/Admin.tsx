@@ -488,6 +488,14 @@ function BasicTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<C
             <div className="adm-section-label">三星突破圖片</div>
             <ImageCrop storageKey={`cb_star_img_${char.id}`} />
           </div>
+          <div className="adm-section">
+            <div className="adm-section-label">角色圖片 A（8-bit · 1024×1536）</div>
+            <ImageCrop storageKey={`cb_extra_a_img_${char.id}`} cropW={1024} cropH={1536} />
+          </div>
+          <div className="adm-section">
+            <div className="adm-section-label">角色圖片 B（8-bit · 1024×1536）</div>
+            <ImageCrop storageKey={`cb_extra_b_img_${char.id}`} cropW={1024} cropH={1536} />
+          </div>
         </div>
 
         {/* ── Right: data ── */}
