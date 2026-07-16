@@ -19,7 +19,7 @@ export default function StoryMode({ onClose }: Props) {
     const portrait = (side: 'left' | 'right', boardCharacter: string, pose: 'front' | 'side') => {
       const facingKey = `${boardCharacter}_${pose}`
       const sourceRight = boardFacing[facingKey] === 'right'
-      const flip = (side === 'right') !== sourceRight
+      const flip = pose === 'side' && ((side === 'right') !== sourceRight)
       const legacyIndex = pose === 'front' ? 1 : 2
       const image = getUrlByKey(`cb_board_${boardCharacter}_${pose}`) ?? getUrlByKey(`cb_board_portrait_${legacyIndex}`) ?? ''
       return <img className={`story-board-char story-board-${side} ${segment?.side === side ? 'speaking' : ''}`}

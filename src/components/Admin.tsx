@@ -923,7 +923,7 @@ function BgSettings() {
               const key = `${character.id}_${pose}`
               return <div key={key}><div style={{ fontSize: 11, color: '#8f91ad', marginBottom: 6 }}>{character.name || '未命名'} · {pose === 'front' ? '正面' : '側面'}立繪（768×1376）</div>
                 <ImageCrop storageKey={`cb_board_${key}`} cropW={768} cropH={1376} />
-                <FacingSelect value={facing[key] ?? 'left'} onChange={value => updateFacing(key, value)} /></div>
+                {pose === 'side' && <FacingSelect value={facing[key] ?? 'left'} onChange={value => updateFacing(key, value)} />}</div>
             })}
           </div>
         </div>)}
