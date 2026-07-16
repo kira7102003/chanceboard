@@ -100,6 +100,7 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
   type MenuItem = { icon: string; iconImage?: string; label: string; panelKey?: Panel; action?: () => void; enabled: boolean }
   const MAIN_BTNS: MenuItem[] = [
     { icon: '⚔️', label: '決鬥', enabled: true, action: () => setShowOnline(value => !value) },
+    { icon: '📖', label: '故事', enabled: true, panelKey: 'story' },
     { icon: '👥', label: '隊伍', enabled: true, panelKey: 'teams' },
     { icon: '', iconImage: '/chess-piece.svg', label: '棋子', enabled: true, panelKey: 'pieces' },
     { icon: '✨', label: '召喚', enabled: true, panelKey: 'summon' },
