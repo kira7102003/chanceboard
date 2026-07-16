@@ -8,7 +8,7 @@ import type { GameState } from '../types/game'
 import { getReadyUnits } from '../engine/atb'
 import { effectiveATK, effectiveDEF, effectiveSPD } from '../engine/combat'
 import ScorePanel from './ScorePanel'
-import { getCharImg, getCharWideImg, getMoveImg, getCardImg } from '../utils/charStore'
+import { getCharImg, getCharWideImg, getMoveImg, getCardImg, getMoveImageFacing } from '../utils/charStore'
 import BattleLog from './battle/BattleLog'
 import { useFitBattleLayout } from '../hooks/useFitBattleLayout'
 
@@ -90,6 +90,7 @@ interface Props {
 }
 
 interface MoveAnim {
+  moveId: string
   img: string | null
   name: string
   charName: string
@@ -167,7 +168,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
       })) ?? []
       if (animTimer.current) clearTimeout(animTimer.current)
       setMoveAnim({
-        img,
+        moveId, img,
         name: moveName, charName, charImg,
         attackerSide: attackerSide ?? 'A',
         targetSide: targetSide ?? (attackerSide === 'A' ? 'B' : 'A'),
@@ -295,7 +296,9 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
         // Direction is viewer-relative: the local team is always rendered on the
         // left and the opposing team on the right, including the B-side view.
         const attackFromLeft = moveAnim.attackerSide === mySide
-        const mirrorSkill = !attackFromLeft
+        // Uploaded art defaults to facing left. Right-facing source artwork
+        // inverts the old side rule, so the animation remains viewer-correct.
+        const mirrorSkill = (!attackFromLeft) !== (getMoveImageFacing(moveAnim.moveId) === 'right')
         const targetOnRight = moveAnim.targetSide !== mySide
         const mirrorTarget = targetOnRight
         const sideIsAuto = moveAnim.attackerSide === 'A' ? game.autoBattleA : game.autoBattleB

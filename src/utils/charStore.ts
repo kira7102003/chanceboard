@@ -181,6 +181,10 @@ export function getMoveOverrides(): Record<string, Record<string, unknown>> {
   } catch { return {} }
 }
 
+export function getMoveImageFacing(moveId: string): 'left' | 'right' {
+  return getMoveOverrides()[moveId]?.imageFacing === 'right' ? 'right' : 'left'
+}
+
 let _mvSyncTimer: ReturnType<typeof setTimeout> | null = null
 export function saveMoveOverride(id: string, patch: Record<string, unknown>): void {
   const overrides = getMoveOverrides()

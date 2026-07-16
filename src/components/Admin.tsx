@@ -482,6 +482,16 @@ export function CharPortrait({ id, size = 48, height: ht, style: sx }: {
 
 // ─── BasicTab ─────────────────────────────────────────────────────────────────
 
+function FacingSelect({ value, onChange }: { value: 'left' | 'right'; onChange: (value: 'left' | 'right') => void }) {
+  return <label className="adm-field" style={{ marginTop: 7 }}>
+    <span>圖片原始面向（預設左）</span>
+    <select className="adm-select" value={value} onChange={event => onChange(event.target.value as 'left' | 'right')}>
+      <option value="left">← 面向左</option>
+      <option value="right">面向右 →</option>
+    </select>
+  </label>
+}
+
 function BasicTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<Character>) => void }) {
   return (
     <div className="adm-basic">
@@ -508,6 +518,7 @@ function BasicTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<C
           <div className="adm-section">
             <div className="adm-section-label">角色圖片 B（8-bit · 1024×1536）</div>
             <ImageCrop storageKey={`cb_extra_b_img_${char.id}`} cropW={1024} cropH={1536} />
+            <FacingSelect value={char.extraBImageFacing ?? 'left'} onChange={value => onUpdate({ extraBImageFacing: value })} />
           </div>
         </div>
 
@@ -698,6 +709,9 @@ function MovesTab({ moves: baseMoves }: { moves: Move[] }) {
             {isOpen && (
               <div className="adm-move-crop">
                 <ImageCrop storageKey={`cb_move_img_${m.id}`} onSave={() => markSaved(m.id)} />
+                <FacingSelect value={m.imageFacing ?? 'left'} onChange={value => {
+                  saveMoveOverride(m.id, { imageFacing: value }); forceRender(n => n + 1)
+                }} />
               </div>
             )}
           </div>
@@ -857,6 +871,13 @@ function StoryTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<C
 // ─── BgSettings ──────────────────────────────────────────────────────────────
 
 function BgSettings() {
+  const [facing, setFacing] = useState<Record<string, 'left' | 'right'>>(() => {
+    try { return JSON.parse(localStorage.getItem('cb_board_facing') ?? '{}') } catch { return {} }
+  })
+  const updateFacing = (key: string, value: 'left' | 'right') => {
+    const next = { ...facing, [key]: value }
+    setFacing(next); localStorage.setItem('cb_board_facing', JSON.stringify(next))
+  }
   return (
     <div className="adm-basic" style={{ overflowY: 'auto' }}>
       <div className="adm-section">
@@ -867,8 +888,9 @@ function BgSettings() {
         <div className="adm-section-label" style={{ marginBottom: 12 }}>看板角色圖片設定</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           {[1, 2].map(index => <div key={`portrait-${index}`}>
-            <div style={{ fontSize: 11, color: '#8f91ad', marginBottom: 6 }}>看板角色立繪 {index}（768×1376）</div>
+            <div style={{ fontSize: 11, color: '#8f91ad', marginBottom: 6 }}>看板角色{index === 1 ? '正面' : '側面'}立繪（768×1376）</div>
             <ImageCrop storageKey={`cb_board_portrait_${index}`} cropW={768} cropH={1376} />
+            <FacingSelect value={facing[`portrait_${index}`] ?? 'left'} onChange={value => updateFacing(`portrait_${index}`, value)} />
           </div>)}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 14 }}>

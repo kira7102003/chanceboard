@@ -24,4 +24,6 @@ export interface Move {
   effectTrigger: EffectTrigger | null
   effectOps: EffectOp[]
   effectChance: number
+  /** Original direction of the uploaded move artwork. Defaults to left. */
+  imageFacing?: 'left' | 'right'
 }
