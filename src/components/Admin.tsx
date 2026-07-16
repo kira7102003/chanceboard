@@ -851,6 +851,21 @@ function BgSettings() {
         <ImageCrop storageKey="cb_bg_main" cropW={1376} cropH={768} />
       </div>
       <div className="adm-section" style={{ borderTop: '1px solid #1a1f3e', paddingTop: 16 }}>
+        <div className="adm-section-label" style={{ marginBottom: 12 }}>看板角色圖片設定</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          {[1, 2].map(index => <div key={`portrait-${index}`}>
+            <div style={{ fontSize: 11, color: '#8f91ad', marginBottom: 6 }}>看板角色立繪 {index}（768×1376）</div>
+            <ImageCrop storageKey={`cb_board_portrait_${index}`} cropW={768} cropH={1376} />
+          </div>)}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 14 }}>
+          {[1, 2].map(index => <div key={`full-${index}`}>
+            <div style={{ fontSize: 11, color: '#8f91ad', marginBottom: 6 }}>全圖立繪 {index}（1536×1024）</div>
+            <ImageCrop storageKey={`cb_board_full_${index}`} cropW={1536} cropH={1024} />
+          </div>)}
+        </div>
+      </div>
+      <div className="adm-section" style={{ borderTop: '1px solid #1a1f3e', paddingTop: 16 }}>
         <div className="adm-section-label" style={{ marginBottom: 12 }}>
           戰鬥背景（共 6 張，對戰開始時隨機切換）
         </div>
