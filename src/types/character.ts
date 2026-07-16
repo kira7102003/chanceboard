@@ -23,4 +23,5 @@ export interface Character {
   /** Per-star percentage stat bonuses. Index 0 is one-star, index 4 is five-star. */
   starBonuses?: Array<{ hp: number; atk: number; def: number; spd: number }>
   extraBImageFacing?: 'left' | 'right'
+  wideImageFacing?: 'left' | 'right'
 }

@@ -186,11 +186,11 @@ export function getMoveImageFacing(moveId: string): 'left' | 'right' {
 }
 
 export function getCharacterBImage(charId: string): string | null {
-  return getUrlByKey(`cb_extra_b_img_${charId}`) ?? getCharWideImg(charId) ?? getCharImg(charId)
+  return getCharWideImg(charId)
 }
 
 export function getCharacterBImageFacing(charId: string): 'left' | 'right' {
-  return getChars().find(character => character.id === charId)?.extraBImageFacing === 'right' ? 'right' : 'left'
+  return getChars().find(character => character.id === charId)?.wideImageFacing === 'right' ? 'right' : 'left'
 }
 
 let _mvSyncTimer: ReturnType<typeof setTimeout> | null = null

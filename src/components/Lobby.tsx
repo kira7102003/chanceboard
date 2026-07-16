@@ -45,7 +45,7 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
 
   // 有些角色沒上傳過立繪（getUrlByKey 為 null）——顯示與切換都要跳過它們，
   // 否則輪到沒圖的角色時整個立繪消失、也點不到它切回來（cb_lobby_char 又記住了它）。
-  const imageKeyFor = (id: string) => getUrlByKey(`cb_wide_img_${id}`) ? `cb_wide_img_${id}` : `cb_img_${id}`
+  const imageKeyFor = (id: string) => `cb_wide_img_${id}`
   const hasImg = (i: number) => !!chars[i] && !!getUrlByKey(imageKeyFor(chars[i].id))
   let dispIdx = charIdx
   for (let i = 0; i < chars.length; i++) {

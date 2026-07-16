@@ -519,6 +519,7 @@ function BasicTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<C
           <div className="adm-section">
             <div className="adm-section-label">側面（戰場立繪與大廳）</div>
             <ImageCrop storageKey={`cb_wide_img_${char.id}`} />
+            <FacingSelect value={char.wideImageFacing ?? 'left'} onChange={value => onUpdate({ wideImageFacing: value })} />
           </div>
           <div className="adm-section">
             <div className="adm-section-label">四星以上突破圖片</div>

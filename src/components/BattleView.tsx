@@ -8,7 +8,7 @@ import type { GameState } from '../types/game'
 import { getReadyUnits } from '../engine/atb'
 import { calcBAT, effectiveATK, effectiveDEF, effectiveSPD } from '../engine/combat'
 import ScorePanel from './ScorePanel'
-import { getCharImg, getCharWideImg, getMoveImg, getCardImg, getMoveImageFacing, getCharacterBImage, getCharacterBImageFacing } from '../utils/charStore'
+import { getCharWideImg, getMoveImg, getCardImg, getMoveImageFacing, getCharacterBImage, getCharacterBImageFacing } from '../utils/charStore'
 import BattleLog from './battle/BattleLog'
 import { useFitBattleLayout } from '../hooks/useFitBattleLayout'
 
@@ -161,7 +161,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
       lastAnimIdx.current = i
       const { moveId, moveName, moveSlot, charName, charId, attackerSide, targetSide, targetName, targetCharId, targetUnitId, groupTargets, dealsDamage, hasTarget, selfTargetOnly, missed } = entry.moveAnim
       const img = getMoveImg(moveId)
-      const charImg = charId ? (getCharWideImg(charId) ?? getCharImg(charId)) : null
+      const charImg = charId ? getCharWideImg(charId) : null
       const targetCharImg = targetCharId ? getCharacterBImage(targetCharId) : null
       const targetFacing = targetCharId ? getCharacterBImageFacing(targetCharId) : 'left'
       const resolvedGroupTargets = groupTargets?.map(t => ({
@@ -666,7 +666,7 @@ function UnitCard({ unit, clock, flip = false, onClick, selectable, highlighted,
   const pct     = unit.alive ? Math.max(0, (unit.hp / unit.maxHp) * 100) : 0
   const ticks   = Math.max(0, unit.nextActionAt - clock)
   const hpColor = pct > 50 ? '#22cc66' : pct > 20 ? '#ccaa22' : '#cc3333'
-  const img     = getCharWideImg(unit.characterId) ?? getCharImg(unit.characterId)
+  const img     = getCharWideImg(unit.characterId)
   const stateClass = selectable ? 'selectable' : (onClick && isPreview ? 'previewable' : (onClick ? 'targetable' : ''))
 
   return (
