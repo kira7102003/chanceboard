@@ -891,6 +891,17 @@ function BgSettings() {
     const next = { ...facing, [key]: value }
     setFacing(next); localStorage.setItem('cb_board_facing', JSON.stringify(next))
   }
+  const [battleBgNames, setBattleBgNames] = useState<string[]>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('cb_battle_bg_names') ?? 'null') as string[] | null
+      return Array.from({ length: 6 }, (_, index) => saved?.[index] || `戰鬥背景 ${index + 1}`)
+    } catch { return Array.from({ length: 6 }, (_, index) => `戰鬥背景 ${index + 1}`) }
+  })
+  const updateBattleBgName = (index: number, name: string) => {
+    const next = battleBgNames.map((value, i) => i === index ? name : value)
+    setBattleBgNames(next)
+    localStorage.setItem('cb_battle_bg_names', JSON.stringify(next))
+  }
   return (
     <div className="adm-basic" style={{ overflowY: 'auto' }}>
       <div className="adm-section">
@@ -923,7 +934,10 @@ function BgSettings() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           {Array.from({ length: 6 }, (_, i) => (
             <div key={i}>
-              <div style={{ fontSize: 11, color: '#555570', marginBottom: 6 }}>戰鬥背景 {i + 1}</div>
+              <label className="adm-field" style={{ marginBottom: 6 }}>
+                <span>戰鬥背景 {i + 1} 名稱</span>
+                <input value={battleBgNames[i]} maxLength={40} onChange={event => updateBattleBgName(i, event.target.value)} />
+              </label>
               <ImageCrop storageKey={`cb_bg_battle_${i + 1}`} cropW={1376} cropH={768} />
             </div>
           ))}
