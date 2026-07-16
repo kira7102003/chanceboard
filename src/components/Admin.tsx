@@ -926,17 +926,16 @@ function BgSettings() {
                 {pose === 'side' && <FacingSelect value={facing[key] ?? 'left'} onChange={value => updateFacing(key, value)} />}</div>
             })}
           </div>
+          <div style={{ marginTop: 12 }}>
+            <div style={{ fontSize: 11, color: '#8f91ad', marginBottom: 6 }}>{character.name || '未命名'} · 全圖立繪（1536×1024）</div>
+            <ImageCrop storageKey={`cb_board_${character.id}_full`} cropW={1536} cropH={1024}
+              fallbackStorageKey={character.id === 'black' ? 'cb_board_full_1' : character.id === 'white' ? 'cb_board_full_2' : undefined} />
+          </div>
         </div>)}
         <button className="btn" onClick={() => {
           const next = [...boardCharacters, { id: `board_${Date.now()}`, name: `看板角色 ${boardCharacters.length + 1}` }]
           setBoardCharacters(next); saveBoardCharacters(next)
         }}>＋ 新增看板角色</button>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 14 }}>
-          {[1, 2].map(index => <div key={`full-${index}`}>
-            <div style={{ fontSize: 11, color: '#8f91ad', marginBottom: 6 }}>全圖立繪 {index}（1536×1024）</div>
-            <ImageCrop storageKey={`cb_board_full_${index}`} cropW={1536} cropH={1024} />
-          </div>)}
-        </div>
       </div>
       <div className="adm-section" style={{ borderTop: '1px solid #1a1f3e', paddingTop: 16 }}>
         <div className="adm-section-label" style={{ marginBottom: 12 }}>
@@ -1031,6 +1030,7 @@ const PORTRAIT_H = 1376
 
 interface CropProps {
   storageKey: string
+  fallbackStorageKey?: string
   cropW?: number
   cropH?: number
   previewSize?: number   // unused
@@ -1045,10 +1045,10 @@ type CropDragState =
 
 // disp: rendered image bounds within fixed-height stage (coords relative to stage origin)
 // box:  crop box position/size relative to rendered image (NOT stage)
-function ImageCrop({ storageKey, cropW = PORTRAIT_W, cropH = PORTRAIT_H, onSave }: CropProps) {
+function ImageCrop({ storageKey, fallbackStorageKey, cropW = PORTRAIT_W, cropH = PORTRAIT_H, onSave }: CropProps) {
   const CROP_RATIO = cropW / cropH
   const [imgSrc,      setImgSrc]      = useState<string | null>(null)
-  const [saved,       setSaved]       = useState<string | null>(() => getUrlByKey(storageKey))
+  const [saved,       setSaved]       = useState<string | null>(() => getUrlByKey(storageKey) ?? (fallbackStorageKey ? getUrlByKey(fallbackStorageKey) : null))
   const [uploading,   setUploading]   = useState(false)
   const [fetchingRe,  setFetchingRe]  = useState(false)
   const [savedFailed, setSavedFailed] = useState(false)
