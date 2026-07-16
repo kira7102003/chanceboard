@@ -94,28 +94,28 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
     setImgFailed(true)  // all chars tried or limit reached
   }
 
-  type MenuItem = { icon: string; iconImage?: string; label: string; panelKey?: Panel; action?: () => void; enabled: boolean }
+  type MenuItem = { icon: string; iconImage?: string; sprite?: number; label: string; panelKey?: Panel; action?: () => void; enabled: boolean }
   const MAIN_BTNS: MenuItem[] = [
-    { icon: '⚔️', label: '決鬥', enabled: true, panelKey: 'duel' },
-    { icon: '📖', label: '故事', enabled: true, panelKey: 'story' },
-    { icon: '👥', label: '隊伍', enabled: true, panelKey: 'teams' },
+    { icon: '', sprite: 9, label: '決鬥', enabled: true, panelKey: 'duel' },
+    { icon: '', sprite: 10, label: '故事', enabled: true, panelKey: 'story' },
+    { icon: '', sprite: 11, label: '隊伍', enabled: true, panelKey: 'teams' },
     { icon: '', iconImage: '/chess-piece.svg', label: '棋子', enabled: true, panelKey: 'pieces' },
     { icon: '✨', label: '召喚', enabled: true, panelKey: 'summon' },
-    { icon: '🧰', label: '後勤', enabled: true, panelKey: 'logistics' },
-    { icon: '🧭', label: '探索', enabled: true, panelKey: 'explore' },
+    { icon: '', sprite: 0, label: '後勤', enabled: true, panelKey: 'logistics' },
+    { icon: '', sprite: 1, label: '探索', enabled: true, panelKey: 'explore' },
   ]
   const SECONDARY_BTNS: MenuItem[] = [
-    { icon: '🎯', label: '任務', enabled: true, panelKey: 'tasks' }, { icon: '📬', label: '信箱', enabled: true, panelKey: 'mail' },
-    { icon: '🛒', label: '商店', enabled: true, panelKey: 'shop' }, { icon: '🏆', label: '成就', enabled: true, panelKey: 'achievements' },
-    { icon: '📢', label: '公告', enabled: true, panelKey: 'announcements' }, { icon: '📚', label: '收藏', enabled: true, panelKey: 'collection' },
-    { icon: '🤝', label: '好友', enabled: true, panelKey: 'friends' },
+    { icon: '', sprite: 2, label: '任務', enabled: true, panelKey: 'tasks' }, { icon: '', sprite: 3, label: '信箱', enabled: true, panelKey: 'mail' },
+    { icon: '', sprite: 4, label: '商店', enabled: true, panelKey: 'shop' }, { icon: '', sprite: 5, label: '成就', enabled: true, panelKey: 'achievements' },
+    { icon: '', sprite: 6, label: '公告', enabled: true, panelKey: 'announcements' }, { icon: '', sprite: 7, label: '收藏', enabled: true, panelKey: 'collection' },
+    { icon: '', sprite: 8, label: '好友', enabled: true, panelKey: 'friends' },
   ]
 
   const MenuGrid = ({ items, secondary = false }: { items: MenuItem[]; secondary?: boolean }) => <div className={`lv2-grid ${secondary ? 'lv2-grid-secondary' : 'lv2-grid-main'}`}>
-    {items.map(({ icon, iconImage, label, panelKey, action, enabled }) => <button key={label} disabled={!enabled}
+    {items.map(({ icon, iconImage, sprite, label, panelKey, action, enabled }) => <button key={label} disabled={!enabled}
       title={enabled ? label : `${label}（尚未開放）`} className={`lv2-btn-grid${secondary ? '' : ' lv2-btn-primary'}${enabled ? '' : ' disabled'}`}
       onClick={enabled ? (panelKey ? () => setPanel(panelKey) : action) : undefined}>
-      <span>{iconImage ? <img className="lv2-menu-icon-img" src={iconImage} alt="" /> : icon}</span><span>{label}</span>{!enabled && <small>尚未開放</small>}
+      <span>{sprite !== undefined ? <i className="lv2-function-icon" style={{ backgroundPosition: `${(sprite % 4) * 100 / 3}% ${Math.floor(sprite / 4) * 50}%` }} /> : iconImage ? <img className="lv2-menu-icon-img" src={iconImage} alt="" /> : icon}</span><span>{label}</span>{!enabled && <small>尚未開放</small>}
     </button>)}
   </div>
 
