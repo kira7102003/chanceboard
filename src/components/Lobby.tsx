@@ -159,7 +159,6 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
         {/* ── Menu panel (right) ── */}
         <div className="lv2-panel">
 
-          <div className="lv2-menu-label">主功能</div>
           <MenuGrid items={MAIN_BTNS} />
 
           {/* Online submenu */}
@@ -187,7 +186,6 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
           )}
 
           <div className="lv2-support-panel">
-            <div className="lv2-menu-label">次功能</div>
             <MenuGrid items={SECONDARY_BTNS} secondary />
 
             {/* Bottom row */}
