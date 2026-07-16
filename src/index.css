@@ -1295,16 +1295,15 @@ h2 {
 .stack-expand-right > .uc-i2 { z-index: 1; transform: translateX(20%);  opacity: .55; }
 
 /* Hover 展開（只有疊 2+ 張的 .stack-multi 會動）：
-   前/中格往後展開、後格往前展開；卡不縮小，改用半疊撲克牌 —
-   步距 50% 卡寬，第三張最遠 100% ≈ 只蓋到隔壁一格，不會超出畫面。
-   每張露出的半邊都可點選。 */
+   展開距離採原設計的 2/3，第二張約 33%、第三張約 67%，
+   保留可點選的露出區域，並避免靠邊队伍超出視窗。 */
 .slot-col { position: relative; }
 .slot-col:hover { z-index: 50; }
 .slot-col:hover .stack-multi > .unit-card { opacity: 1; }
-.slot-col:hover .stack-expand-left  > .uc-i1 { transform: translateX(-50%); }
-.slot-col:hover .stack-expand-left  > .uc-i2 { transform: translateX(-100%); }
-.slot-col:hover .stack-expand-right > .uc-i1 { transform: translateX(50%);  }
-.slot-col:hover .stack-expand-right > .uc-i2 { transform: translateX(100%); }
+.slot-col:hover .stack-expand-left  > .uc-i1 { transform: translateX(-33.333%); }
+.slot-col:hover .stack-expand-left  > .uc-i2 { transform: translateX(-66.667%); }
+.slot-col:hover .stack-expand-right > .uc-i1 { transform: translateX(33.333%);  }
+.slot-col:hover .stack-expand-right > .uc-i2 { transform: translateX(66.667%); }
 
 .unit-card {
   background: linear-gradient(155deg, var(--bg3) 0%, var(--bg2) 100%);
