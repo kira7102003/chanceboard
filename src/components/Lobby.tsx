@@ -36,7 +36,7 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
   // Re-evaluate charImgUrl after cloud data loads (desktop fresh-session fix)
   useEffect(() => onCloudSynced(() => { imgErrCount.current = 0; setImgFailed(false); forceUpdate(n => n + 1) }), [])
 
-  const { username, coins, gems, ownedCharIds } = usePlayerStore()
+  const { username, coins, gems, materials, ownedCharIds } = usePlayerStore()
 
   const chars  = getChars().filter(c => ownedCharIds.includes(c.id))
   const savedId  = localStorage.getItem(LOBBY_CHAR_KEY)
@@ -112,9 +112,9 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
     { icon: '🤝', label: '好友', enabled: true, panelKey: 'friends' },
   ]
 
-  const MenuGrid = ({ items, secondary = false }: { items: MenuItem[]; secondary?: boolean }) => <div className={`lv2-grid${secondary ? ' lv2-grid-secondary' : ''}`}>
+  const MenuGrid = ({ items, secondary = false }: { items: MenuItem[]; secondary?: boolean }) => <div className={`lv2-grid ${secondary ? 'lv2-grid-secondary' : 'lv2-grid-main'}`}>
     {items.map(({ icon, iconImage, label, panelKey, action, enabled }) => <button key={label} disabled={!enabled}
-      title={enabled ? label : `${label}（尚未開放）`} className={`lv2-btn-grid${enabled ? '' : ' disabled'}`}
+      title={enabled ? label : `${label}（尚未開放）`} className={`lv2-btn-grid${secondary ? '' : ' lv2-btn-primary'}${enabled ? '' : ' disabled'}`}
       onClick={enabled ? (panelKey ? () => setPanel(panelKey) : action) : undefined}>
       <span>{iconImage ? <img className="lv2-menu-icon-img" src={iconImage} alt="" /> : icon}</span><span>{label}</span>{!enabled && <small>尚未開放</small>}
     </button>)}
@@ -148,8 +148,12 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
         {/* ── Resources (top-right) ── */}
         <div className="lv2-resources">
           <span className="lv2-res">👤 <b>{username}</b></span>
-          <span className="lv2-res">🪙 <b>{coins.toLocaleString()}</b></span>
+          <span className="lv2-res">🪙 金 <b>{coins.toLocaleString()}</b></span>
           <span className="lv2-res">💎 <b>{gems}</b></span>
+          <span className="lv2-res resource-silver">銀 <b>{materials?.silver ?? 0}</b></span>
+          <span className="lv2-res resource-copper">銅 <b>{materials?.copper ?? 0}</b></span>
+          <span className="lv2-res resource-iron">鐵 <b>{materials?.iron ?? 0}</b></span>
+          <span className="lv2-res resource-wood">木 <b>{materials?.wood ?? 0}</b></span>
         </div>
 
         {/* ── Menu panel (right) ── */}

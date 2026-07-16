@@ -13,6 +13,8 @@ interface PlayerState {
   defaultDeckId: string | null
   dailyClaims: Record<string, string[]>
   characterStars: Record<string, number>
+  characterFragments: Record<string, number>
+  materials: { silver: number; copper: number; iron: number; wood: number }
   cardInventory: Record<string, number>
   upgradeItems: number
   claimedRewards: string[]
@@ -37,6 +39,7 @@ interface PlayerState {
   setDefaultDeck: (id: string | null) => void
   claimDailyReward: (userId: string, dateKey: string, coins: number, gems: number) => boolean
   addCharacterStar: (id: string) => boolean
+  addCharacterFragments: (id: string, quantity: number) => void
   buyCards: (id: string, quantity: number, unitPrice: number) => boolean
   upgradeCharacterWithItem: (id: string) => boolean
   claimReward: (id: string, coins: number, gems: number, upgradeItems: number) => boolean
@@ -57,6 +60,8 @@ export const usePlayerStore = create<PlayerState>()(
       defaultDeckId: null,
       dailyClaims: {},
       characterStars: {},
+      characterFragments: {},
+      materials: { silver: 0, copper: 0, iron: 0, wood: 0 },
       cardInventory: { '001': 10, '002': 10, '003': 10, '004': 10 },
       upgradeItems: 0,
       claimedRewards: [],
@@ -86,6 +91,9 @@ export const usePlayerStore = create<PlayerState>()(
         set(s => ({ characterStars: { ...s.characterStars, [id]: current + 1 } }))
         return true
       },
+      addCharacterFragments: (id, quantity) => set(s => ({
+        characterFragments: { ...s.characterFragments, [id]: (s.characterFragments?.[id] ?? 0) + Math.max(0, Math.floor(quantity)) },
+      })),
       buyCards: (id, quantity, unitPrice) => {
         const count = get().cardInventory[id] ?? 0
         const amount = Math.max(1, Math.floor(quantity))

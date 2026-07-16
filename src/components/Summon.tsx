@@ -6,15 +6,15 @@ import type { Character } from '../types/character'
 
 const PULL_1_COST  = 160
 const PULL_10_COST = 1440
-const DUP_COIN     = 300
+const DUP_FRAGMENTS = 10
 const EL_COLOR: Record<string, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee' }
 
-interface PullResult { char: Character; isNew: boolean }
+interface PullResult { char: Character; isNew: boolean; fragments: number }
 
 interface Props { onClose: () => void }
 
 export default function Summon({ onClose }: Props) {
-  const { gems, ownedCharIds, spendGems, unlockChar, addCoins, addCharacterStar } = usePlayerStore()
+  const { gems, ownedCharIds, spendGems, unlockChar, addCharacterFragments } = usePlayerStore()
   const allChars = getChars().filter(c => c.enabled !== false)
 
   const [results,   setResults]   = useState<PullResult[] | null>(null)
@@ -30,9 +30,9 @@ export default function Summon({ onClose }: Props) {
     for (let i = 0; i < count; i++) {
       const c     = allChars[Math.floor(Math.random() * allChars.length)]
       const isNew = !alreadyOwned.has(c.id)
-      pulled.push({ char: c, isNew })
+      pulled.push({ char: c, isNew, fragments: isNew ? 0 : DUP_FRAGMENTS })
       if (isNew) { alreadyOwned.add(c.id); unlockChar(c.id) }
-      else if (!addCharacterStar(c.id)) addCoins(DUP_COIN)
+      else addCharacterFragments(c.id, DUP_FRAGMENTS)
     }
 
     setResults(null)
@@ -99,7 +99,7 @@ export default function Summon({ onClose }: Props) {
           </div>
 
           <div className="hint" style={{ textAlign: 'center', marginTop: 8 }}>
-            重複角色提升星級；五星後再次取得補償 🪙 {DUP_COIN} 金幣
+            重複角色會轉換為該角色碎片 ×{DUP_FRAGMENTS}
           </div>
         </div>
       )}
@@ -122,7 +122,7 @@ export default function Summon({ onClose }: Props) {
       {results && (
         <div className="panel-body">
           <div className="summon-results">
-            {results.map(({ char: c, isNew }, i) => {
+            {results.map(({ char: c, isNew, fragments }, i) => {
               const imgUrl = getUrlByKey(`cb_img_${c.id}`)
               const col    = EL_COLOR[c.element]
               return (
@@ -137,7 +137,7 @@ export default function Summon({ onClose }: Props) {
                     }
                   </div>
                   <div className="summon-result-name" style={{ color: col }}>{c.name}</div>
-                  {!isNew && <div className="summon-dup-label">🪙 +{DUP_COIN}</div>}
+                  {!isNew && <div className="summon-dup-label">🧩 角色碎片 +{fragments}</div>}
                 </div>
               )
             })}
