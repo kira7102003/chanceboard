@@ -1,7 +1,6 @@
 import { lazy, Suspense, useState, useEffect, useRef } from 'react'
 import type { SavedSession } from '../hooks/useRoom'
 import { getChars, getUrlByKey, onCloudSynced } from '../utils/charStore'
-import { supabase } from '../utils/supabase'
 import { usePlayerStore } from '../store/playerStore'
 import type { FeatureMode } from './FeaturePanel'
 const Collection = lazy(() => import('./Collection'))
@@ -36,7 +35,7 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
   // Re-evaluate charImgUrl after cloud data loads (desktop fresh-session fix)
   useEffect(() => onCloudSynced(() => { imgErrCount.current = 0; setImgFailed(false); forceUpdate(n => n + 1) }), [])
 
-  const { username, coins, gems, materials, ownedCharIds, level, experience, desktopCharIds, addExperience } = usePlayerStore()
+  const { coins, gems, materials, ownedCharIds, level, experience, desktopCharIds, addExperience } = usePlayerStore()
 
   const ownedChars = getChars().filter(c => ownedCharIds.includes(c.id))
   const configuredChars = (desktopCharIds ?? []).map(id => ownedChars.find(c => c.id === id)).filter((c): c is NonNullable<typeof c> => !!c)
@@ -147,14 +146,13 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
 
         {/* ── User identity + resources: one aligned HUD row ── */}
         <div className="lv2-top-hud">
-          <div className="lv2-user-info"><span className="lv2-res">👤 <b>{username}</b></span></div>
           <div className="lv2-resources">
-            <span className="lv2-res">💎 <b>{gems}</b></span>
-            <span className="lv2-res">🪙 金 <b>{coins.toLocaleString()}</b></span>
-            <span className="lv2-res resource-silver">銀 <b>{materials?.silver ?? 0}</b></span>
-            <span className="lv2-res resource-copper">銅 <b>{materials?.copper ?? 0}</b></span>
-            <span className="lv2-res resource-iron">鐵 <b>{materials?.iron ?? 0}</b></span>
-            <span className="lv2-res resource-wood">木 <b>{materials?.wood ?? 0}</b></span>
+            <span className="lv2-res"><i className="resource-icon gem">◆</i><b>{gems}</b></span>
+            <span className="lv2-res"><i className="resource-icon gold">●</i><b>金 {coins.toLocaleString()}</b></span>
+            <span className="lv2-res resource-silver"><i className="resource-icon silver">●</i><b>銀 {materials?.silver ?? 0}</b></span>
+            <span className="lv2-res resource-copper"><i className="resource-icon copper">●</i><b>銅 {materials?.copper ?? 0}</b></span>
+            <span className="lv2-res resource-iron"><i className="resource-icon iron">⬡</i><b>鐵 {materials?.iron ?? 0}</b></span>
+            <span className="lv2-res resource-wood"><i className="resource-icon wood">▰</i><b>木 {materials?.wood ?? 0}</b></span>
           </div>
         </div>
 
@@ -174,7 +172,6 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
           <div className="lv2-bottom-actions">
             <button className="lv2-btn-settings" onClick={onAdmin}><span>🗂</span><span>資料管理</span></button>
             <button className="lv2-btn-settings" onClick={() => setPanel('settings')}><span>⚙</span><span>設定</span></button>
-            <button className="lv2-btn-settings" onClick={() => supabase.auth.signOut()}><span>🚪</span><span>登出</span></button>
           </div>
         </div>
       </div>

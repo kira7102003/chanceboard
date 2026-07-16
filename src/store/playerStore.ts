@@ -22,6 +22,10 @@ interface PlayerState {
   level: number
   experience: number
   desktopCharIds: string[]
+  musicEnabled: boolean
+  soundEnabled: boolean
+  musicVolume: number
+  soundVolume: number
 
   // Model mutations (Controller calls these)
   setUsername: (name: string) => void
@@ -51,6 +55,8 @@ interface PlayerState {
   addExperience: (amount: number) => void
   setDesktopCharacters: (ids: string[]) => void
   claimStoryReward: (chapterId: string, reward: { characterId?: string; coins?: number; gems?: number; silver?: number; copper?: number; iron?: number; wood?: number }) => boolean
+  setMusicSettings: (enabled: boolean, volume: number) => void
+  setSoundSettings: (enabled: boolean, volume: number) => void
 }
 
 export const usePlayerStore = create<PlayerState>()(
@@ -75,6 +81,10 @@ export const usePlayerStore = create<PlayerState>()(
       level: 1,
       experience: 0,
       desktopCharIds: [],
+      musicEnabled: true,
+      soundEnabled: true,
+      musicVolume: 70,
+      soundVolume: 80,
 
       setUsername: (name) => set({ username: name.trim().slice(0, 20) || '玩家' }),
       addCoins:   (n) => set(s => ({ coins: s.coins + n })),
@@ -167,6 +177,8 @@ export const usePlayerStore = create<PlayerState>()(
         })
         return true
       },
+      setMusicSettings: (enabled, volume) => set({ musicEnabled: enabled, musicVolume: Math.max(0, Math.min(100, Math.round(volume))) }),
+      setSoundSettings: (enabled, volume) => set({ soundEnabled: enabled, soundVolume: Math.max(0, Math.min(100, Math.round(volume))) }),
       saveTeam: (team) => {
         if (get().savedTeams.length >= 10) return
         const id = `team_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`

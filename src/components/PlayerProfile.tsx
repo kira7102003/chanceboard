@@ -1,5 +1,6 @@
 import { getChars, getUrlByKey } from '../utils/charStore'
 import { usePlayerStore } from '../store/playerStore'
+import { supabase } from '../utils/supabase'
 
 interface Props { onClose: () => void }
 
@@ -30,6 +31,7 @@ export default function PlayerProfile({ onClose }: Props) {
         })}</div>
         {!characters.length && <div className="profile-empty">收藏中尚無角色，請先透過召喚取得角色。</div>}
       </section>
+      <button className="profile-logout" onClick={() => supabase.auth.signOut()}>🚪 登出</button>
     </div>
   </div>
 }

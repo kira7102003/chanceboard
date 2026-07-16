@@ -65,6 +65,25 @@ export default function App() {
   const [cloudSynced, setCloudSynced] = useState(false)
   const [user,      setUser]      = useState<User | null>(null)
   const [authReady, setAuthReady] = useState(false)
+  const { musicEnabled, soundEnabled, musicVolume, soundVolume } = usePlayerStore()
+
+  useEffect(() => {
+    const applyOne = (audio: HTMLAudioElement) => {
+      const music = audio.dataset.audioKind === 'music'
+      audio.muted = music ? !musicEnabled : !soundEnabled
+      audio.volume = (music ? musicVolume : soundVolume) / 100
+    }
+    const apply = (root: ParentNode = document) => {
+      if (root instanceof HTMLAudioElement) applyOne(root)
+      root.querySelectorAll<HTMLAudioElement>('audio').forEach(applyOne)
+    }
+    apply()
+    const observer = new MutationObserver(records => records.forEach(record => record.addedNodes.forEach(node => {
+      if (node instanceof HTMLElement) apply(node)
+    })))
+    observer.observe(document.body, { childList: true, subtree: true })
+    return () => observer.disconnect()
+  }, [musicEnabled, soundEnabled, musicVolume, soundVolume])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
