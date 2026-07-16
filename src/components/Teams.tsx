@@ -37,7 +37,8 @@ export default function Teams({ onClose }: Props) {
           {creating ? '← 取消' : '← 返回'}
         </button>
         <span className="panel-title">🛡 隊伍</span>
-        {!creating && savedTeams.length < 5 && (
+        {!creating && <span className="panel-meta">{savedTeams.length} / 10</span>}
+        {!creating && savedTeams.length < 10 && (
           <button className="panel-action-btn" onClick={() => setCreating(true)}>＋ 新隊伍</button>
         )}
         {creating && (

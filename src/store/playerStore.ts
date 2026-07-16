@@ -15,6 +15,7 @@ interface PlayerState {
   cardInventory: Record<string, number>
   upgradeItems: number
   claimedRewards: string[]
+  friends: string[]
 
   // Model mutations (Controller calls these)
   addCoins:   (n: number) => void
@@ -37,6 +38,8 @@ interface PlayerState {
   buyCards: (id: string, quantity: number, unitPrice: number) => boolean
   upgradeCharacterWithItem: (id: string) => boolean
   claimReward: (id: string, coins: number, gems: number, upgradeItems: number) => boolean
+  addFriend: (playerId: string) => boolean
+  removeFriend: (playerId: string) => void
 }
 
 export const usePlayerStore = create<PlayerState>()(
@@ -54,6 +57,7 @@ export const usePlayerStore = create<PlayerState>()(
       cardInventory: { '001': 10, '002': 10, '003': 10, '004': 10 },
       upgradeItems: 0,
       claimedRewards: [],
+      friends: [],
 
       addCoins:   (n) => set(s => ({ coins: s.coins + n })),
       spendCoins: (n) => {
@@ -100,8 +104,15 @@ export const usePlayerStore = create<PlayerState>()(
         }))
         return true
       },
+      addFriend: (playerId) => {
+        const normalized = playerId.trim().toUpperCase()
+        if (!normalized || get().friends.length >= 50 || get().friends.includes(normalized)) return false
+        set(s => ({ friends: [...s.friends, normalized] }))
+        return true
+      },
+      removeFriend: (playerId) => set(s => ({ friends: s.friends.filter(id => id !== playerId) })),
       saveTeam: (team) => {
-        if (get().savedTeams.length >= 5) return
+        if (get().savedTeams.length >= 10) return
         const id = `team_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`
         set(s => ({ savedTeams: [...s.savedTeams, { ...team, id }] }))
       },
