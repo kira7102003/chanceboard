@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { describeStoryRewards, getChapterFlow, getStoryChapters, type StoryChapter, type StoryFlowNode } from '../utils/storyStore'
-import { getUrlByKey } from '../utils/charStore'
+import { getCharImg, getChars, getUrlByKey } from '../utils/charStore'
 import { getBoardCharacters } from '../utils/boardCharacters'
 
 interface Props { onClose: () => void; onComplete?: (chapter: StoryChapter) => void }
@@ -8,6 +8,7 @@ interface Props { onClose: () => void; onComplete?: (chapter: StoryChapter) => v
 export default function StoryMode({ onClose, onComplete }: Props) {
   const chapters = useMemo(getStoryChapters, [])
   const boardCharacters = useMemo(getBoardCharacters, [])
+  const characters = useMemo(getChars, [])
   const [chapter, setChapter] = useState<StoryChapter | null>(null)
   const [nodes, setNodes] = useState<StoryFlowNode[]>([])
   const [cursor, setCursor] = useState(0)
@@ -32,6 +33,12 @@ export default function StoryMode({ onClose, onComplete }: Props) {
     const pose = segment?.pose ?? (segment?.portrait === 2 ? 'side' : 'front')
     const activeCharacter = segment?.boardCharacter ?? (segment?.side === 'right' ? rightDefault : leftDefault)
     const background = getUrlByKey(chapter.backgroundKey || `cb_story_map_${chapter.id}`) ?? ''
+    const speaker = segment?.speaker || chapter.title
+    const speakerCharacter = characters.find(character => character.name === speaker || character.name.includes(speaker) || speaker.includes(character.name))
+    const speakerBoard = boardCharacters.find(character => character.name === speaker)?.id ?? segment?.boardCharacter
+    const speakerAvatar = speakerCharacter
+      ? (getUrlByKey(`cb_head_img_${speakerCharacter.id}`) ?? getUrlByKey(`cb_front_img_${speakerCharacter.id}`) ?? getCharImg(speakerCharacter.id))
+      : speakerBoard ? (getUrlByKey(`cb_board_${speakerBoard}_front`) ?? getUrlByKey('cb_board_portrait_1')) : null
 
     return <div className="story-stage" style={{ backgroundImage: `linear-gradient(180deg,rgba(2,3,12,.2),#03040e 95%),url(${background})` }}>
       <div className="story-cinematic-bars" />
@@ -46,9 +53,13 @@ export default function StoryMode({ onClose, onComplete }: Props) {
         <div>{node.branches.map(branch => <button key={branch.id} onClick={() => {
           setNodes(current => [...current.slice(0, cursor), ...branch.nodes, ...current.slice(cursor + 1)])
         }}>{branch.label}</button>)}</div>
-      </div> : node ? <button className="story-dialogue" onClick={() => setCursor(value => Math.min(nodes.length, value + 1))}>
-        <span>{segment?.section && <em style={{ marginRight: 10, opacity: .65 }}>{segment.section}</em>}{segment?.speaker || chapter.title}</span>
-        <p>{segment?.text}</p><small>點擊繼續</small>
+      </div> : node ? <button className={`story-dialogue story-dialogue-${segment?.side ?? 'left'}`} onClick={() => setCursor(value => Math.min(nodes.length, value + 1))}>
+        <div className="story-speaker-avatar">{speakerAvatar ? <img src={speakerAvatar} alt="" /> : <b>{speaker.slice(0, 1)}</b>}</div>
+        <div className="story-dialogue-content">
+          <span className="story-speaker-name">{speaker}<i>{segment?.side === 'right' ? 'RIGHT' : 'LEFT'}</i></span>
+          {segment?.section && <em className="story-section-label">{segment.section}</em>}
+          <p>{segment?.text}</p><small>點擊繼續　›</small>
+        </div>
       </button> : null}
       {cursor >= nodes.length && <button className="btn primary story-finish" onClick={() => { onComplete?.(chapter); leaveChapter() }}>完成章節 ＋100 EXP{describeStoryRewards(chapter.rewards) ? `　${describeStoryRewards(chapter.rewards)}` : ''}</button>}
     </div>
