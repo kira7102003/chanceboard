@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import './StoryFlowDesigner.css'
-import { getChars, getUrlByKey } from '../utils/charStore'
+import { getCharImg, getChars, getUrlByKey } from '../utils/charStore'
 import type { BoardCharacter } from '../utils/boardCharacters'
 import { getChapterFlow, type StoryChapter, type StoryFlowNode, type StoryRewards, type StorySegment } from '../utils/storyStore'
 
@@ -22,6 +22,7 @@ const makeBranch = (): StoryFlowNode => ({ id: uid('branch'), type: 'branch', ti
 const cloneNode = (node: StoryFlowNode): StoryFlowNode => node.type === 'common'
   ? { ...node, id: uid('node'), segment: { ...node.segment, id: uid('segment') } }
   : { ...node, id: uid('branch'), branches: node.branches.map(branch => ({ ...branch, id: uid('route'), nodes: branch.nodes.map(cloneNode) })) }
+const pieceIdFromRef = (value?: string) => value?.startsWith('piece:') ? value.slice(6) : null
 
 export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, onClose }: Props) {
   const [flow, setFlow] = useState(() => getChapterFlow(chapter))
@@ -93,12 +94,13 @@ function FlowLane({ nodes, onChange, boardCharacters, depth, label, laneId }: {
 
 function DialogueCard({ segment, boardCharacters, onChange }: { segment: StorySegment; boardCharacters: BoardCharacter[]; onChange: (segment: StorySegment) => void }) {
   const patch = (value: Partial<StorySegment>) => onChange({ ...segment, ...value })
-  const image = getUrlByKey(`cb_board_${segment.boardCharacter ?? 'black'}_front`) ?? ''
+  const characters = getChars(); const selectedPieceId = pieceIdFromRef(segment.boardCharacter)
+  const image = selectedPieceId ? (getCharImg(selectedPieceId) ?? '') : (getUrlByKey(`cb_board_${segment.boardCharacter ?? 'black'}_front`) ?? '')
   return <div className="story-dialogue-editor">
     <div className="story-node-speaker">{image ? <img src={image} alt="" /> : <span>{segment.speaker.slice(0, 1)}</span>}<input value={segment.speaker} onChange={event => patch({ speaker: event.target.value })} /></div>
     <input className="story-node-section" value={segment.section ?? ''} placeholder="段落名稱" onChange={event => patch({ section: event.target.value })} />
     <textarea value={segment.text} onChange={event => patch({ text: event.target.value })} />
-    <div className="story-node-controls"><select value={segment.boardCharacter ?? ''} onChange={event => { const character = boardCharacters.find(item => item.id === event.target.value); patch({ boardCharacter: event.target.value, speaker: character?.name ?? segment.speaker }) }}><option value="">無大頭貼</option>{boardCharacters.map(character => <option key={character.id} value={character.id}>{character.name}</option>)}</select>
+    <div className="story-node-controls"><select value={segment.boardCharacter ?? ''} onChange={event => { const value = event.target.value; const pieceId = pieceIdFromRef(value); const character = pieceId ? characters.find(item => item.id === pieceId) : boardCharacters.find(item => item.id === value); patch({ boardCharacter: value || undefined, speaker: character?.name ?? segment.speaker, pose: 'front' }) }}><option value="">無大頭貼</option><optgroup label="看板角色">{boardCharacters.map(character => <option key={character.id} value={character.id}>{character.name}</option>)}</optgroup><optgroup label="所有棋子">{characters.map(character => <option key={character.id} value={`piece:${character.id}`}>{character.name}</option>)}</optgroup></select>
       <select value={segment.side} onChange={event => patch({ side: event.target.value as 'left' | 'right' })}><option value="left">左側發言</option><option value="right">右側發言</option></select>
       <select value={segment.pose ?? 'front'} onChange={event => patch({ pose: event.target.value as 'front' | 'side' })}><option value="front">正面</option><option value="side">側面</option></select></div>
   </div>
@@ -135,10 +137,11 @@ function StoryDesignerPreview({ chapter, flow, boardCharacters, onClose }: { cha
   const node = nodes[cursor]
   const segment = node?.type === 'common' ? node.segment : undefined
   const speaker = segment?.speaker ?? chapter.title
-  const speakerCharacter = getChars().find(character => character.name === speaker || character.name.includes(speaker) || speaker.includes(character.name))
+  const selectedPieceId = pieceIdFromRef(segment?.boardCharacter)
+  const speakerCharacter = getChars().find(character => character.id === selectedPieceId || character.name === speaker || character.name.includes(speaker) || speaker.includes(character.name))
   const previewColors: Record<string, string> = { '劍': '#ef704d', '槍': '#29d889', '法': '#a86cff' }
   const previewColor = speakerCharacter ? (previewColors[speakerCharacter.element] ?? '#d9bd72') : segment?.boardCharacter === 'black' ? '#a86cff' : segment?.boardCharacter === 'white' ? '#55c9ef' : '#d9bd72'
-  const image = segment?.boardCharacter ? getUrlByKey(`cb_board_${segment.boardCharacter}_front`) : null
+  const image = selectedPieceId ? getCharImg(selectedPieceId) : segment?.boardCharacter ? getUrlByKey(`cb_board_${segment.boardCharacter}_front`) : null
   const background = getUrlByKey(chapter.backgroundKey || `cb_story_map_${chapter.id}`) ?? ''
   return <div className="story-designer-preview" style={{ backgroundImage: `linear-gradient(#03051155,#030511dd),url(${background})` }}>
     <button className="story-preview-close" onClick={onClose}>× 關閉預覽</button><div className="story-preview-badge">PREVIEW　{chapter.title}</div>

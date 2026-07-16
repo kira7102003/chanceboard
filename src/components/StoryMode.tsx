@@ -22,6 +22,7 @@ export default function StoryMode({ onClose, onComplete }: Props) {
     const boardFacing = (() => { try { return JSON.parse(localStorage.getItem('cb_board_facing') ?? '{}') } catch { return {} } })() as Record<string, string>
     const leftDefault = boardCharacters[0]?.id ?? 'black'
     const rightDefault = boardCharacters[1]?.id ?? leftDefault
+    const selectedPieceId = segment?.boardCharacter?.startsWith('piece:') ? segment.boardCharacter.slice(6) : null
     const portrait = (side: 'left' | 'right', boardCharacter: string, pose: 'front' | 'side') => {
       const sourceRight = boardFacing[`${boardCharacter}_${pose}`] === 'right'
       const flip = pose === 'side' && ((side === 'right') !== sourceRight)
@@ -32,13 +33,13 @@ export default function StoryMode({ onClose, onComplete }: Props) {
         style={{ transform: flip ? 'scaleX(-1)' : undefined }} /> : null
     }
     const pose = segment?.pose ?? (segment?.portrait === 2 ? 'side' : 'front')
-    const activeCharacter = segment?.boardCharacter ?? (segment?.side === 'right' ? rightDefault : leftDefault)
+    const activeCharacter = selectedPieceId ? (segment?.side === 'right' ? rightDefault : leftDefault) : segment?.boardCharacter ?? (segment?.side === 'right' ? rightDefault : leftDefault)
     const background = getUrlByKey(chapter.backgroundKey || `cb_story_map_${chapter.id}`) ?? ''
     const speaker = segment?.speaker || chapter.title
-    const speakerCharacter = characters.find(character => character.name === speaker || character.name.includes(speaker) || speaker.includes(character.name))
-    const speakerBoard = boardCharacters.find(character => character.name === speaker)?.id ?? segment?.boardCharacter
+    const speakerCharacter = characters.find(character => character.id === selectedPieceId || character.name === speaker || character.name.includes(speaker) || speaker.includes(character.name))
+    const speakerBoard = boardCharacters.find(character => character.name === speaker)?.id ?? (selectedPieceId ? undefined : segment?.boardCharacter)
     const speakerAvatar = speakerCharacter
-      ? (getUrlByKey(`cb_head_img_${speakerCharacter.id}`) ?? getUrlByKey(`cb_front_img_${speakerCharacter.id}`) ?? getCharImg(speakerCharacter.id))
+      ? (getCharImg(speakerCharacter.id) ?? getUrlByKey(`cb_head_img_${speakerCharacter.id}`) ?? getUrlByKey(`cb_front_img_${speakerCharacter.id}`))
       : speakerBoard ? (getUrlByKey(`cb_board_${speakerBoard}_front`) ?? getUrlByKey('cb_board_portrait_1')) : null
     const elementColor: Record<string, string> = { '劍': '#ef704d', '槍': '#29d889', '法': '#a86cff' }
     const elementIcon: Record<string, string> = { '劍': '⚔', '槍': '♧', '法': '✦' }
