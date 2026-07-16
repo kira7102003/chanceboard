@@ -51,8 +51,8 @@ export function useFitBattleLayout(refs: FitBattleLayoutRefs) {
       const mainH = mainEl.clientHeight
       if (mainH <= 0) return
 
-      // .slot-col's max-width is itself derived from --board-cell-h, so uncap
-      // it first — measuring under the previous value would lock cellH there.
+      // 先清除上一輪高度，再讀取 flex 已平均分配後的單格實際寬度。
+      // 這個寬度已扣除戰場 padding、五個 gap 與中央分隔線。
       arenaEl.style.setProperty('--board-cell-h', '9999px')
       const slotColW = slotColRef.current?.clientWidth ?? 0
 
@@ -63,7 +63,8 @@ export function useFitBattleLayout(refs: FitBattleLayoutRefs) {
       const availableCellH = mainH - minActRowH - ARENA_CHROME_V - SAFETY
       let cellH = Math.max(100, Math.min(ratioCellH, availableCellH))
       if (slotColW > 0) {
-        // 寬度上限：六欄均分後，卡片高不能超過 欄寬÷(24/43)，比例才固定
+        // 六格先平均寬度，再用 24:43 圖片比例求出可用高度；
+        // 最後才把角色、狀態與重疊卡填進格內。
         cellH = Math.min(cellH, Math.floor(slotColW / CARD_ASPECT))
       }
       arenaEl.style.setProperty('--board-cell-h', `${cellH}px`)
