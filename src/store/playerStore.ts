@@ -32,7 +32,7 @@ interface PlayerState {
   setDefaultDeck: (id: string | null) => void
   claimDailyReward: (userId: string, dateKey: string, coins: number, gems: number) => boolean
   addCharacterStar: (id: string) => boolean
-  buyCard: (id: string, price: number) => boolean
+  buyCards: (id: string, quantity: number, unitPrice: number) => boolean
 }
 
 export const usePlayerStore = create<PlayerState>()(
@@ -72,10 +72,12 @@ export const usePlayerStore = create<PlayerState>()(
         set(s => ({ characterStars: { ...s.characterStars, [id]: current + 1 } }))
         return true
       },
-      buyCard: (id, price) => {
+      buyCards: (id, quantity, unitPrice) => {
         const count = get().cardInventory[id] ?? 0
-        if (count >= 10 || get().coins < price) return false
-        set(s => ({ coins: s.coins - price, cardInventory: { ...s.cardInventory, [id]: count + 1 } }))
+        const amount = Math.max(1, Math.floor(quantity))
+        const total = amount * Math.max(0, Math.floor(unitPrice))
+        if (count + amount > 10 || get().coins < total) return false
+        set(s => ({ coins: s.coins - total, cardInventory: { ...s.cardInventory, [id]: count + amount } }))
         return true
       },
       saveTeam: (team) => {
