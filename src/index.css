@@ -176,23 +176,18 @@ body { margin: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .lv2-char-img { animation: none; }
+  .lv2-grid-main .lv2-btn-primary:first-child::before { animation: none; display: none; }
 }
-.lv2-resources {
-  position: absolute; top: 20px; right: 20px;
-  display: flex; flex-wrap: nowrap; justify-content: flex-end; gap: 6px; z-index: 10;
-}
+.lv2-top-hud { position: absolute; z-index: 10; top: 20px; right: 20px; display: flex; align-items: center; gap: 6px; }
+.lv2-resources { display: flex; flex-wrap: nowrap; align-items: center; justify-content: flex-end; gap: 6px; }
 .lv2-user-info {
-  position: absolute; z-index: 10; top: 20px; left: 20px;
-  width: min(48vw, 690px); height: 38px;
-  display: flex; align-items: center; justify-content: flex-end;
-  border-bottom: 1px solid rgba(200,161,90,.22);
-  background: linear-gradient(90deg, transparent 0%, rgba(8,10,24,.12) 65%, rgba(8,10,24,.5) 100%);
+  display: flex; align-items: center;
 }
 .lv2-res {
   display: flex; align-items: center; gap: 6px;
   background: rgba(8,10,24,.82); backdrop-filter: blur(10px);
   border: 1px solid rgba(200,161,90,.22); border-radius: 20px;
-  padding: 5px 14px; font-size: 13px; color: var(--text-h);
+  padding: 5px 14px; font-size: 13px; color: #c7ccda;
 }
 .lv2-panel {
   position: absolute; right: 38px; top: 84px;
@@ -204,10 +199,10 @@ body { margin: 0; }
   position: absolute; z-index: 2; top: 84px; left: 22%; right: min(520px, 36vw);
   height: 74px; pointer-events: none;
 }
-.resource-silver { border-color: rgba(210,220,235,.38); color: #e5ecf6; }
-.resource-copper { border-color: rgba(202,122,72,.4); color: #e6a070; }
-.resource-iron { border-color: rgba(145,155,170,.4); color: #b9c2cf; }
-.resource-wood { border-color: rgba(145,104,58,.45); color: #d2a46d; }
+.resource-silver { border-color: rgba(210,220,235,.38); }
+.resource-copper { border-color: rgba(202,122,72,.4); }
+.resource-iron { border-color: rgba(145,155,170,.4); }
+.resource-wood { border-color: rgba(145,104,58,.45); }
 .lv2-menu-label{font-size:10px;color:#c8a15a;letter-spacing:3px;padding:2px 4px 0;text-shadow:0 0 12px #c8a15a66}
 .lv2-btn-main {
   display: flex; align-items: center; gap: 16px; width: 100%;
@@ -243,7 +238,7 @@ body { margin: 0; }
   background: rgba(8,10,24,.78); backdrop-filter: blur(10px);
   border: 1px solid rgba(200,161,90,.1); border-radius: 12px;
   padding: 16px 6px; cursor: pointer;
-  font-size: 11px; font-weight: 600; color: var(--text-h); letter-spacing: .4px;
+  font-size: 11px; font-weight: 600; color: #c7ccda; letter-spacing: .4px;
   transition: border-color .15s, background .15s;
 }
 .lv2-btn-grid span:first-child { font-size: 20px; }
@@ -260,6 +255,14 @@ body { margin: 0; }
   display: flex; flex-wrap: nowrap; gap: 6px;
   overflow: hidden; padding: 2px 1px 5px;
 }
+.lv2-grid-main .lv2-btn-primary:first-child::before {
+  content: ''; position: absolute; z-index: 0; top: 0; bottom: 0; left: -55%; width: 38%;
+  background: linear-gradient(105deg, transparent, rgba(255,220,126,.08), rgba(255,220,126,.55), rgba(255,220,126,.08), transparent);
+  transform: skewX(-18deg); animation: lobby-duel-gold-sweep 2.8s ease-in-out infinite;
+  pointer-events: none;
+}
+.lv2-grid-main .lv2-btn-primary:first-child > span { position: relative; z-index: 1; }
+@keyframes lobby-duel-gold-sweep { 0%,18% { left: -55%; opacity: 0; } 28% { opacity: 1; } 72% { opacity: 1; } 82%,100% { left: 125%; opacity: 0; } }
 .lv2-grid-secondary .lv2-btn-grid {
   flex: 1 1 0; min-width: 0; padding: 9px 2px; gap: 3px;
   white-space: nowrap;
@@ -270,7 +273,7 @@ body { margin: 0; }
   background: rgba(8,10,24,.65); backdrop-filter: blur(8px);
   border: 1px solid rgba(200,161,90,.07); border-radius: 10px;
   padding: 11px 18px; cursor: pointer;
-  font-size: 12px; font-weight: 600; color: var(--gold);
+  font-size: 12px; font-weight: 600; color: #c7ccda;
   transition: color .15s, border-color .15s;
 }
 .lv2-btn-settings:hover { color: var(--gold2); border-color: rgba(200,161,90,.3); }
@@ -308,8 +311,8 @@ body { margin: 0; }
   .lobby-v2  { display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 24px; }
   .lv2-panel { position: static; transform: none; width: 100%; padding: 16px; box-sizing: border-box; }
   .lv2-char  { height: 60dvh; opacity: .85; --lobby-float-distance: 6px; }
-  .lv2-user-info { top: 8px; left: 8px; width: auto; height: 34px; border: 0; background: none; }
-  .lv2-resources { top: 8px; right: 8px; max-width: calc(100vw - 100px); overflow: hidden; }
+  .lv2-top-hud { top: 8px; right: 8px; left: 8px; overflow: hidden; justify-content: flex-end; }
+  .lv2-resources { min-width: 0; overflow: hidden; }
   .lv2-task-status { display: none; }
   .lv2-support-panel {
     position: static; width: calc(100% - 32px); box-sizing: border-box;

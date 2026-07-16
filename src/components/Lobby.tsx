@@ -137,19 +137,17 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
           </div>
         )}
 
-        {/* ── User identity (top-left information zone) ── */}
-        <div className="lv2-user-info">
-          <span className="lv2-res">👤 <b>{username}</b></span>
-        </div>
-
-        {/* ── Resources (top-right) ── */}
-        <div className="lv2-resources">
-          <span className="lv2-res">💎 <b>{gems}</b></span>
-          <span className="lv2-res">🪙 金 <b>{coins.toLocaleString()}</b></span>
-          <span className="lv2-res resource-silver">銀 <b>{materials?.silver ?? 0}</b></span>
-          <span className="lv2-res resource-copper">銅 <b>{materials?.copper ?? 0}</b></span>
-          <span className="lv2-res resource-iron">鐵 <b>{materials?.iron ?? 0}</b></span>
-          <span className="lv2-res resource-wood">木 <b>{materials?.wood ?? 0}</b></span>
+        {/* ── User identity + resources: one aligned HUD row ── */}
+        <div className="lv2-top-hud">
+          <div className="lv2-user-info"><span className="lv2-res">👤 <b>{username}</b></span></div>
+          <div className="lv2-resources">
+            <span className="lv2-res">💎 <b>{gems}</b></span>
+            <span className="lv2-res">🪙 金 <b>{coins.toLocaleString()}</b></span>
+            <span className="lv2-res resource-silver">銀 <b>{materials?.silver ?? 0}</b></span>
+            <span className="lv2-res resource-copper">銅 <b>{materials?.copper ?? 0}</b></span>
+            <span className="lv2-res resource-iron">鐵 <b>{materials?.iron ?? 0}</b></span>
+            <span className="lv2-res resource-wood">木 <b>{materials?.wood ?? 0}</b></span>
+          </div>
         </div>
 
         {/* ── Menu panel (right) ── */}
