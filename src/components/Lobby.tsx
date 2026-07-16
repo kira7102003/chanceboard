@@ -146,12 +146,13 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
         </button>
 
         {/* ── Character portrait ── */}
-        {activeLogistics ? <LobbyLogisticsShowcase /> : charImgUrl && !imgFailed && (
+        {charImgUrl && !imgFailed && (
           <div className="lv2-char" onClick={cycleChar} style={{ cursor: 'pointer' }} title="點擊切換角色">
             <img src={charImgUrl} alt="" className="lv2-char-img"
               onError={handleImgError} />
           </div>
         )}
+        {activeLogistics && <LobbyLogisticsShowcase />}
 
         {/* ── User identity + resources: one aligned HUD row ── */}
         <div className="lv2-top-hud">
