@@ -75,11 +75,11 @@ function FlowLane({ nodes, onChange, boardCharacters, depth, label, laneId }: {
   return <section className="story-flow-lane" style={{ '--lane-depth': depth } as React.CSSProperties}>
     <div className="story-flow-lane-label">{label}</div>
     <div className="story-flow-board">
-      {nodes.map((node, index) => <div className="story-flow-card-wrap" key={node.id} draggable onDragStart={event => { event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('application/x-story-node', JSON.stringify({ laneId, index })) }}>
+      {nodes.map((node, index) => <div className="story-flow-card-wrap" key={node.id}>
         <div className="story-drop-zone" onDragOver={event => event.preventDefault()} onDrop={event => dropAt(event, index)}><span>放到這裡</span></div>
         {index > 0 && <span className="story-flow-arrow">→</span>}
         <article className={`story-designer-card ${node.type}`}>
-          <div className="story-card-top"><i>{index + 1}</i><b>{node.type === 'common' ? '對話節點' : depth === 0 ? '共用選擇' : '選項分支'}</b><span>
+          <div className="story-card-top"><i>{index + 1}</i><b>{node.type === 'common' ? '對話節點' : depth === 0 ? '共用選擇' : '選項分支'}</b><span><button className="story-drag-handle" draggable onDragStart={event => { event.stopPropagation(); event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('application/x-story-node', JSON.stringify({ laneId, index })) }} title="拖曳移動節點">☷</button>
             <button title="複製卡片" onClick={() => { const next = [...nodes]; next.splice(index + 1, 0, cloneNode(node)); onChange(next) }}>⧉</button><button disabled={index === 0} onClick={() => move(index, -1)}>←</button><button disabled={index === nodes.length - 1} onClick={() => move(index, 1)}>→</button><button className="delete" onClick={() => onChange(nodes.filter(item => item.id !== node.id))}>×</button>
           </span></div>
           {node.type === 'common' ? <DialogueCard segment={node.segment} boardCharacters={boardCharacters} onChange={segment => replace(node.id, { ...node, segment })} />

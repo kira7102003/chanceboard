@@ -114,6 +114,31 @@ const whiteRoute = [
   ]),
 ]
 
-export const PAWN_STORY_FLOW: StoryFlowNode[] = [
+function splitDialogueLines(nodes: StoryFlowNode[]): StoryFlowNode[] {
+  return nodes.reduce<StoryFlowNode[]>((result, node) => {
+    if (node.type === 'branch') {
+      result.push({ ...node, branches: node.branches.map(branch => ({ ...branch, nodes: splitDialogueLines(branch.nodes) })) })
+      return result
+    }
+    const lines = node.segment.text.split(/\r?\n/).map(line => line.trim()).filter(Boolean)
+    if (lines.length <= 1) {
+      result.push(node)
+      return result
+    }
+    result.push(...lines.map((text, index): StoryFlowNode => ({
+      ...node,
+      id: `${node.id}_line_${index + 1}`,
+      segment: {
+        ...node.segment,
+        id: `${node.segment.id}_line_${index + 1}`,
+        text,
+        section: index === 0 ? node.segment.section : '',
+      },
+    })))
+    return result
+  }, [])
+}
+
+export const PAWN_STORY_FLOW: StoryFlowNode[] = splitDialogueLines([
   choice('選擇執棋方', [['執黑', blackRoute], ['執白', whiteRoute]]),
-]
+])
