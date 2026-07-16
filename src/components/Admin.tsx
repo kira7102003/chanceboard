@@ -13,6 +13,7 @@ import { getChapterFlow, getChapterSegments, getStoryChapters, saveStoryChapters
 import { getBattleBackgroundNames, getBoardCharacters, saveBoardCharacters } from '../utils/boardCharacters'
 import StoryFlowDesigner from './StoryFlowDesigner'
 import { getLogisticsJobs, saveLogisticsJobs } from '../utils/logisticsStore'
+import { supabase } from '../utils/supabase'
 
 const EL_COLOR: Record<string, string>   = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee' }
 const SLOT_COLOR: Record<string, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee', '願': '#ddaa22', '被': '#666688' }
@@ -971,11 +972,34 @@ function LogisticsSettings() {
   const update = (index: number, patch: Partial<(typeof jobs)[number]>) => { const next = jobs.map((job, i) => i === index ? { ...job, ...patch } : job); setJobs(next); saveLogisticsJobs(next) }
   return <div className="adm-basic logistics-admin"><div className="diag-head"><div><h2>後勤工作設定</h2><p>設定工作時間、8-bit 動畫圖與完成後可取得的資源。</p></div></div>
     <div className="logistics-admin-grid">{jobs.map((job, index) => <section className="adm-section" key={job.id}><div className="adm-section-label">{job.icon} {job.name}</div>
+      <LogisticsIconGenerator jobId={job.id} jobName={job.name} />
       <AnimatedAssetUpload storageKey={`cb_logistics_anim_${job.id}`} />
       <div className="adm-field-grid"><Field label="工作名稱" value={job.name} onChange={name => update(index, { name })} /><label className="adm-field"><span>工作時間（小時，最少 2）</span><input type="number" min="2" step="0.5" value={job.durationSeconds / 3600} onChange={event => update(index, { durationSeconds: Math.max(7200, Math.round((Number(event.target.value) || 2) * 3600)) })} /></label></div>
       <div className="adm-field-grid">{([['gems', '鑽石'], ['coins', '金幣'], ['silver', '銀'], ['copper', '銅'], ['iron', '鐵'], ['wood', '木']] as const).map(([key, label]) => <label className="adm-field" key={key}><span>{label}</span><input type="number" min="0" value={job.rewards[key]} onChange={event => update(index, { rewards: { ...job.rewards, [key]: Math.max(0, Math.floor(Number(event.target.value) || 0)) } })} /></label>)}</div>
     </section>)}</div>
   </div>
+}
+
+function LogisticsIconGenerator({ jobId, jobName }: { jobId: string; jobName: string }) {
+  const storageKey = `cb_logistics_icon_${jobId}`
+  const [url, setUrl] = useState(() => getUrlByKey(storageKey))
+  const [detail, setDetail] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const generate = async () => {
+    setBusy(true); setError('')
+    try {
+      const { data } = await supabase.auth.getSession()
+      const token = data.session?.access_token
+      if (!token) throw new Error('請先登入管理帳號')
+      const response = await fetch('/.netlify/functions/generate-logistics-icon', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ jobName, detail }) })
+      const result = await response.json().catch(() => ({}))
+      if (!response.ok || !result.dataUrl) throw new Error(result.error ?? `生成失敗 (${response.status})`)
+      await uploadByKey(storageKey, result.dataUrl)
+      setUrl(getUrlByKey(storageKey))
+    } catch (reason) { setError(reason instanceof Error ? reason.message : '生成失敗') } finally { setBusy(false) }
+  }
+  return <div className="logistics-ai-icon"><div className="logistics-ai-preview">{url ? <img src={url} alt={`${jobName} icon`} /> : <span>8 BIT</span>}</div><div><label className="adm-field"><span>AI icon 描述（可留空）</span><input value={detail} maxLength={300} placeholder={`例如：${jobName}使用的工具`} onChange={event => setDetail(event.target.value)} /></label><button className="btn sm primary" disabled={busy} onClick={generate}>{busy ? 'ChatGPT 生成中…' : '用 ChatGPT 生成 8-bit icon'}</button>{url && <button className="btn sm danger" onClick={() => { removeByKey(storageKey); setUrl(null) }}>移除</button>}{error && <small className="adm-error">{error}</small>}</div></div>
 }
 
 function AnimatedAssetUpload({ storageKey }: { storageKey: string }) {

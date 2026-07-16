@@ -19,6 +19,9 @@ const makeCommon = (character?: BoardCharacter): StoryFlowNode => ({ id: uid('no
 const makeBranch = (): StoryFlowNode => ({ id: uid('branch'), type: 'branch', title: '新選項', branches: [
   { id: uid('route'), label: '選項 A', nodes: [] }, { id: uid('route'), label: '選項 B', nodes: [] },
 ] })
+const cloneNode = (node: StoryFlowNode): StoryFlowNode => node.type === 'common'
+  ? { ...node, id: uid('node'), segment: { ...node.segment, id: uid('segment') } }
+  : { ...node, id: uid('branch'), branches: node.branches.map(branch => ({ ...branch, id: uid('route'), nodes: branch.nodes.map(cloneNode) })) }
 
 export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, onClose }: Props) {
   const [flow, setFlow] = useState(() => getChapterFlow(chapter))
@@ -35,9 +38,13 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
       <div><button onClick={() => setPreview(true)}>▶ 預覽</button><button onClick={() => change([...flow, makeCommon(boardCharacters[0])])}>＋ 對話</button><button onClick={() => change([...flow, makeBranch()])}>＋ 分支</button><button className="primary" onClick={save}>{saved ? '✓ 已儲存' : '儲存'}</button></div>
     </header>
     <div className="story-designer-sub">以卡片編排章節。實線代表順序，彩色路線代表玩家選項；每條分支都能繼續加入對話或下一層選項。</div>
+    <nav className="story-designer-palette">
+      <button className="reward" onClick={() => document.querySelector('.story-reward-node')?.scrollIntoView({ behavior: 'smooth', inline: 'center' })}><i>★</i><span>故事獎勵</span></button>
+      {boardCharacters.map((character, index) => { const showIcon = index < 2; const image = showIcon ? getUrlByKey(`cb_board_${character.id}_front`) : null; return <button key={character.id} onClick={() => change([...flow, makeCommon(character)])}><i>{image ? <img src={image} alt="" /> : showIcon ? character.name.slice(0, 1) : null}</i><span>{character.name}</span></button> })}
+    </nav>
     <main className="story-designer-canvas">
-      <FlowLane nodes={flow} onChange={change} boardCharacters={boardCharacters} depth={0} label="章節開始" laneId="root" />
       <RewardCard rewards={rewards} onChange={next => { setRewards(next); setSaved(false) }} />
+      <FlowLane nodes={flow} onChange={change} boardCharacters={boardCharacters} depth={0} label="章節開始" laneId="root" />
       {!flow.length && <div className="story-designer-empty">尚無節點，請從右上角新增第一段對話。</div>}
     </main>
     {preview && <StoryDesignerPreview chapter={chapter} flow={flow} boardCharacters={boardCharacters} onClose={() => setPreview(false)} />}
@@ -72,7 +79,7 @@ function FlowLane({ nodes, onChange, boardCharacters, depth, label, laneId }: {
         {index > 0 && <span className="story-flow-arrow">→</span>}
         <article className={`story-designer-card ${node.type}`}>
           <div className="story-card-top"><i>{index + 1}</i><b>{node.type === 'common' ? '對話節點' : '選項分支'}</b><span>
-            <button disabled={index === 0} onClick={() => move(index, -1)}>←</button><button disabled={index === nodes.length - 1} onClick={() => move(index, 1)}>→</button><button className="delete" onClick={() => onChange(nodes.filter(item => item.id !== node.id))}>×</button>
+            <button title="複製卡片" onClick={() => { const next = [...nodes]; next.splice(index + 1, 0, cloneNode(node)); onChange(next) }}>⧉</button><button disabled={index === 0} onClick={() => move(index, -1)}>←</button><button disabled={index === nodes.length - 1} onClick={() => move(index, 1)}>→</button><button className="delete" onClick={() => onChange(nodes.filter(item => item.id !== node.id))}>×</button>
           </span></div>
           {node.type === 'common' ? <DialogueCard segment={node.segment} boardCharacters={boardCharacters} onChange={segment => replace(node.id, { ...node, segment })} />
             : <BranchCard node={node} boardCharacters={boardCharacters} depth={depth} onChange={next => replace(node.id, next)} />}
