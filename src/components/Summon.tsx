@@ -3,6 +3,7 @@ import { usePlayerStore } from '../store/playerStore'
 import { getChars, getUrlByKey } from '../utils/charStore'
 import GameImage from './GameImage'
 import type { Character } from '../types/character'
+import FunctionIcon from './FunctionIcon'
 
 const PULL_1_COST  = 160
 const PULL_10_COST = 1440
@@ -48,7 +49,7 @@ export default function Summon({ onClose }: Props) {
         <button className="panel-back" disabled={animating} onClick={results ? repeatPull : onClose}>
           {results ? '← 再次招喚' : '← 返回'}
         </button>
-        <span className="panel-title">✨ 招喚</span>
+        <span className="panel-title"><FunctionIcon name="summon" />召喚</span>
         <div className="panel-currency-row">💎 {gems}</div>
       </div>
 

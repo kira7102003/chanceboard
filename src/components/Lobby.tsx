@@ -152,7 +152,7 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
               onError={handleImgError} />
           </div>
         )}
-        {activeLogistics && <LobbyLogisticsShowcase />}
+        {activeLogistics.length > 0 && <LobbyLogisticsShowcase />}
 
         {/* ── User identity + resources: one aligned HUD row ── */}
         <div className="lv2-top-hud">

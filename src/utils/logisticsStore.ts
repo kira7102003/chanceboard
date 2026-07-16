@@ -13,6 +13,7 @@ export const DEFAULT_LOGISTICS_JOBS: LogisticsJob[] = [
 ]
 export function getLogisticsJobs(): LogisticsJob[] { try { const value = JSON.parse(localStorage.getItem(KEY) ?? 'null'); const jobs = Array.isArray(value) && value.length ? value : DEFAULT_LOGISTICS_JOBS; return jobs.map(job => ({ ...job, durationSeconds: Math.max(7200, Number(job.durationSeconds) || 7200) })) } catch { return DEFAULT_LOGISTICS_JOBS } }
 export function saveLogisticsJobs(jobs: LogisticsJob[]): void { localStorage.setItem(KEY, JSON.stringify(jobs.map(job => ({ ...job, durationSeconds: Math.max(7200, job.durationSeconds) })))) }
-export function getActiveLogistics(): ActiveLogistics | null { try { const value = JSON.parse(localStorage.getItem(ACTIVE_KEY) ?? 'null'); return value?.id ? { ...value, charIds: Array.isArray(value.charIds) ? value.charIds : [] } : null } catch { return null } }
-export function saveActiveLogistics(active: ActiveLogistics | null): void { if (active) localStorage.setItem(ACTIVE_KEY, JSON.stringify(active)); else localStorage.removeItem(ACTIVE_KEY) }
-export function getLogisticsBusyCharacterIds(): string[] { return getActiveLogistics()?.charIds ?? [] }
+export function getActiveLogistics(): ActiveLogistics[] { try { const value = JSON.parse(localStorage.getItem(ACTIVE_KEY) ?? 'null'); const list = Array.isArray(value) ? value : value?.id ? [value] : []; return list.filter(item => item?.id).map(item => ({ ...item, charIds: Array.isArray(item.charIds) ? item.charIds : [] })) } catch { return [] } }
+export function saveActiveLogistics(active: ActiveLogistics[]): void { if (active.length) localStorage.setItem(ACTIVE_KEY, JSON.stringify(active)); else localStorage.removeItem(ACTIVE_KEY) }
+export function cancelActiveLogistics(id: string): ActiveLogistics[] { const next = getActiveLogistics().filter(item => item.id !== id); saveActiveLogistics(next); return next }
+export function getLogisticsBusyCharacterIds(): string[] { return [...new Set(getActiveLogistics().flatMap(item => item.charIds))] }

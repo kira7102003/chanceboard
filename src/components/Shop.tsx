@@ -4,6 +4,7 @@ import { cards } from '../data/db'
 import { CARD_ICON } from '../data/cardIcons'
 import { getCardImg } from '../utils/charStore'
 import GameImage from './GameImage'
+import FunctionIcon from './FunctionIcon'
 
 const CARD_COLOR: Record<string, string> = { red: '#ee4444', green: '#22cc77', blue: '#5566ee', yellow: '#ddaa22', flower: '#bb55ee' }
 const cardPrice = (isSuitCard: boolean) => isSuitCard ? 100 : 300
@@ -22,7 +23,7 @@ export default function Shop({ onClose }: Props) {
     <div className="panel-overlay">
       <div className="panel-header">
         <button className="panel-back" onClick={onClose}>← 返回</button>
-        <span className="panel-title">🛒 商店</span>
+        <span className="panel-title"><FunctionIcon name="shop" />商店</span>
         <div className="panel-currency-row">
           <span>🪙 {coins.toLocaleString()}</span>
           <span>💎 {gems}</span>

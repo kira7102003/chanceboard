@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { usePlayerStore } from '../store/playerStore'
 import { getChars, getThumbByKey, getUrlByKey } from '../utils/charStore'
+import FunctionIcon from './FunctionIcon'
 
 const EL_COLOR: Record<string, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee' }
 const POS = ['前', '中', '後']
@@ -36,7 +37,7 @@ export default function Teams({ onClose }: Props) {
         <button className="panel-back" onClick={creating ? cancelCreate : onClose}>
           {creating ? '← 取消' : '← 返回'}
         </button>
-        <span className="panel-title">🛡 隊伍</span>
+        <span className="panel-title"><FunctionIcon name="teams" />隊伍</span>
         {!creating && <span className="panel-meta">{savedTeams.length} / 10</span>}
         {!creating && savedTeams.length < 10 && (
           <button className="panel-action-btn" onClick={() => setCreating(true)}>＋ 新隊伍</button>

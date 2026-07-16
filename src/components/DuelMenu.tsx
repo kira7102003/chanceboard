@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { SavedSession } from '../hooks/useRoom'
+import FunctionIcon from './FunctionIcon'
 
 interface Props {
   onClose: () => void
@@ -21,7 +22,7 @@ export default function DuelMenu({ onClose, onJoin, onSolo, onAIBattle, savedSes
   return <div className="panel-overlay duel-menu">
     <div className="panel-header">
       <button className="panel-back" onClick={onClose}>← 返回大廳</button>
-      <span className="panel-title">⚔️ 決鬥</span>
+      <span className="panel-title"><FunctionIcon name="duel" />決鬥</span>
     </div>
     <div className="panel-body duel-menu-body">
       <div className="duel-mode-grid">

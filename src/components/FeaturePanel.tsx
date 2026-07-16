@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { usePlayerStore } from '../store/playerStore'
 import { getChars, getCharImg } from '../utils/charStore'
+import FunctionIcon from './FunctionIcon'
 
 export type FeatureMode = 'pieces' | 'tasks' | 'mail' | 'achievements' | 'announcements' | 'friends'
 interface Props { mode: FeatureMode; onClose: () => void }
 
-const TITLE: Record<FeatureMode, string> = { pieces: '棋子', tasks: '🎯 任務', mail: '📬 信箱', achievements: '🏆 成就', announcements: '📢 公告', friends: '🤝 好友' }
+const TITLE: Record<FeatureMode, string> = { pieces: '棋子', tasks: '任務', mail: '信箱', achievements: '成就', announcements: '公告', friends: '好友' }
 
 export default function FeaturePanel({ mode, onClose }: Props) {
   const player = usePlayerStore()
@@ -40,7 +41,7 @@ export default function FeaturePanel({ mode, onClose }: Props) {
     </div> })}
   </div>
 
-  return <div className="panel-overlay feature-panel"><div className="panel-header"><button className="panel-back" onClick={onClose}>← 返回</button><span className="panel-title">{mode === 'pieces' && <img className="panel-piece-icon" src="/chess-piece.svg" alt="" />}{TITLE[mode]}</span>{mode === 'pieces' && <span className="panel-meta"><img className="panel-piece-icon sm" src="/chess-piece.svg" alt="" /> 棋子 {player.upgradeItems}</span>}{mode === 'friends' && <span className="panel-meta">{player.friends.length} / 50</span>}</div>
+  return <div className="panel-overlay feature-panel"><div className="panel-header"><button className="panel-back" onClick={onClose}>← 返回</button><span className="panel-title"><FunctionIcon name={mode} />{TITLE[mode]}</span>{mode === 'pieces' && <span className="panel-meta"><img className="panel-piece-icon sm" src="/chess-piece.svg" alt="" /> 棋子 {player.upgradeItems}</span>}{mode === 'friends' && <span className="panel-meta">{player.friends.length} / 50</span>}</div>
     <div className="panel-body">
       {mode === 'pieces' && <div className="feature-piece-grid">{chars.length ? chars.map(char => { const star = player.characterStars[char.id] ?? 0; const fragments = player.characterFragments?.[char.id] ?? 0; const img = getCharImg(char.id); return <div className="feature-piece" key={char.id}>{img && <img src={img} alt="" />}<div><b>{char.name}</b><p>{star ? '★'.repeat(star) : '無星'} · 最高五星</p><small>角色碎片 {fragments}　下一星：HP／ATK／DEF／SPD 依角色設定提升</small></div><button className="btn primary" disabled={star >= 5 || player.upgradeItems <= 0} onClick={() => player.upgradeCharacterWithItem(char.id)}>{star >= 5 ? '已五星' : '使用棋子'}</button></div> }) : <div className="settings-empty">尚未擁有角色</div>}</div>}
       {mode === 'tasks' && <RewardList rows={tasks} />}

@@ -4,6 +4,7 @@ import { CARD_ICON } from '../data/cardIcons'
 import { getChars, getUrlByKey, getCardImg } from '../utils/charStore'
 import { usePlayerStore } from '../store/playerStore'
 import GameImage from './GameImage'
+import FunctionIcon from './FunctionIcon'
 
 const EL_COLOR: Record<string, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee' }
 
@@ -25,7 +26,7 @@ export default function Collection({ onClose }: Props) {
     <div className="panel-overlay">
       <div className="panel-header">
         <button className="panel-back" onClick={onClose}>← 返回</button>
-        <span className="panel-title">📚 收藏</span>
+        <span className="panel-title"><FunctionIcon name="collection" />收藏</span>
         <span className="panel-meta">{tab === 'characters' ? `${ownedCharIds.length} / ${chars.length}` : `${cards.filter(card => (cardInventory[card.id] ?? 0) > 0).length} / ${cards.length}`}</span>
       </div>
       <div className="panel-body">
