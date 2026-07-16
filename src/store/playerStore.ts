@@ -13,6 +13,8 @@ interface PlayerState {
   dailyClaims: Record<string, string[]>
   characterStars: Record<string, number>
   cardInventory: Record<string, number>
+  upgradeItems: number
+  claimedRewards: string[]
 
   // Model mutations (Controller calls these)
   addCoins:   (n: number) => void
@@ -33,6 +35,8 @@ interface PlayerState {
   claimDailyReward: (userId: string, dateKey: string, coins: number, gems: number) => boolean
   addCharacterStar: (id: string) => boolean
   buyCards: (id: string, quantity: number, unitPrice: number) => boolean
+  upgradeCharacterWithItem: (id: string) => boolean
+  claimReward: (id: string, coins: number, gems: number, upgradeItems: number) => boolean
 }
 
 export const usePlayerStore = create<PlayerState>()(
@@ -48,6 +52,8 @@ export const usePlayerStore = create<PlayerState>()(
       dailyClaims: {},
       characterStars: {},
       cardInventory: { '001': 10, '002': 10, '003': 10, '004': 10 },
+      upgradeItems: 0,
+      claimedRewards: [],
 
       addCoins:   (n) => set(s => ({ coins: s.coins + n })),
       spendCoins: (n) => {
@@ -78,6 +84,20 @@ export const usePlayerStore = create<PlayerState>()(
         const total = amount * Math.max(0, Math.floor(unitPrice))
         if (count + amount > 10 || get().coins < total) return false
         set(s => ({ coins: s.coins - total, cardInventory: { ...s.cardInventory, [id]: count + amount } }))
+        return true
+      },
+      upgradeCharacterWithItem: (id) => {
+        const state = get()
+        if (!state.ownedCharIds.includes(id) || state.upgradeItems <= 0 || (state.characterStars[id] ?? 0) >= 5) return false
+        set(s => ({ upgradeItems: s.upgradeItems - 1, characterStars: { ...s.characterStars, [id]: (s.characterStars[id] ?? 0) + 1 } }))
+        return true
+      },
+      claimReward: (id, coins, gems, upgradeItems) => {
+        if (get().claimedRewards.includes(id)) return false
+        set(s => ({
+          coins: s.coins + Math.max(0, Math.floor(coins)), gems: s.gems + Math.max(0, Math.floor(gems)),
+          upgradeItems: s.upgradeItems + Math.max(0, Math.floor(upgradeItems)), claimedRewards: [...s.claimedRewards, id],
+        }))
         return true
       },
       saveTeam: (team) => {

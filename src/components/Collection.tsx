@@ -13,6 +13,13 @@ export default function Collection({ onClose }: Props) {
   const { ownedCharIds, characterStars, cardInventory } = usePlayerStore()
   const chars = getChars()
   const [tab, setTab] = useState<'characters' | 'cards'>('characters')
+  const [ownershipFilter, setOwnershipFilter] = useState<'all' | 'owned' | 'locked'>('all')
+  const [elementFilter, setElementFilter] = useState<'all' | '劍' | '槍' | '法'>('all')
+  const filteredChars = chars.filter(char => {
+    const owned = ownedCharIds.includes(char.id)
+    return (ownershipFilter === 'all' || (ownershipFilter === 'owned' ? owned : !owned))
+      && (elementFilter === 'all' || char.element === elementFilter)
+  })
 
   return (
     <div className="panel-overlay">
@@ -26,8 +33,11 @@ export default function Collection({ onClose }: Props) {
           <button className={tab === 'characters' ? 'active' : ''} onClick={() => setTab('characters')}>角色</button>
           <button className={tab === 'cards' ? 'active' : ''} onClick={() => setTab('cards')}>卡片</button>
         </div>
-        {tab === 'characters' ? <div className="coll-grid">
-          {chars.map(c => {
+        {tab === 'characters' ? <><div className="diag-mode-tabs" style={{ marginBottom: 12 }}>
+          {(['all','owned','locked'] as const).map(value => <button key={value} className={ownershipFilter === value ? 'active' : ''} onClick={() => setOwnershipFilter(value)}>{{ all: '全部', owned: '已擁有', locked: '未獲得' }[value]}</button>)}
+          {(['all','劍','槍','法'] as const).map(value => <button key={`element-${value}`} className={elementFilter === value ? 'active' : ''} onClick={() => setElementFilter(value)}>{value === 'all' ? '全屬性' : value}</button>)}
+        </div><div className="coll-grid">
+          {filteredChars.map(c => {
             const owned  = ownedCharIds.includes(c.id)
             const stars = characterStars[c.id] ?? 0
             const starKey = stars > 3 && getUrlByKey(`cb_star_img_${c.id}`) ? `cb_star_img_${c.id}` : `cb_img_${c.id}`
@@ -53,7 +63,7 @@ export default function Collection({ onClose }: Props) {
               </div>
             )
           })}
-        </div> : <div className="coll-grid">
+        </div></> : <div className="coll-grid">
           {cards.map(card => {
             const count = Math.min(10, cardInventory[card.id] ?? 0)
             const imgUrl = getCardImg(card.id)

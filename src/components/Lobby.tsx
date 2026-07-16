@@ -3,14 +3,16 @@ import type { SavedSession } from '../hooks/useRoom'
 import { getChars, getUrlByKey, onCloudSynced } from '../utils/charStore'
 import { supabase } from '../utils/supabase'
 import { usePlayerStore } from '../store/playerStore'
+import type { FeatureMode } from './FeaturePanel'
 const Collection = lazy(() => import('./Collection'))
 const Shop = lazy(() => import('./Shop'))
 const Summon = lazy(() => import('./Summon'))
 const Teams = lazy(() => import('./Teams'))
 const Settings = lazy(() => import('./Settings'))
 const StoryMode = lazy(() => import('./StoryMode'))
+const FeaturePanel = lazy(() => import('./FeaturePanel'))
 
-type Panel = 'summon' | 'collection' | 'shop' | 'teams' | 'settings' | 'story' | null
+type Panel = 'summon' | 'collection' | 'shop' | 'teams' | 'settings' | 'story' | 'pieces' | 'tasks' | 'mail' | 'achievements' | 'announcements' | null
 
 interface Props {
   onJoin:        (roomId: string) => void
@@ -97,10 +99,13 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
   const MAIN_BTNS: MenuItem[] = [
     { icon: '⚔️', label: '決鬥', enabled: true, action: () => setShowOnline(value => !value) },
     { icon: '👥', label: '隊伍', enabled: true, panelKey: 'teams' },
+    { icon: '🧩', label: '棋子', enabled: true, panelKey: 'pieces' },
     { icon: '✨', label: '召喚', enabled: true, panelKey: 'summon' },
   ]
   const SECONDARY_BTNS: MenuItem[] = [
-    { icon: '🛒', label: '商店', enabled: true, panelKey: 'shop' }, { icon: '📚', label: '收藏', enabled: true, panelKey: 'collection' },
+    { icon: '🎯', label: '任務', enabled: true, panelKey: 'tasks' }, { icon: '📬', label: '信箱', enabled: true, panelKey: 'mail' },
+    { icon: '🛒', label: '商店', enabled: true, panelKey: 'shop' }, { icon: '🏆', label: '成就', enabled: true, panelKey: 'achievements' },
+    { icon: '📢', label: '公告', enabled: true, panelKey: 'announcements' }, { icon: '📚', label: '收藏', enabled: true, panelKey: 'collection' },
     { icon: '🤝', label: '好友', enabled: true, action: () => setShowOnline(value => !value) },
     { icon: '⚙️', label: '設定', enabled: true, panelKey: 'settings' },
   ]
@@ -122,6 +127,7 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
       {panel === 'shop'       && <Shop       onClose={() => setPanel(null)} />}
       {panel === 'settings'   && <Settings onClose={() => setPanel(null)} />}
       {panel === 'story'      && <StoryMode onClose={() => setPanel(null)} />}
+      {panel && ['pieces','tasks','mail','achievements','announcements'].includes(panel) && <FeaturePanel mode={panel as FeatureMode} onClose={() => setPanel(null)} />}
       {panel === 'teams'      && (
         <Teams onClose={() => setPanel(null)} />
       )}
