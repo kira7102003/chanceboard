@@ -12,6 +12,12 @@ export interface StorySegment {
   section?: string
 }
 
+export type StoryFlowNode =
+  | { id: string; type: 'common'; segment: StorySegment }
+  | { id: string; type: 'branch'; title: string; branches: StoryFlowBranch[] }
+
+export interface StoryFlowBranch { id: string; label: string; nodes: StoryFlowNode[] }
+
 export interface StoryChapter {
   id: StoryChapterId
   order: number
@@ -21,6 +27,7 @@ export interface StoryChapter {
   unlocked: boolean
   story: string
   segments?: StorySegment[]
+  flow?: StoryFlowNode[]
   backgroundKey?: string
 }
 
@@ -44,6 +51,7 @@ export function getStoryChapters(): StoryChapter[] {
 }
 
 export function getChapterSegments(chapter: StoryChapter): StorySegment[] {
+  if (chapter.flow?.length) return flattenStoryFlow(chapter.flow)
   if (chapter.segments?.length) return chapter.segments
   return chapter.story.split(/\n\s*\n/).map<StorySegment>((text, index) => ({
     id: `legacy_${chapter.id}_${index}`,
@@ -53,6 +61,18 @@ export function getChapterSegments(chapter: StoryChapter): StorySegment[] {
     boardCharacter: text.trim().startsWith('小白') ? 'white' : 'black',
     pose: index % 2 === 0 ? 'front' : 'side',
   })).filter(segment => segment.text)
+}
+
+export function getChapterFlow(chapter: StoryChapter): StoryFlowNode[] {
+  if (chapter.flow?.length) return chapter.flow
+  return getChapterSegments({ ...chapter, flow: undefined }).map(segment => ({ id: `node_${segment.id}`, type: 'common', segment }))
+}
+
+/** Runtime fallback follows the first branch; the editor retains every route. */
+export function flattenStoryFlow(nodes: StoryFlowNode[]): StorySegment[] {
+  return nodes.flatMap(node => node.type === 'common'
+    ? [node.segment]
+    : node.branches[0] ? flattenStoryFlow(node.branches[0].nodes) : [])
 }
 
 export function saveStoryChapters(chapters: StoryChapter[]): void {

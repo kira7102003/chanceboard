@@ -8,7 +8,7 @@ import { DEFAULT_DAILY_REWARD, getDailyRewards, localDateKey, saveDailyRewardSet
 import type { DailyReward } from '../utils/dailyRewards'
 import { runAllMoveTests, runWinRateLadder } from '../engine/diagnostics'
 import type { MoveTestReport, LadderReport } from '../engine/diagnostics'
-import { getChapterSegments, getStoryChapters, saveStoryChapters, type StorySegment } from '../utils/storyStore'
+import { getChapterFlow, getChapterSegments, getStoryChapters, saveStoryChapters, type StoryChapter, type StoryFlowNode, type StorySegment } from '../utils/storyStore'
 import { getBattleBackgroundNames, getBoardCharacters, saveBoardCharacters } from '../utils/boardCharacters'
 
 const EL_COLOR: Record<string, string>   = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee' }
@@ -983,6 +983,8 @@ function StorySettings() {
               {battleBackgroundNames.map((name, bgIndex) => <option value={`cb_bg_battle_${bgIndex + 1}`} key={bgIndex}>{name}</option>)}
             </select></label>
           </div>
+          <StoryFlowEditor chapter={chapter} boardCharacters={boardCharacters} onChange={flow => update(index, { flow })} />
+          <div hidden>
           <div className="adm-section-label" style={{ marginTop: 12 }}>故事段落編輯</div>
           {getChapterSegments(chapter).map((segment, segmentIndex, allSegments) => {
             const changeSegment = (patch: Partial<StorySegment>) => update(index, {
@@ -1017,10 +1019,63 @@ function StorySettings() {
           })}
           <button className="btn" onClick={() => update(index, { segments: [...getChapterSegments(chapter), {
             id: `segment_${Date.now()}`, speaker: boardCharacters[0]?.name ?? '旁白', text: '新段落', side: 'left', boardCharacter: boardCharacters[0]?.id ?? 'black', pose: 'front', section: '主線',
-          }] })}>＋ 新增段落</button>
+          }] })}>＋ 新增段落</button></div>
         </div>
       </div>
     </div>)}
+  </div>
+}
+
+function StoryFlowEditor({ chapter, boardCharacters, onChange }: {
+  chapter: StoryChapter
+  boardCharacters: ReturnType<typeof getBoardCharacters>
+  onChange: (flow: StoryFlowNode[]) => void
+}) {
+  const flow = getChapterFlow(chapter)
+  const newSegment = (): StorySegment => ({
+    id: `segment_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+    speaker: boardCharacters[0]?.name ?? '旁白', text: '新故事卡片', side: 'left',
+    boardCharacter: boardCharacters[0]?.id ?? 'black', pose: 'front', section: '主線',
+  })
+  const newCommon = (): StoryFlowNode => ({ id: `node_${Date.now()}_${Math.random()}`, type: 'common', segment: newSegment() })
+  const newBranch = (): StoryFlowNode => ({ id: `branch_${Date.now()}_${Math.random()}`, type: 'branch', title: '新分歧', branches: [
+    { id: `route_a_${Date.now()}`, label: '選項 A', nodes: [] }, { id: `route_b_${Date.now()}`, label: '選項 B', nodes: [] },
+  ] })
+  return <section className="story-flow-editor">
+    <div className="story-flow-head"><div><b>故事 Flow</b><small>共用卡片沿主線排列；分歧路線可繼續加入共用或下一層分歧。</small></div>
+      <div><button className="btn sm" onClick={() => onChange([...flow, newCommon()])}>＋ 共用</button><button className="btn sm primary" onClick={() => onChange([...flow, newBranch()])}>⑂ 分歧</button></div>
+    </div>
+    <StoryFlowList nodes={flow} onChange={onChange} boardCharacters={boardCharacters} chapter={chapter} depth={0} newCommon={newCommon} newBranch={newBranch} />
+  </section>
+}
+
+function StoryFlowList({ nodes, onChange, boardCharacters, chapter, depth, newCommon, newBranch }: {
+  nodes: StoryFlowNode[]; onChange: (nodes: StoryFlowNode[]) => void
+  boardCharacters: ReturnType<typeof getBoardCharacters>; chapter: StoryChapter; depth: number
+  newCommon: () => StoryFlowNode; newBranch: () => StoryFlowNode
+}) {
+  return <div className="story-flow-list" style={{ '--flow-depth': depth } as React.CSSProperties}>
+    {nodes.map((node, index) => <div className={`story-flow-node ${node.type}`} key={node.id}>
+      <div className="story-flow-node-bar"><b>{node.type === 'common' ? '共用卡片' : '分歧節點'}</b><span>#{index + 1}</span><button className="btn sm danger" onClick={() => onChange(nodes.filter(item => item.id !== node.id))}>刪除</button></div>
+      {node.type === 'common' ? (() => {
+        const segment = node.segment
+        const patch = (segmentPatch: Partial<StorySegment>) => onChange(nodes.map(item => item.id === node.id && item.type === 'common' ? { ...item, segment: { ...item.segment, ...segmentPatch } } : item))
+        const portraitKey = `cb_board_${segment.boardCharacter ?? 'black'}_${segment.pose ?? 'front'}`
+        const portrait = getUrlByKey(portraitKey) ?? ''
+        const background = getUrlByKey(chapter.backgroundKey || `cb_story_map_${chapter.id}`) ?? ''
+        return <><div className="story-flow-card-fields"><Field label="區段" value={segment.section ?? ''} onChange={section => patch({ section })} /><Field label="說話者" value={segment.speaker} onChange={speaker => patch({ speaker })} />
+          <label className="adm-field"><span>位置</span><select className="adm-select" value={segment.side} onChange={event => patch({ side: event.target.value as 'left'|'right' })}><option value="left">左邊</option><option value="right">右邊</option></select></label>
+          <label className="adm-field"><span>插入立繪</span><select className="adm-select" value={segment.boardCharacter ?? ''} onChange={event => { const selected = boardCharacters.find(char => char.id === event.target.value); patch({ boardCharacter: event.target.value, speaker: selected?.name ?? segment.speaker }) }}>{boardCharacters.map(char => <option key={char.id} value={char.id}>{char.name}</option>)}</select></label>
+          <label className="adm-field"><span>立繪姿勢</span><select className="adm-select" value={segment.pose ?? 'front'} onChange={event => patch({ pose: event.target.value as 'front'|'side' })}><option value="front">正面</option><option value="side">側面</option></select></label></div>
+          <textarea className="adm-story-textarea" value={segment.text} onChange={event => patch({ text: event.target.value })} />
+          <div className="story-flow-preview" style={{ backgroundImage: `linear-gradient(#05071466,#050714cc),url(${background})` }}>{portrait && <img className={segment.side === 'right' ? 'right' : ''} src={portrait} alt="" />}<div><b>{segment.speaker}</b><p>{segment.text}</p></div></div></>
+      })() : <><Field label="分歧標題" value={node.title} onChange={title => onChange(nodes.map(item => item.id === node.id && item.type === 'branch' ? { ...item, title } : item))} />
+        <div className="story-flow-branches">{node.branches.map((branch, branchIndex) => <div className="story-flow-route" key={branch.id}><div className="story-flow-route-head"><input className="input" value={branch.label} onChange={event => onChange(nodes.map(item => item.id === node.id && item.type === 'branch' ? { ...item, branches: item.branches.map(route => route.id === branch.id ? { ...route, label: event.target.value } : route) } : item))} /><button className="btn sm danger" disabled={node.branches.length <= 2} onClick={() => onChange(nodes.map(item => item.id === node.id && item.type === 'branch' ? { ...item, branches: item.branches.filter(route => route.id !== branch.id) } : item))}>刪除路線</button></div>
+          <StoryFlowList nodes={branch.nodes} depth={depth + 1} boardCharacters={boardCharacters} chapter={chapter} newCommon={newCommon} newBranch={newBranch} onChange={branchNodes => onChange(nodes.map(item => item.id === node.id && item.type === 'branch' ? { ...item, branches: item.branches.map((route, i) => i === branchIndex ? { ...route, nodes: branchNodes } : route) } : item))} />
+          <div className="story-flow-add"><button className="btn sm" onClick={() => onChange(nodes.map(item => item.id === node.id && item.type === 'branch' ? { ...item, branches: item.branches.map(route => route.id === branch.id ? { ...route, nodes: [...route.nodes, newCommon()] } : route) } : item))}>＋ 共用</button><button className="btn sm" onClick={() => onChange(nodes.map(item => item.id === node.id && item.type === 'branch' ? { ...item, branches: item.branches.map(route => route.id === branch.id ? { ...route, nodes: [...route.nodes, newBranch()] } : route) } : item))}>⑂ 分歧</button></div>
+        </div>)}<button className="btn sm" onClick={() => onChange(nodes.map(item => item.id === node.id && item.type === 'branch' ? { ...item, branches: [...item.branches, { id: `route_${Date.now()}`, label: `選項 ${item.branches.length + 1}`, nodes: [] }] } : item))}>＋ 新增路線</button></div></>}
+    </div>)}
+    {nodes.length === 0 && <div className="story-flow-empty">這條路線尚無節點，請新增共用或分歧。</div>}
   </div>
 }
 
