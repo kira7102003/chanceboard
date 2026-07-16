@@ -460,9 +460,9 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
         <div className="battle-arena" ref={arenaRef}>
           <div className="slots-row">
             {/* 我方: 後→中→前 (facing enemy on the right) */}
-            {mySlotOrder.map(slot => {
+            {mySlotOrder.map((slot, slotIndex) => {
               // 前/中 往後（左）展開，後 往前（右）展開
-              const fanClass = slot === 3 ? 'stack-expand-right' : 'stack-expand-left'
+              const fanClass = slotIndex === 0 ? 'stack-expand-right' : 'stack-expand-left'
               const label = getSlotLabel(mySide ?? 'A', slot)
               const units = myTeam.filter(u => getPendingSlot(u) === slot).sort((a, b) => b.hp - a.hp)
               return (
@@ -496,9 +496,9 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
             <div className="arena-divider" />
 
             {/* 敵方: 前→中→後 */}
-            {enemySlotOrder.map(slot => {
+            {enemySlotOrder.map((slot, slotIndex) => {
               // 前/中 往後（右）展開，後 往前（左）展開
-              const fanClass = slot === 3 ? 'stack-expand-left' : 'stack-expand-right'
+              const fanClass = slotIndex === 0 ? 'stack-expand-right' : 'stack-expand-left'
               const label = getSlotLabel(oppSide, slot)
               const units = enemyTeam.filter(u => u.slot === slot).sort((a, b) => b.hp - a.hp)
               return (

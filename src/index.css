@@ -1186,7 +1186,7 @@ h2 {
 }
 .arena-divider {
   width: 1px; background: rgba(200,161,90,.18); align-self: stretch;
-  flex-shrink: 0; margin: 0 auto; /* auto：吃掉兩隊收攏後多出的寬度 */
+  flex-shrink: 0;
 }
 
 /* ── Spotlight card ─────────────────────────────────────────── */
@@ -1242,7 +1242,7 @@ h2 {
 .slots-row { display: flex; gap: 6px; align-items: stretch; padding-top: 0; overflow: visible; flex: 1; min-height: 0; }
 /* max-width 綁卡片實際寬（高×24/43）：格子高度被壓矮時（如手機橫向）
    欄寬跟著縮，人物之間不會留大空隙；多出的空間由中線 margin:auto 吸收 */
-.slot-col  { flex: 1 1 0; display: flex; flex-direction: column; gap: 5px; max-width: calc(var(--board-cell-h, 300px) * 24 / 43); min-width: 0; min-height: 0; transition: transform .25s ease; }
+.slot-col  { flex: 1 1 0; display: flex; flex-direction: column; gap: 5px; min-width: 0; min-height: 0; transition: transform .25s ease; }
 .slot-name {
   font-size: 11px; font-weight: 900; letter-spacing: 3px;
   text-align: center; padding: 3px 0;
@@ -1252,7 +1252,7 @@ h2 {
 /* ── Unit card ─────────────────────────────────────────────── */
 /* Poker-card stacking container */
 .slot-cards-stack {
-  position: relative; aspect-ratio: 24 / 43; width: auto;
+  position: relative; width: 100%;
   /* 24:43 matches the Admin portrait-crop tool's 768x1376 target (see
      PORTRAIT_W/PORTRAIT_H in Admin.tsx) so the box hugs the character with
      no letterbox gap and no cropping needed.
@@ -1260,8 +1260,7 @@ h2 {
      fitBattleLayout()); fallback matches the old proportional-shrink guess
      for the moment before the layout effect runs on first paint. */
   height: var(--board-cell-h, calc(50dvh - 60px));
-  max-width: 100%;
-  align-self: center;
+  align-self: stretch;
   overflow: visible;
   /* 照抄參考版 .cell：格子有底色 + 陣營色頂邊 */
   background: linear-gradient(180deg, rgba(14,18,40,.5) 0%, rgba(8,10,24,.5) 100%);
@@ -1282,6 +1281,8 @@ h2 {
   position: absolute; top: 0; left: 0; bottom: 0; width: 100%;
   transition: transform .25s ease, box-shadow .2s, opacity .25s ease;
 }
+.slot-cards-stack.stack-multi > .unit-card { width: 66.667%; }
+.slot-cards-stack.stack-multi.stack-expand-left > .unit-card { left: auto; right: 0; }
 /* 單獨一隻：滿版，hover 不移動（沒有任何 transform 規則會命中） */
 
 /* 兩、三隻同格：卡維持原尺寸（滿格），撲克牌式重疊，
@@ -1289,10 +1290,10 @@ h2 {
    .uc-i0/.uc-i1/.uc-i2 由 JSX 依疊序標上（slotlabel 也是子元素，
    nth-child 會錯位，所以用明確 class）。 */
 .slot-cards-stack > .uc-i0 { z-index: 3; }
-.stack-expand-left  > .uc-i1 { z-index: 2; transform: translateX(-10%); opacity: .75; }
-.stack-expand-left  > .uc-i2 { z-index: 1; transform: translateX(-20%); opacity: .55; }
-.stack-expand-right > .uc-i1 { z-index: 2; transform: translateX(10%);  opacity: .75; }
-.stack-expand-right > .uc-i2 { z-index: 1; transform: translateX(20%);  opacity: .55; }
+.stack-expand-left  > .uc-i1 { z-index: 2; transform: translateX(-14%); opacity: .75; }
+.stack-expand-left  > .uc-i2 { z-index: 1; transform: translateX(-28%); opacity: .55; }
+.stack-expand-right > .uc-i1 { z-index: 2; transform: translateX(14%);  opacity: .75; }
+.stack-expand-right > .uc-i2 { z-index: 1; transform: translateX(28%);  opacity: .55; }
 
 /* Hover 展開（只有疊 2+ 張的 .stack-multi 會動）：
    展開距離採原設計的 2/3，第二張約 33%、第三張約 67%，
@@ -1300,10 +1301,10 @@ h2 {
 .slot-col { position: relative; }
 .slot-col:hover { z-index: 50; }
 .slot-col:hover .stack-multi > .unit-card { opacity: 1; }
-.slot-col:hover .stack-expand-left  > .uc-i1 { transform: translateX(-33.333%); }
-.slot-col:hover .stack-expand-left  > .uc-i2 { transform: translateX(-66.667%); }
-.slot-col:hover .stack-expand-right > .uc-i1 { transform: translateX(33.333%);  }
-.slot-col:hover .stack-expand-right > .uc-i2 { transform: translateX(66.667%); }
+.slot-col:hover .stack-expand-left  > .uc-i1 { transform: translateX(-100%); }
+.slot-col:hover .stack-expand-left  > .uc-i2 { transform: translateX(-200%); }
+.slot-col:hover .stack-expand-right > .uc-i1 { transform: translateX(100%);  }
+.slot-col:hover .stack-expand-right > .uc-i2 { transform: translateX(200%); }
 
 .unit-card {
   background: linear-gradient(155deg, var(--bg3) 0%, var(--bg2) 100%);
