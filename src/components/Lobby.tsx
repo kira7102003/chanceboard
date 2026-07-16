@@ -11,8 +11,9 @@ const Teams = lazy(() => import('./Teams'))
 const Settings = lazy(() => import('./Settings'))
 const StoryMode = lazy(() => import('./StoryMode'))
 const FeaturePanel = lazy(() => import('./FeaturePanel'))
+const DuelMenu = lazy(() => import('./DuelMenu'))
 
-type Panel = 'summon' | 'collection' | 'shop' | 'teams' | 'settings' | 'story' | 'pieces' | 'tasks' | 'mail' | 'achievements' | 'announcements' | 'friends' | null
+type Panel = 'duel' | 'summon' | 'collection' | 'shop' | 'teams' | 'settings' | 'story' | 'pieces' | 'tasks' | 'mail' | 'achievements' | 'announcements' | 'friends' | null
 
 interface Props {
   onJoin:        (roomId: string) => void
@@ -26,8 +27,6 @@ interface Props {
 const LOBBY_CHAR_KEY = 'cb_lobby_char'
 
 export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejoin, onAdmin }: Props) {
-  const [input,      setInput]      = useState('')
-  const [showOnline, setShowOnline] = useState(false)
   const [imgFailed,  setImgFailed]  = useState(false)
   const [panel,      setPanel]      = useState<Panel>(null)
   const [, forceUpdate] = useState(0)
@@ -88,18 +87,9 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
     setImgFailed(true)  // all chars tried or limit reached
   }
 
-  const create = () => {
-    const id = Math.random().toString(36).slice(2, 8).toUpperCase()
-    onJoin(id)
-  }
-  const join = () => {
-    const id = input.trim().toUpperCase()
-    if (id.length >= 4) onJoin(id)
-  }
-
   type MenuItem = { icon: string; iconImage?: string; label: string; panelKey?: Panel; action?: () => void; enabled: boolean }
   const MAIN_BTNS: MenuItem[] = [
-    { icon: '⚔️', label: '決鬥', enabled: true, action: () => setShowOnline(value => !value) },
+    { icon: '⚔️', label: '決鬥', enabled: true, panelKey: 'duel' },
     { icon: '📖', label: '故事', enabled: true, panelKey: 'story' },
     { icon: '👥', label: '隊伍', enabled: true, panelKey: 'teams' },
     { icon: '', iconImage: '/chess-piece.svg', label: '棋子', enabled: true, panelKey: 'pieces' },
@@ -129,6 +119,8 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
       {panel === 'shop'       && <Shop       onClose={() => setPanel(null)} />}
       {panel === 'settings'   && <Settings onClose={() => setPanel(null)} />}
       {panel === 'story'      && <StoryMode onClose={() => setPanel(null)} />}
+      {panel === 'duel'       && <DuelMenu onClose={() => setPanel(null)} onJoin={onJoin} onSolo={onSolo}
+        onAIBattle={onAIBattle} savedSession={savedSession} onRejoin={onRejoin} />}
       {panel && ['pieces','tasks','mail','achievements','announcements','friends'].includes(panel) && <FeaturePanel mode={panel as FeatureMode} onClose={() => setPanel(null)} />}
       {panel === 'teams'      && (
         <Teams onClose={() => setPanel(null)} />
@@ -165,29 +157,6 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
 
           <MenuGrid items={MAIN_BTNS} />
 
-          {/* Online submenu */}
-          {showOnline && (
-            <div className="lv2-online">
-              <button className="lv2-btn-sm" onClick={onSolo}>⚔️ 單人決鬥</button>
-              <button className="lv2-btn-sm" onClick={create}>建立多人房間</button>
-              <div style={{ display: 'flex', gap: 6 }}>
-                <input className="input" style={{ flex: 1, fontSize: 12 }}
-                  placeholder="輸入房間代碼"
-                  value={input}
-                  onChange={e => setInput(e.target.value.toUpperCase())}
-                  onKeyDown={e => e.key === 'Enter' && join()}
-                  maxLength={8}
-                />
-                <button className="lv2-btn-sm" style={{ width: 'auto', whiteSpace: 'nowrap' }} onClick={join}>加入</button>
-              </div>
-              <button className="lv2-btn-sm" onClick={onAIBattle}>🤖 AI 對戰觀戰</button>
-              {savedSession && (
-                <button className="lv2-btn-sm" style={{ color: '#9988ee' }} onClick={onRejoin}>
-                  繼續上局（{savedSession.roomId}）
-                </button>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Reserved mission-status zone; content will be connected later. */}
