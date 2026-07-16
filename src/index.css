@@ -157,11 +157,25 @@ body { margin: 0; }
 .lv2-char {
   position: absolute; left: 0; bottom: 0;
   height: 93dvh; z-index: 1; opacity: 1 !important;
+  --lobby-float-distance: 10px;
 }
 .lv2-char-img {
   height: 100%; width: auto;
   object-fit: contain; object-position: left bottom;
   filter: drop-shadow(0 0 80px rgba(0,0,0,.75));
+  transform-origin: 48% 92%;
+  animation: lobby-character-float 5.8s cubic-bezier(.42, 0, .34, 1) infinite;
+  will-change: transform;
+}
+@keyframes lobby-character-float {
+  0%   { transform: translate3d(0, 1px, 0) rotate(-.08deg) scale(1); }
+  27%  { transform: translate3d(0, calc(var(--lobby-float-distance) * -.72), 0) rotate(.06deg) scale(1.001); }
+  52%  { transform: translate3d(0, calc(var(--lobby-float-distance) * -1), 0) rotate(.1deg) scale(1.002); }
+  76%  { transform: translate3d(0, calc(var(--lobby-float-distance) * -.38), 0) rotate(-.02deg) scale(1.001); }
+  100% { transform: translate3d(0, 1px, 0) rotate(-.08deg) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lv2-char-img { animation: none; }
 }
 .lv2-resources {
   position: absolute; top: 20px; right: 20px;
@@ -235,7 +249,7 @@ body { margin: 0; }
 @media (max-width: 640px) {
   .lobby-v2  { display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 24px; }
   .lv2-panel { position: static; transform: none; width: 100%; padding: 16px; box-sizing: border-box; }
-  .lv2-char  { height: 60dvh; opacity: .85; }
+  .lv2-char  { height: 60dvh; opacity: .85; --lobby-float-distance: 6px; }
   .lv2-resources { top: 12px; right: 12px; }
 }
 
@@ -2868,7 +2882,7 @@ h2 {
 
   /* lobby v2 landscape: panel left-aligned, char smaller */
   .lobby-v2  { display: flex; flex-direction: row; align-items: stretch; height: 100dvh; min-height: unset; }
-  .lv2-char  { height: 96dvh; bottom: 0; opacity: .75; }
+  .lv2-char  { height: 96dvh; bottom: 0; opacity: .75; --lobby-float-distance: 5px; }
   .lv2-panel { position: static; transform: none; width: 320px;
                margin: auto 24px auto auto; padding: 0; }
   .lv2-resources { top: 8px; right: 8px; }
