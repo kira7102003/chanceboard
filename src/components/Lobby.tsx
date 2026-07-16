@@ -110,7 +110,6 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
     { icon: '🛒', label: '商店', enabled: true, panelKey: 'shop' }, { icon: '🏆', label: '成就', enabled: true, panelKey: 'achievements' },
     { icon: '📢', label: '公告', enabled: true, panelKey: 'announcements' }, { icon: '📚', label: '收藏', enabled: true, panelKey: 'collection' },
     { icon: '🤝', label: '好友', enabled: true, panelKey: 'friends' },
-    { icon: '⚙️', label: '設定', enabled: true, panelKey: 'settings' },
   ]
 
   const MenuGrid = ({ items, secondary = false }: { items: MenuItem[]; secondary?: boolean }) => <div className={`lv2-grid${secondary ? ' lv2-grid-secondary' : ''}`}>
