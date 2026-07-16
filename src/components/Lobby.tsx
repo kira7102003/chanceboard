@@ -100,7 +100,7 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
     { icon: '', sprite: 10, label: '故事', enabled: true, panelKey: 'story' },
     { icon: '', sprite: 11, label: '隊伍', enabled: true, panelKey: 'teams' },
     { icon: '', iconImage: '/chess-piece.svg', label: '棋子', enabled: true, panelKey: 'pieces' },
-    { icon: '✨', label: '召喚', enabled: true, panelKey: 'summon' },
+    { icon: '', iconImage: '/summon-icon.svg', label: '召喚', enabled: true, panelKey: 'summon' },
     { icon: '', sprite: 0, label: '後勤', enabled: true, panelKey: 'logistics' },
     { icon: '', sprite: 1, label: '探索', enabled: true, panelKey: 'explore' },
   ]
@@ -157,7 +157,7 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
         {/* ── User identity + resources: one aligned HUD row ── */}
         <div className="lv2-top-hud">
           <div className="lv2-resources">
-            <span className="lv2-res"><i className="resource-icon gem">◆</i><b>{gems}</b></span>
+            <span className="lv2-res"><i className="resource-icon gem">◆</i><b>鑽 {gems}</b></span>
             <span className="lv2-res"><i className="resource-icon gold">●</i><b>金 {coins.toLocaleString()}</b></span>
             <span className="lv2-res resource-silver"><i className="resource-icon silver">●</i><b>銀 {materials?.silver ?? 0}</b></span>
             <span className="lv2-res resource-copper"><i className="resource-icon copper">●</i><b>銅 {materials?.copper ?? 0}</b></span>
