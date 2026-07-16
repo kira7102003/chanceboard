@@ -31,6 +31,24 @@ export interface StoryChapter {
   segments?: StorySegment[]
   flow?: StoryFlowNode[]
   backgroundKey?: string
+  rewards?: StoryRewards
+}
+
+export interface StoryRewards {
+  characterId?: string
+  coins?: number
+  gems?: number
+  silver?: number
+  copper?: number
+  iron?: number
+  wood?: number
+}
+
+export function describeStoryRewards(rewards?: StoryRewards): string {
+  if (!rewards) return ''
+  return [rewards.characterId && '角色', rewards.gems && `鑽石 ×${rewards.gems}`, rewards.coins && `金幣 ×${rewards.coins}`,
+    rewards.silver && `銀 ×${rewards.silver}`, rewards.copper && `銅 ×${rewards.copper}`, rewards.iron && `鐵 ×${rewards.iron}`, rewards.wood && `木 ×${rewards.wood}`]
+    .filter(Boolean).join('　')
 }
 
 const KEY = 'cb_story_chapters'

@@ -121,7 +121,7 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
       {panel === 'collection' && <Collection onClose={() => setPanel(null)} />}
       {panel === 'shop'       && <Shop       onClose={() => setPanel(null)} />}
       {panel === 'settings'   && <Settings onClose={() => setPanel(null)} />}
-      {panel === 'story'      && <StoryMode onClose={() => setPanel(null)} onComplete={() => addExperience(100)} />}
+      {panel === 'story'      && <StoryMode onClose={() => setPanel(null)} onComplete={chapter => { addExperience(100); usePlayerStore.getState().claimStoryReward(chapter.id, chapter.rewards ?? {}) }} />}
       {panel === 'profile'    && <PlayerProfile onClose={() => setPanel(null)} />}
       {panel === 'duel'       && <DuelMenu onClose={() => setPanel(null)} onJoin={onJoin} onSolo={onSolo}
         onAIBattle={onAIBattle} savedSession={savedSession} onRejoin={onRejoin} />}

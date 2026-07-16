@@ -50,6 +50,7 @@ interface PlayerState {
   removeFriend: (playerId: string) => void
   addExperience: (amount: number) => void
   setDesktopCharacters: (ids: string[]) => void
+  claimStoryReward: (chapterId: string, reward: { characterId?: string; coins?: number; gems?: number; silver?: number; copper?: number; iron?: number; wood?: number }) => boolean
 }
 
 export const usePlayerStore = create<PlayerState>()(
@@ -143,6 +144,29 @@ export const usePlayerStore = create<PlayerState>()(
       setDesktopCharacters: (ids) => set(s => ({
         desktopCharIds: [...new Set(ids)].filter(id => s.ownedCharIds.includes(id)).slice(0, 5),
       })),
+      claimStoryReward: (chapterId, reward) => {
+        const rewardId = `story:${chapterId}`
+        if (get().claimedRewards.includes(rewardId)) return false
+        set(s => {
+          const alreadyOwned = !!reward.characterId && s.ownedCharIds.includes(reward.characterId)
+          return {
+            coins: s.coins + Math.max(0, Math.floor(reward.coins ?? 0)),
+            gems: s.gems + Math.max(0, Math.floor(reward.gems ?? 0)),
+            materials: {
+              silver: s.materials.silver + Math.max(0, Math.floor(reward.silver ?? 0)),
+              copper: s.materials.copper + Math.max(0, Math.floor(reward.copper ?? 0)),
+              iron: s.materials.iron + Math.max(0, Math.floor(reward.iron ?? 0)),
+              wood: s.materials.wood + Math.max(0, Math.floor(reward.wood ?? 0)),
+            },
+            ownedCharIds: reward.characterId && !alreadyOwned ? [...s.ownedCharIds, reward.characterId] : s.ownedCharIds,
+            characterFragments: alreadyOwned && reward.characterId
+              ? { ...s.characterFragments, [reward.characterId]: (s.characterFragments[reward.characterId] ?? 0) + 10 }
+              : s.characterFragments,
+            claimedRewards: [...s.claimedRewards, rewardId],
+          }
+        })
+        return true
+      },
       saveTeam: (team) => {
         if (get().savedTeams.length >= 10) return
         const id = `team_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`

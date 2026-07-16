@@ -961,6 +961,7 @@ function BgSettings() {
 function StorySettings() {
   const [chapters, setChapters] = useState(getStoryChapters)
   const boardCharacters = getBoardCharacters()
+  const rewardCharacters = getChars()
   const battleBackgroundNames = getBattleBackgroundNames()
   const update = (index: number, patch: Partial<(typeof chapters)[number]>) => {
     const next = chapters.map((chapter, i) => i === index ? { ...chapter, ...patch } : chapter)
@@ -983,6 +984,14 @@ function StorySettings() {
               {battleBackgroundNames.map((name, bgIndex) => <option value={`cb_bg_battle_${bgIndex + 1}`} key={bgIndex}>{name}</option>)}
             </select></label>
           </div>
+          <div className="adm-section-label" style={{ marginTop: 14 }}>章節首次完成獎勵</div>
+          <div className="adm-field-grid story-reward-grid">
+            <label className="adm-field"><span>獎勵角色</span><select className="adm-select" value={chapter.rewards?.characterId ?? ''} onChange={event => update(index, { rewards: { ...chapter.rewards, characterId: event.target.value || undefined } })}>
+              <option value="">不贈送角色</option>{rewardCharacters.map(character => <option key={character.id} value={character.id}>{character.name}</option>)}
+            </select></label>
+            {([['gems', '鑽石'], ['coins', '金幣'], ['silver', '銀'], ['copper', '銅'], ['iron', '鐵'], ['wood', '木']] as const).map(([key, label]) => <label className="adm-field" key={key}><span>{label}</span><input type="number" min="0" value={chapter.rewards?.[key] ?? 0} onChange={event => update(index, { rewards: { ...chapter.rewards, [key]: Math.max(0, Math.floor(Number(event.target.value) || 0)) } })} /></label>)}
+          </div>
+          <small style={{ color: '#858daa' }}>每個帳號每章只能領取一次；重複角色會自動轉為 10 個角色碎片。</small>
           <StoryFlowEditor chapter={chapter} boardCharacters={boardCharacters} onChange={flow => update(index, { flow })} />
           <div hidden>
           <div className="adm-section-label" style={{ marginTop: 12 }}>故事段落編輯</div>

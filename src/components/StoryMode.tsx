@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react'
-import { getChapterFlow, getStoryChapters, type StoryChapter, type StoryFlowNode } from '../utils/storyStore'
+import { describeStoryRewards, getChapterFlow, getStoryChapters, type StoryChapter, type StoryFlowNode } from '../utils/storyStore'
 import { getUrlByKey } from '../utils/charStore'
 import { getBoardCharacters } from '../utils/boardCharacters'
 
-interface Props { onClose: () => void; onComplete?: () => void }
+interface Props { onClose: () => void; onComplete?: (chapter: StoryChapter) => void }
 
 export default function StoryMode({ onClose, onComplete }: Props) {
   const chapters = useMemo(getStoryChapters, [])
@@ -50,7 +50,7 @@ export default function StoryMode({ onClose, onComplete }: Props) {
         <span>{segment?.section && <em style={{ marginRight: 10, opacity: .65 }}>{segment.section}</em>}{segment?.speaker || chapter.title}</span>
         <p>{segment?.text}</p><small>點擊繼續</small>
       </button> : null}
-      {cursor >= nodes.length && <button className="btn primary story-finish" onClick={() => { onComplete?.(); leaveChapter() }}>完成章節 ＋100 EXP</button>}
+      {cursor >= nodes.length && <button className="btn primary story-finish" onClick={() => { onComplete?.(chapter); leaveChapter() }}>完成章節 ＋100 EXP{describeStoryRewards(chapter.rewards) ? `　${describeStoryRewards(chapter.rewards)}` : ''}</button>}
     </div>
   }
 
