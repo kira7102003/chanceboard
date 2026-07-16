@@ -78,7 +78,7 @@ function FlowLane({ nodes, onChange, boardCharacters, depth, label, laneId }: {
         <div className="story-drop-zone" onDragOver={event => event.preventDefault()} onDrop={event => dropAt(event, index)}><span>放到這裡</span></div>
         {index > 0 && <span className="story-flow-arrow">→</span>}
         <article className={`story-designer-card ${node.type}`}>
-          <div className="story-card-top"><i>{index + 1}</i><b>{node.type === 'common' ? '對話節點' : '選項分支'}</b><span>
+          <div className="story-card-top"><i>{index + 1}</i><b>{node.type === 'common' ? '對話節點' : depth === 0 ? '共用選擇' : '選項分支'}</b><span>
             <button title="複製卡片" onClick={() => { const next = [...nodes]; next.splice(index + 1, 0, cloneNode(node)); onChange(next) }}>⧉</button><button disabled={index === 0} onClick={() => move(index, -1)}>←</button><button disabled={index === nodes.length - 1} onClick={() => move(index, 1)}>→</button><button className="delete" onClick={() => onChange(nodes.filter(item => item.id !== node.id))}>×</button>
           </span></div>
           {node.type === 'common' ? <DialogueCard segment={node.segment} boardCharacters={boardCharacters} onChange={segment => replace(node.id, { ...node, segment })} />
@@ -105,7 +105,7 @@ function DialogueCard({ segment, boardCharacters, onChange }: { segment: StorySe
 }
 
 function BranchCard({ node, boardCharacters, depth, onChange }: { node: Extract<StoryFlowNode, { type: 'branch' }>; boardCharacters: BoardCharacter[]; depth: number; onChange: (node: Extract<StoryFlowNode, { type: 'branch' }>) => void }) {
-  return <div className="story-branch-editor">
+  return <div className={`story-branch-editor${depth === 0 ? ' root-parallel-routes' : ''}`}>
     <input className="story-branch-title" value={node.title} onChange={event => onChange({ ...node, title: event.target.value })} />
     <div className="story-branch-routes">{node.branches.map((route, routeIndex) => <div className="story-route-lane" key={route.id}>
       <div className="story-route-head"><i style={{ '--route-index': routeIndex } as React.CSSProperties} /><input value={route.label} onChange={event => onChange({ ...node, branches: node.branches.map(item => item.id === route.id ? { ...item, label: event.target.value } : item) })} /><button disabled={node.branches.length <= 2} onClick={() => onChange({ ...node, branches: node.branches.filter(item => item.id !== route.id) })}>×</button></div>
