@@ -9,6 +9,11 @@
   cursor: pointer;
 }
 
+.pixel-preview-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.pixel-preview-toggle:disabled { opacity: .4; cursor: not-allowed; }
+.pixel-precise-control { display: grid; grid-template-columns: 1fr 68px; gap: 8px; align-items: center; }
+.pixel-precise-control input[type="number"] { width: 100%; box-sizing: border-box; padding: 5px; border: 1px solid #46516d; border-radius: 6px; background: #080c17; color: #f0d47d; text-align: right; }
+
 .pixel-preview-toggle.active {
   border-color: #e0b64b;
   background: #29210d;
