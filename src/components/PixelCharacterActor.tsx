@@ -1,4 +1,5 @@
 import './PixelCharacterActor.css'
+import './PixelWholeMotion.css'
 import { getCharacterBImageFacing, getUrlByKey } from '../utils/charStore'
 
 type PixelPose = 'front' | 'side' | 'back'

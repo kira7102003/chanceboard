@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import './Logistics.css'
+import './PixelWholeMotion.css'
 import './LobbyLogisticsShowcase.css'
 import './LobbyLogisticsCompleted.css'
 import { getChars, getUrlByKey } from '../utils/charStore'
