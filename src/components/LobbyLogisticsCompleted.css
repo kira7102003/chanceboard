@@ -1,0 +1,14 @@
+.lobby-logistics-list .lobby-logistics-showcase.completed {
+  cursor: pointer;
+  border-color: #d9b45e;
+  box-shadow: 0 0 0 1px #d9b45e66, 0 0 26px #d9b45e55;
+  transition: filter .18s, transform .18s;
+}
+.lobby-logistics-list .lobby-logistics-showcase.completed:hover {
+  filter: brightness(1.12);
+  transform: translateY(-1px);
+}
+.lobby-logistics-list .lobby-logistics-showcase.completed .lobby-logistics-title span {
+  color: #f1d27b;
+  font-weight: 900;
+}

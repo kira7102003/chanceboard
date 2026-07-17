@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react'
 import './Logistics.css'
 import './LobbyLogisticsShowcase.css'
+import './LobbyLogisticsCompleted.css'
 import { getChars, getUrlByKey } from '../utils/charStore'
-import { cancelActiveLogistics, getActiveLogistics, getLogisticsJobs } from '../utils/logisticsStore'
+import { cancelActiveLogistics, getActiveLogistics, getLogisticsJobs, saveActiveLogistics } from '../utils/logisticsStore'
+import { usePlayerStore } from '../store/playerStore'
 
 export default function LobbyLogisticsShowcase({ onOpen }: { onOpen?: () => void }) {
   const [active, setActive] = useState(getActiveLogistics)
   const [now, setNow] = useState(Date.now())
   const [completedNotice, setCompletedNotice] = useState<string[]>([])
   const jobs = getLogisticsJobs()
+  const addRewards = usePlayerStore(state => state.addResourceRewards)
 
   useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer) }, [])
   useEffect(() => {
@@ -29,9 +32,9 @@ export default function LobbyLogisticsShowcase({ onOpen }: { onOpen?: () => void
       const jobIndex = Math.max(0, jobs.findIndex(job => job.id === item.id)); const job = jobs[jobIndex]
       const characters = getChars().filter(character => item.charIds.includes(character.id)); const generatedIcon = getUrlByKey(`cb_logistics_icon_${item.id}`)
       const remain = Math.max(0, Math.ceil((item.endsAt - now) / 1000)); const hours = Math.floor(remain / 3600); const minutes = Math.floor(remain % 3600 / 60); const seconds = remain % 60
-      const openOrCancel = () => remain === 0 ? onOpen?.() : setActive(cancelActiveLogistics(item.id))
-      return <section className={`lobby-logistics-showcase${remain === 0 ? ' completed' : ''}`} key={item.id}>
-        <button className={`lobby-logistics-emblem${generatedIcon ? ' generated' : ''}`} title={remain === 0 ? '前往領取' : `取消${job?.name ?? '後勤'}`} aria-label={remain === 0 ? '前往領取' : `取消${job?.name ?? '後勤'}`} onClick={openOrCancel} style={{ '--job-index': jobIndex, backgroundPosition: `${jobIndex * 25}% center` } as React.CSSProperties}>{generatedIcon && <img src={generatedIcon} alt="" />}</button>
+      const claim = () => { if (remain !== 0 || !job) return; addRewards(job.rewards); const next = active.filter(activeItem => activeItem.id !== item.id); setActive(next); saveActiveLogistics(next); setCompletedNotice(current => current.filter(id => id !== item.id)) }
+      return <section className={`lobby-logistics-showcase${remain === 0 ? ' completed' : ''}`} key={item.id} role={remain === 0 ? 'button' : undefined} tabIndex={remain === 0 ? 0 : undefined} onClick={claim} onKeyDown={event => { if (remain === 0 && (event.key === 'Enter' || event.key === ' ')) claim() }}>
+        <button className={`lobby-logistics-emblem${generatedIcon ? ' generated' : ''}`} title={remain === 0 ? '領取資源' : `取消${job?.name ?? '後勤'}`} aria-label={remain === 0 ? '領取資源' : `取消${job?.name ?? '後勤'}`} onClick={event => { event.stopPropagation(); if (remain === 0) claim(); else setActive(cancelActiveLogistics(item.id)) }} style={{ '--job-index': jobIndex, backgroundPosition: `${jobIndex * 25}% center` } as React.CSSProperties}>{generatedIcon && <img src={generatedIcon} alt="" />}</button>
         <div className="lobby-logistics-title"><b>{job?.name ?? '後勤工作'}</b><span>{remain === 0 ? '完成 · 可領取' : `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`}</span></div>
         <div className="lobby-logistics-workers">{characters.map((character, index) => { const image = getUrlByKey(`cb_extra_b_img_${character.id}`) ?? getUrlByKey(`cb_extra_a_img_${character.id}`) ?? getUrlByKey(`cb_img_${character.id}`); return <div key={character.id} style={{ '--worker-index': index } as React.CSSProperties}>{image ? <img src={image} alt="" /> : <b>{character.name[0]}</b>}<span>{character.name}</span></div> })}</div>
       </section>
