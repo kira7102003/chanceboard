@@ -233,7 +233,7 @@ export default function Admin({ onBack }: Props) {
               <div className="adm-tabs">
                 {(['basic', 'moves', 'story'] as const).map(t => (
                   <button key={t} className={`adm-tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>
-                    {{ basic: '基本資料', moves: '招式圖片', story: '故事 & 插圖' }[t]}
+                    {{ basic: '基本資料', moves: '招式圖片', story: '角色故事' }[t]}
                   </button>
                 ))}
               </div>
@@ -876,12 +876,12 @@ function StoryTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<C
   return (
     <div className="adm-story">
       <div className="adm-section">
-        <div className="adm-section-label">故事插圖</div>
+        <div className="adm-section-label">角色故事插圖</div>
         <ImageCrop storageKey={`cb_story_img_${char.id}`} />
       </div>
 
       <div className="adm-section">
-        <div className="adm-section-label">故事文字 / 背景設定</div>
+        <div className="adm-section-label">角色故事內容（支援換行與分段）</div>
         <textarea
           className="adm-story-textarea"
           placeholder={`在這裡填寫 ${char.name} 的背景故事、設定或台詞...`}
@@ -889,6 +889,7 @@ function StoryTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<C
           onChange={e => onUpdate({ story: e.target.value })}
           rows={14}
         />
+        <small className="adm-story-save-hint">內容會自動儲存在目前角色資料，每位角色的故事互相獨立。</small>
       </div>
     </div>
   )
