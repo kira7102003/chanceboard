@@ -231,6 +231,7 @@ export default function App() {
       {/* 大廳 */}
       {!showAdmin && !isActive && (
         <Lobby
+          userId={user.id}
           onJoin={handleJoin}
           onSolo={handleSoloStart}
           onAIBattle={handleAIBattleStart}

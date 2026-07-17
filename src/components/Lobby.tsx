@@ -20,6 +20,7 @@ const Explore = lazy(() => import('./Explore'))
 type Panel = 'profile' | 'logistics' | 'explore' | 'duel' | 'summon' | 'collection' | 'shop' | 'teams' | 'settings' | 'story' | 'pieces' | 'tasks' | 'mail' | 'achievements' | 'announcements' | 'friends' | null
 
 interface Props {
+  userId:        string
   onJoin:        (roomId: string) => void
   onSolo:        () => void
   onAIBattle:    () => void
@@ -30,7 +31,7 @@ interface Props {
 
 const LOBBY_CHAR_KEY = 'cb_lobby_char'
 
-export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejoin, onAdmin }: Props) {
+export default function Lobby({ userId, onJoin, onSolo, onAIBattle, savedSession, onRejoin, onAdmin }: Props) {
   const [imgFailed,  setImgFailed]  = useState(false)
   const [panel,      setPanel]      = useState<Panel>(null)
   const [, forceUpdate] = useState(0)
@@ -143,7 +144,7 @@ export default function Lobby({ onJoin, onSolo, onAIBattle, savedSession, onRejo
       {panel === 'explore'    && <Explore onClose={returnToLobby} />}
       {panel === 'duel'       && <DuelMenu onClose={returnToLobby} onJoin={onJoin} onSolo={onSolo}
         onAIBattle={onAIBattle} savedSession={savedSession} onRejoin={onRejoin} />}
-      {panel && ['pieces','tasks','mail','achievements','announcements','friends'].includes(panel) && <FeaturePanel mode={panel as FeatureMode} onClose={returnToLobby} />}
+      {panel && ['pieces','tasks','mail','achievements','announcements','friends'].includes(panel) && <FeaturePanel mode={panel as FeatureMode} userId={userId} onClose={returnToLobby} />}
       {panel === 'teams'      && (
         <Teams onClose={returnToLobby} />
       )}
