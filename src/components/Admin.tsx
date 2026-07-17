@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import './Logistics.css'
 import { moves as defaultMoves, cards as allCards } from '../data/db'
 import { getChars, saveChars, resetChars, getCharImg, getUrlByKey, uploadByKey, removeByKey, onCloudSynced, onCloudSave, getMoveOverrides, saveMoveOverride, resetMoveOverride } from '../utils/charStore'
+import { removePixelBackground } from '../utils/removePixelBackground'
 import { CARD_ICON } from '../data/cardIcons'
 import type { Character } from '../types/character'
 import type { Move, RangeType, Scope } from '../types/move'
@@ -1181,6 +1182,7 @@ function ImageCrop({ storageKey, fallbackStorageKey, cropW = PORTRAIT_W, cropH =
   const [saved,       setSaved]       = useState<string | null>(() => getUrlByKey(storageKey) ?? (fallbackStorageKey ? getUrlByKey(fallbackStorageKey) : null))
   const [uploading,   setUploading]   = useState(false)
   const [fetchingRe,  setFetchingRe]  = useState(false)
+  const [removingBg,   setRemovingBg] = useState(false)
   const [savedFailed, setSavedFailed] = useState(false)
   const [disp,        setDisp]        = useState({ w: 0, h: 0, imgX: 0, imgY: 0 })
   // box: x/y in rendered-image coords; w = box width; height = w / CROP_RATIO
@@ -1319,6 +1321,19 @@ function ImageCrop({ storageKey, fallbackStorageKey, cropW = PORTRAIT_W, cropH =
     setImgSrc(null)
   }
 
+  const handleRemoveBackground = async () => {
+    if (!imgSrc) return
+    setRemovingBg(true)
+    try {
+      setImgSrc(await removePixelBackground(imgSrc))
+    } catch (error) {
+      console.error('8-bit 去背失敗', error)
+      alert(error instanceof Error ? error.message : '8-bit 去背失敗')
+    } finally {
+      setRemovingBg(false)
+    }
+  }
+
   const handleSave = async () => {
     const img = imgRef.current; if (!img || !img.naturalWidth) return
     const d = dispRef.current; if (!d.w || !d.h) return
@@ -1387,7 +1402,7 @@ function ImageCrop({ storageKey, fallbackStorageKey, cropW = PORTRAIT_W, cropH =
 
       {imgSrc && (
         <div className="img-crop-tool">
-          <div ref={stageRef} className="img-crop-stage">
+          <div ref={stageRef} className={`img-crop-stage${storageKey.startsWith('cb_extra_') ? ' pixel-transparent-stage' : ''}`}>
             <img ref={imgRef} src={imgSrc} className="img-crop-src"
               alt="" onLoad={initBox} draggable={false} />
 
@@ -1416,6 +1431,7 @@ function ImageCrop({ storageKey, fallbackStorageKey, cropW = PORTRAIT_W, cropH =
 
           <div className="img-crop-hint">拖曳框內移動位置 · 拖曳四角縮放大小</div>
           <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+            {storageKey.startsWith('cb_extra_') && <button className="btn sm" onClick={handleRemoveBackground} disabled={uploading || removingBg}>{removingBg ? '去背處理中…' : '自動去背'}</button>}
             <button className="btn primary sm" onClick={handleSave} disabled={uploading}>
               {uploading ? '上傳中…' : '裁切並儲存'}
             </button>

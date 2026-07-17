@@ -3174,6 +3174,12 @@ h2 {
   width: min(760px, 100%); margin: 0 auto; padding: 24px;
   display: flex; flex-direction: column; gap: 18px;
 }
+.img-crop-stage.pixel-transparent-stage {
+  background-color: #111522;
+  background-image: linear-gradient(45deg,#242b3b 25%,transparent 25%),linear-gradient(-45deg,#242b3b 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#242b3b 75%),linear-gradient(-45deg,transparent 75%,#242b3b 75%);
+  background-position: 0 0,0 8px,8px -8px,-8px 0;
+  background-size: 16px 16px;
+}
 @keyframes maMissPop {
   0%, 18% { opacity: 0; transform: translate(-50%, -50%) scale(.45) rotate(-12deg); }
   30% { opacity: 1; transform: translate(-50%, -50%) scale(1.15) rotate(-5deg); }
