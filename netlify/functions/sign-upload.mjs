@@ -40,7 +40,7 @@ export const handler = async (event) => {
     if (typeof size !== 'number' || size < 1 || size > 8 * 1024 * 1024) {
       return { statusCode: 413, headers: CORS, body: JSON.stringify({ error: 'File too large' }) }
     }
-    if (!['image/webp', 'application/json'].includes(contentType)) {
+    if (!['image/webp', 'image/png', 'application/json'].includes(contentType)) {
       return { statusCode: 415, headers: CORS, body: JSON.stringify({ error: 'Unsupported file type' }) }
     }
 
