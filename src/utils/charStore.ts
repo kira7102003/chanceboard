@@ -190,7 +190,7 @@ export function getCharacterBImage(charId: string): string | null {
 }
 
 export function getCharacterBImageFacing(charId: string): 'left' | 'right' {
-  return getChars().find(character => character.id === charId)?.wideImageFacing === 'right' ? 'right' : 'left'
+  return getChars().find(character => character.id === charId)?.extraBImageFacing === 'right' ? 'right' : 'left'
 }
 
 let _mvSyncTimer: ReturnType<typeof setTimeout> | null = null
