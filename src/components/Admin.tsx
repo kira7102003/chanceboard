@@ -15,6 +15,7 @@ import StoryFlowDesigner from './StoryFlowDesigner'
 import { getLogisticsJobs, saveLogisticsJobs } from '../utils/logisticsStore'
 import { supabase } from '../utils/supabase'
 import PixelCharacterActor from './PixelCharacterActor'
+import PixelSkeletonEditor from './PixelSkeletonEditor'
 
 const EL_COLOR: Record<string, string>   = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee' }
 const SLOT_COLOR: Record<string, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee', '願': '#ddaa22', '被': '#666688' }
@@ -552,6 +553,10 @@ function BasicTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<C
             <div className="adm-section-label">8-bit 小遊戲動畫預覽</div>
             <PixelCharacterActor charId={char.id} action="mining" />
             <small>挖礦預覽會使用 B 側面圖與原始朝向；之後可將同一元件套用到伐木、採集與後勤小遊戲。</small>
+          </div>
+          <div className="adm-section">
+            <div className="adm-section-label">8-bit 骨架編輯器（試作）</div>
+            <PixelSkeletonEditor charId={char.id} />
           </div>
         </div>
 
