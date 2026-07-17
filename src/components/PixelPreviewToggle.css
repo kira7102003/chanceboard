@@ -1,0 +1,16 @@
+.pixel-preview-toggle {
+  width: 100%;
+  margin-bottom: 7px;
+  padding: 8px 12px;
+  border: 1px solid #4c5875;
+  border-radius: 7px;
+  background: #0b1020;
+  color: #c8d0e2;
+  cursor: pointer;
+}
+
+.pixel-preview-toggle.active {
+  border-color: #e0b64b;
+  background: #29210d;
+  color: #ffe08a;
+}
