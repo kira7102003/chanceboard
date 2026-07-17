@@ -634,17 +634,8 @@ function BasicTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<C
           </div>
 
           <div className="adm-section">
-            <div className="adm-section-label">招式名稱</div>
-            <div className="adm-field-grid">
-              {([
-                ['moveNameSword', '⚔ 劍槽'], ['moveNameGun', '🔫 槍槽'],
-                ['moveNameMagic', '✦ 法槽'], ['moveNameWish', '🌠 願槽'],
-                ['passiveName',   '💠 被動'],
-              ] as const).map(([key, label]) => (
-                <Field key={key} label={label} value={char[key]}
-                  onChange={v => onUpdate({ [key]: v } as Partial<Character>)} />
-              ))}
-            </div>
+            <div className="adm-section-label">被動名稱</div>
+            <Field label="💠 被動" value={char.passiveName} onChange={value => onUpdate({ passiveName: value })} />
           </div>
         </div>
 
@@ -742,6 +733,7 @@ function MovesTab({ moves: baseMoves }: { moves: Move[] }) {
 
             {isOpen && (
               <div className="adm-move-crop">
+                <label className="adm-field"><span>招式名稱</span><input value={m.name} onChange={event => { saveMoveOverride(m.id, { name: event.target.value }); forceRender(value => value + 1) }} /></label>
                 <ImageCrop storageKey={`cb_move_img_${m.id}`} onSave={() => markSaved(m.id)} />
                 <FacingSelect value={m.imageFacing ?? 'left'} onChange={value => {
                   saveMoveOverride(m.id, { imageFacing: value }); forceRender(n => n + 1)
