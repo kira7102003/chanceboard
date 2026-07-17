@@ -1,0 +1,69 @@
+/* Motion is kept separate from the editor layout so saved bone boxes remain compatible. */
+.pixel-skeleton-preview .pixel-preview-part {
+  animation-fill-mode: both;
+  animation-iteration-count: infinite;
+  animation-timing-function: steps(8, end);
+  will-change: transform;
+}
+
+/* Idle: restrained breathing and a delayed head/arm response. */
+.pixel-skeleton-preview.preview-idle .pixel-preview-part { animation-duration: 2.8s; }
+.pixel-skeleton-preview.preview-idle .part-head { animation-name: cb-idle-head; }
+.pixel-skeleton-preview.preview-idle .part-body { animation-name: cb-idle-body; }
+.pixel-skeleton-preview.preview-idle .part-arm-l { animation-name: cb-idle-arm-l; }
+.pixel-skeleton-preview.preview-idle .part-arm-r { animation-name: cb-idle-arm-r; }
+
+/* Walk: opposing limbs, a short grounded step, and a small body bob. */
+.pixel-skeleton-preview.preview-walk .pixel-preview-part { animation-duration: .84s; }
+.pixel-skeleton-preview.preview-walk .part-head { animation-name: cb-walk-head; }
+.pixel-skeleton-preview.preview-walk .part-body { animation-name: cb-walk-body; }
+.pixel-skeleton-preview.preview-walk .part-arm-l { animation-name: cb-walk-forward; }
+.pixel-skeleton-preview.preview-walk .part-forearm-l { animation-name: cb-walk-forearm-forward; }
+.pixel-skeleton-preview.preview-walk .part-arm-r { animation-name: cb-walk-back; }
+.pixel-skeleton-preview.preview-walk .part-forearm-r { animation-name: cb-walk-forearm-back; }
+.pixel-skeleton-preview.preview-walk .part-thigh-l { animation-name: cb-walk-back; }
+.pixel-skeleton-preview.preview-walk .part-shin-l { animation-name: cb-walk-shin-back; }
+.pixel-skeleton-preview.preview-walk .part-thigh-r { animation-name: cb-walk-forward; }
+.pixel-skeleton-preview.preview-walk .part-shin-r { animation-name: cb-walk-shin-forward; }
+
+/* Mining: wind-up, strike, impact hold, then recovery. */
+.pixel-skeleton-preview.preview-mining .pixel-preview-part { animation-duration: 1.55s; }
+.pixel-skeleton-preview.preview-mining .part-head { animation-name: cb-mine-head; }
+.pixel-skeleton-preview.preview-mining .part-body { animation-name: cb-mine-body; }
+.pixel-skeleton-preview.preview-mining .part-arm-r { animation-name: cb-mine-arm; }
+.pixel-skeleton-preview.preview-mining .part-forearm-r { animation-name: cb-mine-forearm; }
+.pixel-skeleton-preview.preview-mining .part-arm-l { animation-name: cb-mine-brace; }
+.pixel-skeleton-preview.preview-mining .part-forearm-l { animation-name: cb-mine-brace-lower; }
+.pixel-skeleton-preview.preview-mining .skeleton-pickaxe {
+  right: 10%; top: 27%; font-size: 46px;
+  animation: cb-mine-tool 1.55s steps(8, end) infinite;
+}
+.skeleton-mining-rock { position:absolute; z-index:4; right:5%; bottom:12%; width:24%; height:9%; border-radius:50% 45% 25% 35%; background:#30333b; border:2px solid #747986; box-shadow:inset 0 3px #9297a1,0 5px 9px #0009; }
+.skeleton-mining-impact { position:absolute; z-index:6; right:15%; bottom:20%; width:7px; height:7px; background:#ffd75e; box-shadow:-15px -9px #ff9d3d,10px -16px #fff2a0,17px -5px #ffbd3f; animation:cb-mine-impact 1.55s steps(1,end) infinite; }
+
+@keyframes cb-idle-head { 0%,100%{transform:translateY(0) rotate(0)} 42%,58%{transform:translateY(-1.2%) rotate(.5deg)} }
+@keyframes cb-idle-body { 0%,100%{transform:translateY(0) scaleY(1)} 42%,58%{transform:translateY(-.7%) scaleY(1.012)} }
+@keyframes cb-idle-arm-l { 0%,100%{transform:rotate(0)} 45%,60%{transform:rotate(-1deg)} }
+@keyframes cb-idle-arm-r { 0%,100%{transform:rotate(0)} 45%,60%{transform:rotate(1deg)} }
+
+@keyframes cb-walk-body { 0%,50%,100%{transform:translateY(0)} 25%,75%{transform:translateY(-1.5%)} }
+@keyframes cb-walk-head { 0%,50%,100%{transform:translateY(0) rotate(0)} 25%{transform:translateY(-1%) rotate(-.7deg)} 75%{transform:translateY(-1%) rotate(.7deg)} }
+@keyframes cb-walk-forward { 0%,100%{transform:rotate(-11deg)} 50%{transform:rotate(11deg)} }
+@keyframes cb-walk-back { 0%,100%{transform:rotate(11deg)} 50%{transform:rotate(-11deg)} }
+@keyframes cb-walk-forearm-forward { 0%,100%{transform:rotate(-5deg)} 50%{transform:rotate(8deg)} }
+@keyframes cb-walk-forearm-back { 0%,100%{transform:rotate(8deg)} 50%{transform:rotate(-5deg)} }
+@keyframes cb-walk-shin-forward { 0%,100%{transform:rotate(-3deg) translateY(0)} 25%{transform:rotate(9deg) translateY(-1%)} 50%{transform:rotate(3deg)} 75%{transform:rotate(-7deg)} }
+@keyframes cb-walk-shin-back { 0%,100%{transform:rotate(3deg)} 25%{transform:rotate(-7deg)} 50%{transform:rotate(-3deg)} 75%{transform:rotate(9deg) translateY(-1%)} }
+
+@keyframes cb-mine-body { 0%,100%{transform:rotate(0) translate(0)} 20%{transform:rotate(-2deg) translateX(-1%)} 48%,58%{transform:rotate(4deg) translate(2%,1%)} 72%{transform:rotate(2deg) translateX(1%)} }
+@keyframes cb-mine-head { 0%,100%{transform:rotate(0)} 20%{transform:rotate(-2deg)} 48%,58%{transform:rotate(3deg) translateY(1%)} }
+@keyframes cb-mine-arm { 0%,100%{transform:rotate(-18deg)} 20%{transform:rotate(-35deg)} 48%,58%{transform:rotate(32deg)} 72%{transform:rotate(12deg)} }
+@keyframes cb-mine-forearm { 0%,100%{transform:rotate(-12deg)} 20%{transform:rotate(-27deg)} 48%,58%{transform:rotate(27deg)} 72%{transform:rotate(8deg)} }
+@keyframes cb-mine-brace { 0%,100%{transform:rotate(0)} 20%{transform:rotate(-7deg)} 48%,58%{transform:rotate(9deg)} }
+@keyframes cb-mine-brace-lower { 0%,100%{transform:rotate(0)} 20%{transform:rotate(-5deg)} 48%,58%{transform:rotate(7deg)} }
+@keyframes cb-mine-tool { 0%,100%{transform:rotate(-52deg) translate(0)} 20%{transform:rotate(-72deg) translate(-4px,-4px)} 48%,58%{transform:rotate(22deg) translate(4px,8px)} 72%{transform:rotate(-8deg)} }
+@keyframes cb-mine-impact { 0%,47%,60%,100%{opacity:0;transform:scale(.4)} 48%,58%{opacity:1;transform:scale(1.15)} }
+
+@media (prefers-reduced-motion: reduce) {
+  .pixel-skeleton-preview .pixel-preview-part,.pixel-skeleton-preview .skeleton-pickaxe,.pixel-skeleton-preview .skeleton-mining-impact { animation:none !important; }
+}

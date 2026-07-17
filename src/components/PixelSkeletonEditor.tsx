@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import './PixelSkeletonEditor.css'
+import './PixelSkeletonMotion.css'
 import { getUrlByKey } from '../utils/charStore'
 
 type Pose = 'a' | 'b' | 'c'
@@ -35,7 +36,7 @@ export default function PixelSkeletonEditor({ charId }: { charId: string }) {
   return <div className="pixel-skeleton-editor">
     <div className="pixel-skeleton-tools"><div>{(['a','b','c'] as Pose[]).map(value=><button className={pose===value?'active':''} key={value} onClick={()=>setPose(value)}>{value.toUpperCase()} {value==='a'?'正面':value==='b'?'側面':'背面'}</button>)}</div><div><select value={action} onChange={event=>setAction(event.target.value as Action)}><option value="idle">待機</option><option value="walk">走路</option><option value="mining">挖礦</option></select><button onClick={()=>{localStorage.setItem(storageKey,JSON.stringify(parts));setSaved(true)}}>{saved?'✓ 已儲存':'儲存骨架'}</button><button onClick={()=>{setParts(PARTS);setSaved(false)}}>重設</button></div></div>
     <div className="pixel-skeleton-workspace"><div className="pixel-skeleton-stage" ref={stage}>{image&&<img src={image} alt="" />}{parts.map(part=><div key={part.id} className={`pixel-bone-box ${selected===part.id?'selected':''}`} style={{left:`${part.x}%`,top:`${part.y}%`,width:`${part.w}%`,height:`${part.h}%`}} onPointerDown={event=>begin(event,part.id,'move')}><span>{part.label}</span><i className="pixel-bone-pivot" style={{left:`${part.px}%`,top:`${part.py}%`}} onPointerDown={event=>begin(event,part.id,'pivot')}/><i className="pixel-bone-resize" onPointerDown={event=>begin(event,part.id,'resize')}/></div>)}</div>
-      <div className={`pixel-skeleton-preview preview-${action}`}>{previewParts.map(({part,origin})=><div key={part.id} className={`pixel-preview-part part-${part.id}`} style={{left:`${part.x}%`,top:`${part.y}%`,width:`${part.w}%`,height:`${part.h}%`,transformOrigin:origin}}><img src={image} alt="" style={{width:`${10000/part.w}%`,height:`${10000/part.h}%`,left:`${-part.x/part.w*100}%`,top:`${-part.y/part.h*100}%`}} /></div>)}{action==='mining'&&<b className="skeleton-pickaxe">⛏</b>}</div></div>
+      <div className={`pixel-skeleton-preview preview-${action}`}>{previewParts.map(({part,origin})=><div key={part.id} className={`pixel-preview-part part-${part.id}`} style={{left:`${part.x}%`,top:`${part.y}%`,width:`${part.w}%`,height:`${part.h}%`,transformOrigin:origin}}><img src={image} alt="" style={{width:`${10000/part.w}%`,height:`${10000/part.h}%`,left:`${-part.x/part.w*100}%`,top:`${-part.y/part.h*100}%`}} /></div>)}{action==='mining'&&<><b className="skeleton-pickaxe">⛏</b><i className="skeleton-mining-rock"/><i className="skeleton-mining-impact"/></>}</div></div>
     <div className="pixel-skeleton-parts">{parts.map(part=><button key={part.id} className={selected===part.id?'active':''} onClick={()=>setSelected(part.id)}>{part.label}</button>)}</div>{selectedPart&&<small>目前：{selectedPart.label}。拖曳框移動，拖右下角縮放，拖黃點設定關節。</small>}
   </div>
 }
