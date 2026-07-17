@@ -7,6 +7,7 @@ import { moves as allMoves } from '../data/db'
 import type { Character } from '../types/character'
 import type { MoveSlot } from '../types/move'
 import { getLogisticsBusyCharacterIds } from '../utils/logisticsStore'
+import './CharacterStory.css'
 
 type ElFilter = '劍' | '槍' | '法' | 'all'
 
@@ -25,8 +26,9 @@ interface Props {
 }
 
 // ── Gallery (大典) modal ────────────────────────────────────────
-function CharGallery({ char, selectedIds, onToggle, onClose }: {
+function CharGallery({ char, stars, selectedIds, onToggle, onClose }: {
   char: Character
+  stars: number
   selectedIds: string[]
   onToggle: (id: string) => void
   onClose: () => void
@@ -96,7 +98,8 @@ function CharGallery({ char, selectedIds, onToggle, onClose }: {
           </div>
 
           {/* Story */}
-          {char.story && <div className="cs-gallery-story">{char.story}</div>}
+          {char.story && <div className="cs-gallery-story"><b>外篇</b>{char.story}</div>}
+          {char.innerStory && (stars >= (char.innerStoryUnlockStars ?? 5) ? <div className="cs-gallery-story inner"><b>裡篇</b>{char.innerStory}</div> : <div className="cs-gallery-story locked">🔒 裡篇需要 {char.innerStoryUnlockStars ?? 5} 星解鎖（目前 {stars} 星）</div>)}
 
           {/* Bottom row: select + close */}
           <div className="cs-gallery-bottom">
@@ -121,7 +124,7 @@ export default function CharSelect({ onConfirm, onToggle, onBack }: Props) {
   const logisticsBusyIds = getLogisticsBusyCharacterIds()
   const characters = allChars.filter(c => c.enabled !== false && !logisticsBusyIds.includes(c.id))
   const { selectedCharIds, isSolo, loadTeam } = useGameStore()
-  const { savedTeams, defaultTeamId, setDefaultTeam } = usePlayerStore()
+  const { savedTeams, defaultTeamId, setDefaultTeam, characterStars } = usePlayerStore()
   const ready = selectedCharIds.length === 3
 
   const [elFilter,    setElFilter]    = useState<ElFilter>('all')
@@ -428,6 +431,7 @@ export default function CharSelect({ onConfirm, onToggle, onBack }: Props) {
       {galleryChar && (
         <CharGallery
           char={galleryChar}
+          stars={characterStars[galleryChar.id] ?? 0}
           selectedIds={selectedCharIds}
           onToggle={onToggle}
           onClose={() => setGalleryChar(null)}

@@ -19,6 +19,9 @@ export interface Character {
   /** false for non-human beings that are exempt from Robot Law restrictions. */
   isHuman?: boolean
   story?: string
+  innerStory?: string
+  /** Stars required to reveal the inner story. Defaults to five. */
+  innerStoryUnlockStars?: number
   enabled?: boolean   // undefined / true = shown in CharSelect; false = hidden
   /** Per-star percentage stat bonuses. Index 0 is one-star, index 4 is five-star. */
   starBonuses?: Array<{ hp: number; atk: number; def: number; spd: number }>

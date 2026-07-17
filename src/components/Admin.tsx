@@ -233,7 +233,7 @@ export default function Admin({ onBack }: Props) {
               <div className="adm-tabs">
                 {(['basic', 'moves', 'story'] as const).map(t => (
                   <button key={t} className={`adm-tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>
-                    {{ basic: '基本資料', moves: '招式圖片', story: '角色故事' }[t]}
+                    {{ basic: '基本資料', moves: '招式', story: '角色故事' }[t]}
                   </button>
                 ))}
               </div>
@@ -633,10 +633,6 @@ function BasicTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<C
             })}
           </div>
 
-          <div className="adm-section">
-            <div className="adm-section-label">被動名稱</div>
-            <Field label="💠 被動" value={char.passiveName} onChange={value => onUpdate({ passiveName: value })} />
-          </div>
         </div>
 
       </div>
@@ -881,15 +877,20 @@ function StoryTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<C
       </div>
 
       <div className="adm-section">
-        <div className="adm-section-label">角色故事內容（支援換行與分段）</div>
+        <div className="adm-section-label">外篇（基礎角色故事）</div>
         <textarea
           className="adm-story-textarea"
-          placeholder={`在這裡填寫 ${char.name} 的背景故事、設定或台詞...`}
+          placeholder={`在這裡填寫 ${char.name} 的外篇故事...`}
           value={char.story ?? ''}
           onChange={e => onUpdate({ story: e.target.value })}
           rows={14}
         />
         <small className="adm-story-save-hint">內容會自動儲存在目前角色資料，每位角色的故事互相獨立。</small>
+      </div>
+      <div className="adm-section adm-inner-story">
+        <div className="adm-section-label">裡篇（星級解鎖故事）</div>
+        <label className="adm-field"><span>解鎖條件</span><select className="adm-select" value={char.innerStoryUnlockStars ?? 5} onChange={event => onUpdate({ innerStoryUnlockStars: Number(event.target.value) })}>{[0,1,2,3,4,5].map(star => <option key={star} value={star}>{star === 0 ? '無條件' : `${star} 星解鎖${star === 5 ? '（預設滿星）' : ''}`}</option>)}</select></label>
+        <textarea className="adm-story-textarea" placeholder={`在這裡填寫 ${char.name} 解鎖後的裡篇故事...`} value={char.innerStory ?? ''} onChange={event => onUpdate({ innerStory: event.target.value })} rows={14} />
       </div>
     </div>
   )
