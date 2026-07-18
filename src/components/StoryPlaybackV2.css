@@ -6,3 +6,9 @@
 .story-v2-portrait.active{transform:scale(var(--portrait-active))}.story-v2-portrait.right.active{transform:scaleX(-1) scale(var(--portrait-active))}.story-v2-portrait.inactive{height:120%;opacity:var(--portrait-dim);transform:scale(var(--portrait-inactive))}.story-v2-portrait.right.inactive{transform:scaleX(-1) scale(var(--portrait-inactive))}
 .story-v2-marquee>span{display:block;margin-bottom:1.1em;animation:story-paragraph-in .55s ease both}@keyframes story-paragraph-in{from{opacity:0;transform:translateY(16px);filter:blur(4px)}to{opacity:1;transform:none;filter:none}}.story-v2-marquee.dir-ttb>span,.story-v2-marquee.dir-btt>span{display:inline-block;margin:0 0 0 1.1em}
 .story-v2-reward{position:absolute;z-index:14;top:12%;left:50%;min-width:min(620px,82vw);transform:translateX(-50%);display:grid;gap:8px;padding:18px 28px;border:1px solid #d6ae52;border-radius:14px;background:linear-gradient(90deg,transparent,#171109ed 16% 84%,transparent);color:#ffe196;text-align:center;box-shadow:0 0 70px #e4b94b33;animation:story-reward-in .65s ease both}.story-v2-reward small{letter-spacing:5px;color:#bd9d57}.story-v2-reward b{font-size:clamp(18px,2vw,30px)}@keyframes story-reward-in{from{opacity:0;transform:translate(-50%,-24px) scale(.95)}to{opacity:1;transform:translateX(-50%) scale(1)}}
+
+/* Story safe area: keep full-body art off the screen edge and reveal dialogue by line. */
+.story-v2-portrait.left{left:clamp(24px,4vw,76px)}
+.story-v2-portrait.right{right:clamp(24px,4vw,76px)}
+.story-v2-dialogue p{white-space:pre-line}
+@media(max-width:760px){.story-v2-portrait.left{left:12px}.story-v2-portrait.right{right:12px}}
