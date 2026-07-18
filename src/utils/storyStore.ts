@@ -12,6 +12,11 @@ export interface StorySegment {
   boardCharacter?: string
   pose?: 'front' | 'side'
   section?: string
+  presentation?: 'dialogue' | 'narration' | 'marquee' | 'chapter' | 'cg' | 'battle'
+  textDirection?: 'ltr' | 'ttb' | 'btt' | 'rtl'
+  cgKey?: string
+  cgPositionX?: number
+  cgPositionY?: number
 }
 
 export type StoryFlowNode =
