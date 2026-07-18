@@ -4,7 +4,7 @@ import PixelCharacterActor from './PixelCharacterActor'
 import { getChars, getCharImg, getMoveImg } from '../utils/charStore'
 import { moves } from '../data/db'
 import { usePlayerStore } from '../store/playerStore'
-import { consumeMiningDailyUse, getMiningConfig, getMiningDailyUses, getMiningRun, miningStats, saveMiningRun, type MiningJob, type MiningRun, type MiningRewardKey } from '../utils/miningStore'
+import { consumeMiningDailyUse, getMiningConfig, getMiningDailyUses, getMiningRun, miningStats, rollMiningRewards, saveMiningRun, type MiningJob, type MiningRun } from '../utils/miningStore'
 import './Explore.css'
 
 interface Props { onClose: () => void }
@@ -38,12 +38,12 @@ export default function Explore({ onClose }: Props) {
   const cancelNode = (nodeId: string) => { if (!confirm('確定取消這個礦點的自動挖掘？次數不會退回。')) return; persistJobs(run.jobs.filter(job => job.nodeId !== nodeId)); setMessage('已取消該礦點的自動挖掘') }
   const claimNode = (nodeId: string) => {
     const state = nodeState.find(node => node.id === nodeId); if (!state?.finished) return
-    const amount = Math.max(1, Math.floor(state.broken * (state.rewardMin + state.rewardMax) / 2)), reward: Partial<Record<MiningRewardKey, number>> = { [state.reward]: amount }
-    player.addResourceRewards(reward); persistJobs(run.jobs.filter(job => job.nodeId !== nodeId)); setMessage(`${state.name}完成：${state.reward} +${amount}`)
+    const reward=rollMiningRewards(state,Math.max(1,state.broken)),summary=Object.entries(reward).map(([key,amount])=>`${rewardLabel[key]??key} +${amount}`).join('、')||'沒有額外掉落'
+    player.addResourceRewards(reward); persistJobs(run.jobs.filter(job => job.nodeId !== nodeId)); setMessage(`${state.name}完成：${summary}`)
   }
   const enterManual = (choice:number|React.MouseEvent=target) => { const chosen=typeof choice==='number'?choice:target;if (!selected.length) return setMessage('請先選擇一位角色，再點擊要進入的礦坑'); const miner=selected[0];setSelected([miner]);setManualPositions([{ x: 12, y: 78 }]); setManualDebris(Array.from({length:34},(_,id)=>({id,x:4+Math.floor(Math.random()*46)*2,y:7+Math.floor(Math.random()*43)*2,kind:(id%7===0?'crystal':id%5===0?'pit':'rock') as 'rock'|'crystal'|'pit'}))); setManualHp(config.nodes.map(node => node.maxHp)); setTarget(chosen); setActiveMiner(miner);setCombo(0);setLastStrike(0);setDigMarks([]);setSkillCooldowns({});setAttacking(''); setMessage(`直接連按技能挖掘 ${config.nodes[chosen].name}，命中會留下挖掘痕跡`); setManualEndAt(Date.now()+15000); setManual(true) }
   const manualSeconds=Math.max(0,Math.ceil((manualEndAt-now)/1000)),manualFinished=manualSeconds<=0||manualHp[target]<=0
-  const rewardLabel:Record<string,string>={swordSoul:'劍魂',gunSoul:'槍魂',magicSoul:'法魂'}
+  const rewardLabel:Record<string,string>={swordSoul:'劍魂',gunSoul:'槍魂',magicSoul:'法魂',coins:'金幣',gems:'鑽石',silver:'銀',copper:'銅',iron:'鐵',wood:'木'}
   const attackRock = (charId: string, moveId: string) => {
     const char=chars.find(item=>item.id===charId),move=moves.find(item=>item.id===moveId),node=config.nodes[target]
     const cooldownKey=`${charId}_${moveId}`
@@ -53,7 +53,7 @@ export default function Explore({ onClose }: Props) {
     setCombo(nextCombo);setLastStrike(Date.now());setActiveMiner(charId);setSkillCooldowns(value=>({...value,[cooldownKey]:Date.now()+miningCooldown*1000}))
     setAttacking(attackKey)
     setManualPositions(pos=>pos.map((point,index)=>index===0?{x:Math.max(4,Math.min(96,node.x+(Math.random()-.5)*7)),y:Math.max(8,Math.min(92,node.y+9+Math.random()*5))}:point))
-    window.setTimeout(()=>{setDigMarks(marks=>[...marks.slice(-23),{id:Date.now(),x:Math.max(3,Math.min(97,node.x+(Math.random()-.5)*14)),y:Math.max(6,Math.min(94,node.y+(Math.random()-.5)*10)),size:18+Math.random()*24}]);setManualHp(current=>{if(Date.now()>=manualEndAt)return current;const next=[...current],before=next[target];next[target]=Math.max(0,before-damage);if(before>0&&next[target]===0){const amount=Math.floor((node.rewardMin+node.rewardMax)/2);player.addResourceRewards({[node.reward]:amount});setMessage(`${node.name}已清除，獲得 ${rewardLabel[node.reward]??node.reward} +${amount}`)}return next});setAttacking('')},420)
+    window.setTimeout(()=>{setDigMarks(marks=>[...marks.slice(-23),{id:Date.now(),x:Math.max(3,Math.min(97,node.x+(Math.random()-.5)*14)),y:Math.max(6,Math.min(94,node.y+(Math.random()-.5)*10)),size:18+Math.random()*24}]);setManualHp(current=>{if(Date.now()>=manualEndAt)return current;const next=[...current],before=next[target];next[target]=Math.max(0,before-damage);if(before>0&&next[target]===0){const rewards=rollMiningRewards(node),summary=Object.entries(rewards).map(([key,amount])=>`${rewardLabel[key]??key} +${amount}`).join('、')||'沒有額外掉落';player.addResourceRewards(rewards);setMessage(`${node.name}已清除：${summary}`)}return next});setAttacking('')},420)
   }
   const moveOnGrid=(event:React.MouseEvent<HTMLElement>)=>{if(manualFinished||!activeMiner||(event.target as HTMLElement).closest('button'))return;const rect=event.currentTarget.getBoundingClientRect(),x=Math.round((event.clientX-rect.left)/rect.width*49)/49*100,y=Math.round((event.clientY-rect.top)/rect.height*49)/49*100;setManualPositions(points=>points.map((point,index)=>selected[index]===activeMiner?{x,y}:point))}
   if (manual) return <div className="panel-overlay mining-manual">
