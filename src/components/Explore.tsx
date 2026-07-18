@@ -12,7 +12,7 @@ const fmt = (seconds: number) => `${Math.max(0, Math.floor(seconds / 3600))}:${S
 
 export default function Explore({ onClose }: Props) {
   const player = usePlayerStore(), chars = useMemo(() => getChars(), []), config = useMemo(() => getMiningConfig(), [])
-  const available = (player.ownedCharIds.length ? chars.filter(char => player.ownedCharIds.includes(char.id)) : chars).filter(char => char.enabled !== false)
+  const available = chars.filter(char => player.ownedCharIds.includes(char.id) && char.enabled !== false)
   const [selected, setSelected] = useState<string[]>([]), [run, setRun] = useState<MiningRun>(() => getMiningRun() ?? { jobs: [] }), [now, setNow] = useState(Date.now()), [message, setMessage] = useState('')
   const [dailyTick, setDailyTick] = useState(0), [manual, setManual] = useState(false), [target, setTarget] = useState(0),[entryMode,setEntryMode]=useState<'manual'|'auto'>('manual')
   const [manualHp, setManualHp] = useState(() => config.nodes.map(node => node.maxHp)), [manualPositions, setManualPositions] = useState<{x:number;y:number}[]>([])
