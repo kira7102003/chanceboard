@@ -39,17 +39,16 @@ export default function Explore({ onClose }: Props) {
     const amount = Math.max(1, Math.floor(state.broken * (state.rewardMin + state.rewardMax) / 2)), reward: Partial<Record<MiningRewardKey, number>> = { [state.reward]: amount }
     player.addResourceRewards(reward); persistJobs(run.jobs.filter(job => job.nodeId !== nodeId)); setMessage(`${state.name}完成：${state.reward} +${amount}`)
   }
-  const enterManual = () => { if (!selected.length) return setMessage('請先選擇 1～3 位角色'); setManualPositions(selected.map((_,index) => ({ x: 12+index*6, y: 78-index*4 }))); setManualDebris(Array.from({length:22},(_,id)=>({id,x:8+Math.floor(Math.random()*42)*2,y:10+Math.floor(Math.random()*38)*2,kind:(id%7===0?'crystal':id%5===0?'pit':'rock') as 'rock'|'crystal'|'pit'}))); setManualHp(config.nodes.map(node => node.maxHp)); setTarget(0); setActiveMiner(selected[0]);setCombo(0);setLastStrike(0);setAttacking(''); setMessage('點地磚移動；靠近礦物後選招式，清礦尋找下一層'); setManualEndAt(Date.now()+15000); setManual(true) }
-  const manualSeconds=Math.max(0,Math.ceil((manualEndAt-now)/1000)),manualFinished=manualSeconds<=0||selected.every((_,index)=>manualHp[index]<=0)
+  const enterManual = () => { if (!selected.length) return setMessage('請先選擇一位角色'); const miner=selected[0],chosen=Math.floor(Math.random()*config.nodes.length);setSelected([miner]);setManualPositions([{ x: 12, y: 78 }]); setManualDebris(Array.from({length:34},(_,id)=>({id,x:4+Math.floor(Math.random()*46)*2,y:7+Math.floor(Math.random()*43)*2,kind:(id%7===0?'crystal':id%5===0?'pit':'rock') as 'rock'|'crystal'|'pit'}))); setManualHp(config.nodes.map(node => node.maxHp)); setTarget(chosen); setActiveMiner(miner);setCombo(0);setLastStrike(0);setAttacking(''); setMessage(`本層發現 ${config.nodes[chosen].name}，15 秒內挖完即可取得獎勵`); setManualEndAt(Date.now()+15000); setManual(true) }
+  const manualSeconds=Math.max(0,Math.ceil((manualEndAt-now)/1000)),manualFinished=manualSeconds<=0||manualHp[target]<=0
   const rewardLabel:Record<string,string>={swordSoul:'劍魂',gunSoul:'槍魂',magicSoul:'法魂'}
   const attackRock = (charId: string, moveId: string) => {
     const char=chars.find(item=>item.id===charId),move=moves.find(item=>item.id===moveId),node=config.nodes[target]
     if(!char||!move||!node||manualFinished||manualHp[target]<=0||attacking)return
-    if(selected.indexOf(charId)!==target)return setMessage(`${char.name}綁定的是第 ${selected.indexOf(charId)+1} 個礦點`)
     const nextCombo=Date.now()-lastStrike<2000?Math.min(5,combo+1):1,damage=Math.max(1,Math.round(char.atk*(move.powerRatio??1)*120*(1+(nextCombo-1)*.1))),attackKey=`${charId}_${moveId}`
     setCombo(nextCombo);setLastStrike(Date.now());setActiveMiner(charId)
     setAttacking(attackKey)
-    setManualPositions(pos=>pos.map((point,index)=>selected[index]===charId?{x:Math.max(4,Math.min(96,node.x+(Math.random()-.5)*7)),y:Math.max(8,Math.min(92,node.y+9+Math.random()*5))}:point))
+    setManualPositions(pos=>pos.map((point,index)=>index===0?{x:Math.max(4,Math.min(96,node.x+(Math.random()-.5)*7)),y:Math.max(8,Math.min(92,node.y+9+Math.random()*5))}:point))
     window.setTimeout(()=>{setManualHp(current=>{if(Date.now()>=manualEndAt)return current;const next=[...current],before=next[target];next[target]=Math.max(0,before-damage);if(before>0&&next[target]===0){const amount=Math.floor((node.rewardMin+node.rewardMax)/2);player.addResourceRewards({[node.reward]:amount});setMessage(`${node.name}已清除，獲得 ${rewardLabel[node.reward]??node.reward} +${amount}`)}return next});setAttacking('')},520)
   }
   const moveOnGrid=(event:React.MouseEvent<HTMLElement>)=>{if(manualFinished||!activeMiner||(event.target as HTMLElement).closest('button'))return;const rect=event.currentTarget.getBoundingClientRect(),x=Math.round((event.clientX-rect.left)/rect.width*49)/49*100,y=Math.round((event.clientY-rect.top)/rect.height*49)/49*100;setManualPositions(points=>points.map((point,index)=>selected[index]===activeMiner?{x,y}:point))}
