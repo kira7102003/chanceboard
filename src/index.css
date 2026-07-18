@@ -3673,3 +3673,57 @@ h2 {
   .lv2-bottom-actions { flex: 2 1 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px; }
   .lv2-bottom-actions .lv2-btn-settings { padding: 3px; font-size: 9px; }
 }
+
+/* Scale the complete menu cards (including their borders), not only the artwork. */
+@media (min-width: 641px) {
+  .lv2-panel {
+    bottom: auto;
+    height: auto;
+  }
+  .lv2-panel .lv2-grid-main {
+    height: auto;
+    grid-template-rows: repeat(4, clamp(68px, 15dvh, 145px));
+    align-content: start;
+  }
+  .lv2-panel .lv2-btn-primary {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    max-height: 100%;
+    box-sizing: border-box;
+    border-radius: clamp(8px, 1.4dvh, 14px);
+  }
+  .lv2-support-panel,
+  .lv2-support-panel .lv2-btn-grid,
+  .lv2-bottom-actions .lv2-btn-settings {
+    box-sizing: border-box;
+    min-height: 0;
+  }
+}
+
+@media (max-height: 600px) and (min-width: 641px) {
+  .lv2-panel { bottom: auto; height: auto; }
+  .lv2-panel .lv2-grid-main {
+    height: auto;
+    grid-template-rows: repeat(4, clamp(48px, 14.5dvh, 78px));
+  }
+  .lv2-panel .lv2-btn-primary {
+    height: 100%;
+    border-radius: clamp(6px, 1.5dvh, 10px);
+  }
+}
+
+@media (max-width: 640px) {
+  .lv2-panel .lv2-btn-primary,
+  .lv2-grid-secondary .lv2-btn-grid,
+  .lv2-bottom-actions .lv2-btn-settings {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    max-height: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+    border-radius: clamp(6px, 2.2vw, 10px);
+  }
+}
