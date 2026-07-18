@@ -49,7 +49,7 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
       <FlowLane nodes={flow} onChange={change} boardCharacters={boardCharacters} depth={0} label="章節開始" laneId="root" />
       {!flow.length && <div className="story-designer-empty">尚無節點，請從右上角新增第一段對話。</div>}
     </main>
-    {preview && <StoryDesignerPreview chapter={chapter} flow={flow} boardCharacters={boardCharacters} onClose={() => setPreview(false)} />}
+    {preview && <StoryDesignerPreview chapter={chapter} flow={flow} onClose={() => setPreview(false)} />}
   </div>
 }
 
@@ -133,7 +133,7 @@ function RewardCard({ rewards, onChange }: { rewards: StoryRewards; onChange: (r
   </section>
 }
 
-function StoryDesignerPreview({ chapter, flow, boardCharacters, onClose }: { chapter: StoryChapter; flow: StoryFlowNode[]; boardCharacters: BoardCharacter[]; onClose: () => void }) {
+function StoryDesignerPreview({ chapter, flow, onClose }: { chapter: StoryChapter; flow: StoryFlowNode[]; onClose: () => void }) {
   const [nodes, setNodes] = useState(flow)
   const [cursor, setCursor] = useState(0)
   const node = nodes[cursor]
@@ -151,6 +151,6 @@ function StoryDesignerPreview({ chapter, flow, boardCharacters, onClose }: { cha
       : node ? <button className={`story-preview-dialogue ${segment?.side === 'right' ? 'right' : ''}`} style={{ '--story-accent': previewColor } as React.CSSProperties} onClick={() => setCursor(value => value + 1)}>
         <div className="story-preview-avatar">{image ? <img src={image} alt="" /> : <b>{speaker.slice(0, 1)}</b>}</div><div><span>{speaker}</span>{segment?.section && <small>{segment.section}</small>}<p>{segment?.text}</p><em>點擊繼續 ›</em></div>
       </button> : <div className="story-preview-choice"><h2>預覽結束</h2><button onClick={() => { setNodes(flow); setCursor(0) }}>重新播放</button><button onClick={onClose}>返回編輯</button></div>}
-    <div className="story-preview-cast">{boardCharacters.slice(0, 2).map(character => { const portrait = getUrlByKey(`cb_board_${character.id}_front`); return portrait ? <img key={character.id} src={portrait} alt={character.name} /> : null })}</div>
+    <div className={`story-preview-cast ${segment?.side ?? 'left'}`}>{image ? <img src={image} alt={speaker} /> : null}</div>
   </div>
 }
