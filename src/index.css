@@ -499,6 +499,115 @@ body, body *, body *::before, body *::after { font-family: var(--app-font) !impo
   color: var(--gold2); font: inherit; cursor: pointer;
 }
 
+/* Lobby viewport fit: distribute every menu row inside the visible screen. */
+@media (min-width: 641px) {
+  .lv2-panel {
+    top: clamp(68px, 8.8dvh, 84px);
+    bottom: clamp(112px, 13dvh, 138px);
+    max-height: none;
+    overflow: visible;
+  }
+  .lv2-panel .lv2-grid-main {
+    height: 100%;
+    grid-template-rows: repeat(4, minmax(0, 1fr));
+  }
+  .lv2-panel .lv2-btn-primary {
+    min-height: 0;
+    padding-block: clamp(7px, 1.25dvh, 16px);
+    gap: clamp(3px, .65dvh, 6px);
+  }
+  .lv2-panel .lv2-btn-primary .lv2-function-icon {
+    width: clamp(30px, 4.8dvh, 45px);
+    height: clamp(30px, 4.8dvh, 45px);
+  }
+  .lv2-support-panel {
+    bottom: clamp(6px, 1.7dvh, 16px);
+  }
+  .lv2-char {
+    height: min(93dvh, calc(100dvh - 8px));
+  }
+}
+
+@media (max-width: 640px) {
+  .lobby-v2 {
+    display: block;
+    height: 100dvh;
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+  .lv2-top-hud {
+    left: 72px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .lv2-top-hud::-webkit-scrollbar { display: none; }
+  .lv2-resources { width: max-content; }
+  .lv2-res { padding: 4px 8px; font-size: 10px; }
+  .lv2-char { height: min(62dvh, 520px); max-width: 58vw; }
+  .lv2-char-img { max-width: 100%; object-position: left bottom; }
+  .lv2-panel {
+    position: absolute;
+    top: 72px;
+    right: 6px;
+    bottom: 146px;
+    width: 64vw;
+    max-height: none;
+    padding: 0;
+    overflow: visible;
+  }
+  .lv2-panel .lv2-grid-main {
+    height: 100%;
+    grid-template-rows: repeat(4, minmax(0, 1fr));
+    gap: 5px;
+  }
+  .lv2-panel .lv2-btn-primary {
+    min-height: 0;
+    padding: 4px 2px;
+    gap: 2px;
+    font-size: 10px;
+  }
+  .lv2-panel .lv2-btn-primary .lv2-function-icon {
+    width: clamp(25px, 5.2dvh, 38px);
+    height: clamp(25px, 5.2dvh, 38px);
+  }
+  .lv2-support-panel {
+    position: absolute;
+    left: 6px;
+    right: 6px;
+    bottom: 6px;
+    width: auto;
+    height: 132px;
+    margin: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) 38px;
+    gap: 5px;
+  }
+  .lv2-support-panel .lv2-grid-secondary {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 3px;
+    padding: 0;
+  }
+  .lv2-grid-secondary .lv2-btn-grid {
+    padding: 3px 1px;
+    font-size: 8px;
+    white-space: normal;
+  }
+  .lv2-grid-secondary .lv2-function-icon { width: 25px; height: 25px; }
+  .lv2-bottom-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lv2-bottom-actions .lv2-btn-settings { padding: 4px; font-size: 10px; }
+}
+
+@media (max-width: 420px), (max-height: 600px) {
+  .lv2-panel { top: 64px; bottom: 122px; }
+  .lv2-support-panel { height: 110px; }
+  .lv2-panel .lv2-btn-primary .lv2-function-icon { width: 25px; height: 25px; }
+  .lv2-level-entry { width: 50px; height: 50px; }
+  .lv2-level-entry > b { font-size: 17px; line-height: 18px; }
+}
+
 /* ── Filter bar ─────────────────────────────────────────────── */
 .cs-filter-bar { display: flex; gap: 8px; flex-wrap: wrap; }
 .cs-header .cs-filter-bar { flex-wrap: nowrap; gap: 5px; }
@@ -3528,3 +3637,39 @@ h2 {
 .story-route-actions{display:flex;gap:7px;margin:0 0 10px}.story-route-admin-map .route-point{z-index:8;width:25px;height:25px;min-width:0;padding:0;display:grid;place-items:center;border:3px solid #fff0a8;border-radius:50%;background:#d89e17;color:#171006;font-weight:900;box-shadow:0 0 0 4px #191208,0 0 17px #ffcf4d;cursor:grab}.story-route-admin-map .route-point:active{cursor:grabbing}
 .story-route-admin-map svg:has(.route-hit){pointer-events:auto}.story-route-admin-map .route-hit{pointer-events:stroke;stroke:transparent;stroke-width:22;stroke-dasharray:none;cursor:grab}.story-route-admin-map .route-point.selected{background:#fff3a2;border-color:#fff;color:#080a13;box-shadow:0 0 0 5px #d99a13,0 0 28px #ffe36f}
 .mining-admin-chars{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:7px}.mining-admin-chars label{padding:8px;display:flex;align-items:center;gap:7px;border:1px solid #2b3150;border-radius:8px;background:#090c1b;color:#dce1ef}.mining-admin-chars small{display:block;margin-left:auto;color:#838da8;font-size:9px}
+/* Final short-viewport lobby override; kept last so legacy landscape rules cannot restore scrolling. */
+@media (max-height: 600px) {
+  .lobby-v2 { display: block; height: 100dvh; min-height: 0; padding: 0; overflow: hidden; }
+  .lv2-char { position: absolute; height: 94dvh; bottom: 0; }
+  .lv2-top-hud { top: 6px; right: 8px; }
+  .lv2-panel {
+    position: absolute;
+    top: 54px;
+    right: 10px;
+    bottom: 76px;
+    width: clamp(280px, 34vw, 430px);
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
+  .lv2-panel .lv2-grid-main { height: 100%; grid-template-rows: repeat(4, minmax(0, 1fr)); gap: 4px; }
+  .lv2-panel .lv2-btn-primary { min-height: 0; padding: 3px 2px; gap: 1px; font-size: 9px; }
+  .lv2-panel .lv2-btn-primary .lv2-function-icon { width: 24px; height: 24px; }
+  .lv2-support-panel {
+    position: absolute;
+    left: 20%;
+    right: 8px;
+    bottom: 5px;
+    width: auto;
+    height: 64px;
+    margin: 0;
+    display: flex;
+    gap: 4px;
+  }
+  .lv2-support-panel .lv2-grid-secondary { flex: 7 1 0; display: flex; gap: 3px; padding: 0; }
+  .lv2-grid-secondary .lv2-btn-grid { min-height: 0; padding: 2px 1px; gap: 1px; font-size: 8px; }
+  .lv2-grid-secondary .lv2-function-icon { width: 23px; height: 23px; }
+  .lv2-bottom-actions { flex: 2 1 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px; }
+  .lv2-bottom-actions .lv2-btn-settings { padding: 3px; font-size: 9px; }
+}
