@@ -17,6 +17,7 @@ const makeSegment = (character?: BoardCharacter): StorySegment => ({
   id: uid('segment'), speaker: character?.name ?? '旁白', text: '輸入故事對話……', side: 'left', boardCharacter: character?.id, pose: 'front', section: '新段落',
 })
 const makeCommon = (character?: BoardCharacter): StoryFlowNode => ({ id: uid('node'), type: 'common', segment: makeSegment(character) })
+const makePresentation = (presentation: NonNullable<StorySegment['presentation']>, character?: BoardCharacter): StoryFlowNode => ({ id: uid('node'), type: 'common', segment: { ...makeSegment(character), presentation, speaker: presentation === 'narration' ? '旁白' : character?.name ?? '旁白', text: presentation === 'chapter' ? '章節標題' : presentation === 'battle' ? '即將進入戰鬥' : '輸入故事內容……' } })
 const makeBranch = (): StoryFlowNode => ({ id: uid('branch'), type: 'branch', title: '新選項', branches: [
   { id: uid('route'), label: '選項 A', nodes: [] }, { id: uid('route'), label: '選項 B', nodes: [] },
 ] })
@@ -37,7 +38,7 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
     <header className="story-designer-head">
       <div><button onClick={onClose}>← 返回章節設定</button><span className="story-designer-dot" /><b>{chapter.piece}　{chapter.title}｜故事流程</b></div>
       <div className="story-designer-legend"><i className="dialogue" />對話<i className="choice" />選項<i className="route" />分支</div>
-      <div><button onClick={() => setPreview(true)}>▶ 預覽</button><button onClick={() => change([...flow, makeCommon(boardCharacters[0])])}>＋ 對話</button><button onClick={() => change([...flow, makeBranch()])}>＋ 分支</button><button className="primary" onClick={save}>{saved ? '✓ 已儲存' : '儲存'}</button></div>
+      <div className="story-add-toolbar"><button onClick={() => setPreview(true)}>▶ 預覽</button><button onClick={() => change([...flow, makeCommon(boardCharacters[0])])}>＋ 對話</button><button onClick={() => change([...flow, makeBranch()])}>＋ 分支</button><button onClick={() => change([...flow, makePresentation('narration')])}>＋ 旁白</button><button onClick={() => change([...flow, makePresentation('marquee')])}>＋ 跑馬燈</button><button onClick={() => change([...flow, makePresentation('chapter')])}>＋ 章節</button><button onClick={() => change([...flow, makePresentation('cg')])}>＋ CG</button><button onClick={() => change([...flow, makePresentation('battle')])}>＋ 戰鬥</button><button className="primary" onClick={save}>{saved ? '✓ 已儲存' : '儲存'}</button></div>
     </header>
     <div className="story-designer-sub">以卡片編排章節。實線代表順序，彩色路線代表玩家選項；每條分支都能繼續加入對話或下一層選項。</div>
     <nav className="story-designer-palette">
@@ -56,6 +57,9 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
 function FlowLane({ nodes, onChange, boardCharacters, depth, label, laneId }: {
   nodes: StoryFlowNode[]; onChange: (nodes: StoryFlowNode[]) => void; boardCharacters: BoardCharacter[]; depth: number; label: string; laneId: string
 }) {
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set())
+  const [dragging, setDragging] = useState(false)
+  const toggleCollapsed = (id: string) => setCollapsed(current => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next })
   const replace = (id: string, node: StoryFlowNode) => onChange(nodes.map(item => item.id === id ? node : item))
   const move = (index: number, offset: number) => {
     const target = index + offset
@@ -73,22 +77,22 @@ function FlowLane({ nodes, onChange, boardCharacters, depth, label, laneId }: {
       onChange(next)
     } catch { /* Ignore non-story drags. */ }
   }
-  return <section className="story-flow-lane" style={{ '--lane-depth': depth } as React.CSSProperties}>
+  return <section className={`story-flow-lane${dragging ? ' dragging' : ''}`} style={{ '--lane-depth': depth } as React.CSSProperties}>
     <div className="story-flow-lane-label">{label}</div>
     <div className="story-flow-board">
       {nodes.map((node, index) => <div className="story-flow-card-wrap" key={node.id}>
         <div className="story-drop-zone" onDragOver={event => event.preventDefault()} onDrop={event => dropAt(event, index)}><span>放到這裡</span></div>
         {index > 0 && <span className="story-flow-arrow">→</span>}
-        <article className={`story-designer-card ${node.type}`}>
-          <div className="story-card-top"><i>{index + 1}</i><b>{node.type === 'common' ? '對話節點' : depth === 0 ? '共用選擇' : '選項分支'}</b><span><button className="story-drag-handle" draggable onDragStart={event => { event.stopPropagation(); event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('application/x-story-node', JSON.stringify({ laneId, index })) }} title="拖曳移動節點">☷</button>
+        <article className={`story-designer-card ${node.type}${collapsed.has(node.id)?' collapsed':''}`}>
+          <div className="story-card-top" draggable onDragStart={event => { setDragging(true); event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('application/x-story-node', JSON.stringify({ laneId, index })) }} onDragEnd={() => setDragging(false)}><i>{index + 1}</i><b>{node.type === 'common' ? `${node.segment.presentation==='narration'?'旁白':node.segment.presentation==='marquee'?'跑馬燈':node.segment.presentation==='chapter'?'章節':node.segment.presentation==='cg'?'CG':node.segment.presentation==='battle'?'戰鬥':'對話'}節點` : depth === 0 ? '共用選擇' : '選項分支'}</b>{collapsed.has(node.id)&&node.type==='common'&&<em>{node.segment.speaker}</em>}<span><button draggable={false} title={collapsed.has(node.id)?'展開':'收縮'} onMouseDown={event=>event.stopPropagation()} onClick={event=>{event.stopPropagation();toggleCollapsed(node.id)}}>{collapsed.has(node.id)?'▾':'▴'}</button><span className="story-drag-handle" title="拖曳標題列即可移動">☷</span>
             <button title="複製卡片" onClick={() => { const next = [...nodes]; next.splice(index + 1, 0, cloneNode(node)); onChange(next) }}>⧉</button><button disabled={index === 0} onClick={() => move(index, -1)}>←</button><button disabled={index === nodes.length - 1} onClick={() => move(index, 1)}>→</button><button className="delete" onClick={() => onChange(nodes.filter(item => item.id !== node.id))}>×</button>
           </span></div>
-          {node.type === 'common' ? <DialogueCard segment={node.segment} boardCharacters={boardCharacters} onChange={segment => replace(node.id, { ...node, segment })} />
-            : <BranchCard node={node} boardCharacters={boardCharacters} depth={depth} onChange={next => replace(node.id, next)} />}
+          {!collapsed.has(node.id)&&(node.type === 'common' ? <DialogueCard segment={node.segment} boardCharacters={boardCharacters} onChange={segment => replace(node.id, { ...node, segment })} />
+            : <BranchCard node={node} boardCharacters={boardCharacters} depth={depth} onChange={next => replace(node.id, next)} />)}
         </article>
       </div>)}
       <div className="story-drop-zone end" onDragOver={event => event.preventDefault()} onDrop={event => dropAt(event, nodes.length)}><span>放到最後</span></div>
-      <div className="story-flow-inline-add"><button onClick={() => onChange([...nodes, makeCommon(boardCharacters[0])])}>＋ 對話</button><button onClick={() => onChange([...nodes, makeBranch()])}>＋ 分支</button></div>
+      <div className="story-flow-inline-add"><button onClick={() => onChange([...nodes, makeCommon(boardCharacters[0])])}>＋ 對話</button><button onClick={() => onChange([...nodes, makePresentation('narration')])}>＋ 旁白</button><button onClick={() => onChange([...nodes, makePresentation('cg')])}>＋ CG</button><button onClick={() => onChange([...nodes, makePresentation('battle')])}>＋ 戰鬥</button><button onClick={() => onChange([...nodes, makeBranch()])}>＋ 分支</button></div>
     </div>
   </section>
 }
