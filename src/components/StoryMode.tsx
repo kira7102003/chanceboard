@@ -20,10 +20,11 @@ export default function StoryMode({onClose,onComplete,onBattle}:Props){
   <div className="story-world-map">
    <header><small>CHANCEBOARD CHRONICLE</small><h1>六棋之境</h1><p>沿著命運棋路前進，每一幅地圖都是一段尚未落子的故事。</p></header>
    <div className="story-map-route">
+    <div className="story-map-land" aria-hidden="true">{chapters.map((item,index)=><span key={item.id} className={`land-${index+1}`} style={{backgroundImage:`url(${getUrlByKey(`cb_story_map_${item.id}`)??''})`}}/>)}</div>
     <svg className="story-route-line" viewBox="0 0 1000 520" preserveAspectRatio="none" aria-hidden="true"><path d="M95 355 C155 240 220 185 285 215 S390 365 455 335 S555 145 625 175 S740 350 805 305 S875 155 930 120"/></svg>
-    {chapters.map((item,index)=>{const image=getUrlByKey(`cb_story_map_${item.id}`)??'';return <button key={item.id} aria-disabled={!item.unlocked} className={`story-map-node ${item.unlocked?'unlocked':'locked'} ${selectedId===item.id?'selected':''} node-${index+1}`} onClick={()=>setSelectedId(item.id)} onDoubleClick={()=>enter(item)}>
-      <span className="story-map-thumb" style={{backgroundImage:`linear-gradient(180deg,#05061111,#050611dd),url(${image})`}}/><i>{item.piece}</i><em>第 {item.order} 章</em><b>{item.title}</b><small>{item.unlocked?'已開放':'尚未解鎖'}</small>
-     </button>})}
+    {chapters.map((item,index)=> <button key={item.id} aria-disabled={!item.unlocked} className={`story-map-node ${item.unlocked?'unlocked':'locked'} ${selectedId===item.id?'selected':''} node-${index+1}`} onClick={()=>setSelectedId(item.id)} onDoubleClick={()=>enter(item)}>
+      <i>{item.piece}</i><span><em>第 {item.order} 章</em><b>{item.title}</b></span><small>{item.unlocked?'◆':'🔒'}</small>
+     </button>)}
    </div>
    {selected&&<aside className={`story-map-detail ${selected.unlocked?'':'locked'}`} style={{backgroundImage:`linear-gradient(90deg,#080a18f5,#080a18aa),url(${getUrlByKey(`cb_story_map_${selected.id}`)??''})`}}><div><small>CHAPTER {selected.order} · {selected.piece}</small><h2>{selected.title}</h2><p>{selected.subtitle}</p></div><button disabled={!selected.unlocked} onClick={()=>enter(selected)}>{selected.unlocked?'進入章節 →':'🔒 尚未解鎖'}</button></aside>}
   </div>
