@@ -45,6 +45,7 @@ export interface StoryChapter {
   rewards?: StoryRewards
   mapX?: number
   mapY?: number
+  mapRoutePoints?: { x: number; y: number }[]
 }
 
 export interface StoryRewards {
