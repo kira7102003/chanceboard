@@ -15,6 +15,7 @@ interface PlayerState {
   characterStars: Record<string, number>
   characterFragments: Record<string, number>
   materials: { silver: number; copper: number; iron: number; wood: number }
+  skillSouls: { sword: number; gun: number; magic: number }
   cardInventory: Record<string, number>
   upgradeItems: number
   claimedRewards: string[]
@@ -57,7 +58,7 @@ interface PlayerState {
   claimStoryReward: (chapterId: string, reward: { characterId?: string; coins?: number; gems?: number; silver?: number; copper?: number; iron?: number; wood?: number }) => boolean
   setMusicSettings: (enabled: boolean, volume: number) => void
   setSoundSettings: (enabled: boolean, volume: number) => void
-  addResourceRewards: (reward: { gems?: number; coins?: number; silver?: number; copper?: number; iron?: number; wood?: number }) => void
+  addResourceRewards: (reward: { gems?: number; coins?: number; silver?: number; copper?: number; iron?: number; wood?: number; swordSoul?: number; gunSoul?: number; magicSoul?: number }) => void
 }
 
 export const usePlayerStore = create<PlayerState>()(
@@ -75,6 +76,7 @@ export const usePlayerStore = create<PlayerState>()(
       characterStars: {},
       characterFragments: {},
       materials: { silver: 0, copper: 0, iron: 0, wood: 0 },
+      skillSouls: { sword: 0, gun: 0, magic: 0 },
       cardInventory: { '001': 10, '002': 10, '003': 10, '004': 10 },
       upgradeItems: 0,
       claimedRewards: [],
@@ -183,6 +185,7 @@ export const usePlayerStore = create<PlayerState>()(
       addResourceRewards: (reward) => set(s => ({
         gems: s.gems + Math.max(0, Math.floor(reward.gems ?? 0)), coins: s.coins + Math.max(0, Math.floor(reward.coins ?? 0)),
         materials: { silver: s.materials.silver + Math.max(0, Math.floor(reward.silver ?? 0)), copper: s.materials.copper + Math.max(0, Math.floor(reward.copper ?? 0)), iron: s.materials.iron + Math.max(0, Math.floor(reward.iron ?? 0)), wood: s.materials.wood + Math.max(0, Math.floor(reward.wood ?? 0)) },
+        skillSouls: { sword: (s.skillSouls?.sword ?? 0) + Math.max(0, Math.floor(reward.swordSoul ?? 0)), gun: (s.skillSouls?.gun ?? 0) + Math.max(0, Math.floor(reward.gunSoul ?? 0)), magic: (s.skillSouls?.magic ?? 0) + Math.max(0, Math.floor(reward.magicSoul ?? 0)) },
       })),
       saveTeam: (team) => {
         if (get().savedTeams.length >= 10) return
