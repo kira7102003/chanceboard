@@ -26,7 +26,7 @@ export default function StoryMode({onClose,onComplete,onBattle}:Props){
    <div className="story-map-route">
     <div className="story-map-land" aria-hidden="true"/>
     <div className="story-region-highlight" style={{left:`${mapPoints[selectedIndex].x}%`,top:`${mapPoints[selectedIndex].y}%`}}/>
-    <svg className="story-route-line" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polyline points={mapPoints.map(point=>`${point.x},${point.y}`).join(' ')}/></svg>
+    <svg className="story-route-line" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polyline className="route-shadow" points={mapPoints.map(point=>`${point.x},${point.y}`).join(' ')}/><polyline className="route-main" points={mapPoints.map(point=>`${point.x},${point.y}`).join(' ')}/></svg>
     {actorId&&selected?.unlocked&&<div className="story-map-actor" style={{left:`${mapPoints[selectedIndex].x}%`,top:`${mapPoints[selectedIndex].y}%`}}><PixelCharacterActor charId={actorId} pose="side" action="walk" face="right"/></div>}
     {chapters.map((item,index)=> <button key={item.id} aria-disabled={!item.unlocked} style={{'--node-x':`${mapPoints[index].x}%`,'--node-y':`${mapPoints[index].y}%`} as React.CSSProperties} className={`story-map-node ${item.unlocked?'unlocked':'locked'} ${selectedId===item.id?'selected':''} node-${index+1}`} onClick={()=>setSelectedId(item.id)} onDoubleClick={()=>enter(item)}>
       <i>{item.piece}</i><span><em>第 {item.order} 章</em><b>{item.title}</b></span><small>{item.unlocked?'◆':'🔒'}</small>
