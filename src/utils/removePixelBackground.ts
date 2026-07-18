@@ -9,7 +9,7 @@ const loadImage = (src: string) => new Promise<HTMLImageElement>((resolve, rejec
 const isCheckerBackground = (r: number, g: number, b: number, a: number) => {
   const brightest = Math.max(r, g, b)
   const darkest = Math.min(r, g, b)
-  return a < 12 || (darkest >= 188 && brightest - darkest <= 28)
+  return a < 12 || (darkest >= 225 && brightest - darkest <= 10)
 }
 
 /** Removes a light grey/white checkerboard that is connected to the image edge. */
@@ -26,6 +26,11 @@ export async function removePixelBackground(src: string) {
   const { data } = frame
   const width = canvas.width
   const height = canvas.height
+  let transparentPixels = 0
+  for (let offset = 3; offset < data.length; offset += 4) if (data[offset] < 250) transparentPixels++
+  // A real transparent PNG must never go through chroma removal: doing so can
+  // incorrectly connect white clothes to the already transparent background.
+  if (transparentPixels > width * height * .001) return src
   const visited = new Uint8Array(width * height)
   const queue = new Int32Array(width * height)
   let head = 0
