@@ -9,7 +9,8 @@
   cursor: pointer;
 }
 
-.pixel-preview-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.pixel-preview-buttons { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; }
+.pixel-preview-toggle.remove-bg { border-color: #458d77; color: #9cf0c9; }
 .pixel-preview-toggle:disabled { opacity: .4; cursor: not-allowed; }
 .pixel-precise-control { display: grid; grid-template-columns: 1fr 68px; gap: 8px; align-items: center; }
 .pixel-precise-control input[type="number"] { width: 100%; box-sizing: border-box; padding: 5px; border: 1px solid #46516d; border-radius: 6px; background: #080c17; color: #f0d47d; text-align: right; }
