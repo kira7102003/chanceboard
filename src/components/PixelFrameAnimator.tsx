@@ -19,7 +19,7 @@ const readOrder = (charId: string, action: Action) => {
 
 export default function PixelFrameAnimator({ charId, fallback }: { charId: string; fallback: string }) {
   const [action, setAction] = useState<Action>('idle')
-  const [fps, setFps] = useState(() => Number(localStorage.getItem(`cb_pixel_frames_fps_${charId}_idle`)) || 6)
+  const [fps, setFps] = useState(() => Number(localStorage.getItem(`cb_pixel_frames_fps_${charId}_idle`)) || 4)
   const [order, setOrder] = useState<number[]>(() => readOrder(charId, 'idle'))
   const [frame, setFrame] = useState(0)
   const [busy, setBusy] = useState(false)
