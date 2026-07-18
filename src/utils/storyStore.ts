@@ -17,6 +17,12 @@ export interface StorySegment {
   cgKey?: string
   cgPositionX?: number
   cgPositionY?: number
+  cgEndPositionX?: number
+  cgEndPositionY?: number
+  cgDuration?: number
+  portraitActiveScale?: number
+  portraitInactiveScale?: number
+  portraitInactiveOpacity?: number
 }
 
 export type StoryFlowNode =

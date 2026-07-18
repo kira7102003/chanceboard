@@ -33,7 +33,7 @@ const LOBBY_CHAR_KEY = 'cb_lobby_char'
 
 export default function Lobby({ userId, onJoin, onSolo, onAIBattle, savedSession, onRejoin, onAdmin }: Props) {
   const [imgFailed,  setImgFailed]  = useState(false)
-  const [panel,      setPanel]      = useState<Panel>(null)
+  const [panel,      setPanel]      = useState<Panel>(() => localStorage.getItem('cb_story_resume') ? 'story' : null)
   const [, forceUpdate] = useState(0)
   const imgErrCount = useRef(0)
 
@@ -138,7 +138,7 @@ export default function Lobby({ userId, onJoin, onSolo, onAIBattle, savedSession
       {panel === 'collection' && <Collection onClose={returnToLobby} />}
       {panel === 'shop'       && <Shop       onClose={returnToLobby} />}
       {panel === 'settings'   && <Settings onClose={returnToLobby} />}
-      {panel === 'story'      && <StoryMode onClose={returnToLobby} onComplete={chapter => { addExperience(100); usePlayerStore.getState().claimStoryReward(chapter.id, chapter.rewards ?? {}) }} />}
+      {panel === 'story'      && <StoryMode onClose={returnToLobby} onBattle={onAIBattle} onComplete={chapter => { addExperience(100); usePlayerStore.getState().claimStoryReward(chapter.id, chapter.rewards ?? {}) }} />}
       {panel === 'profile'    && <PlayerProfile onClose={returnToLobby} />}
       {panel === 'logistics'  && <Logistics onClose={returnToLobby} />}
       {panel === 'explore'    && <Explore onClose={returnToLobby} />}

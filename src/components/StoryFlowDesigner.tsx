@@ -5,6 +5,7 @@ import './StoryPlaybackV2.css'
 import { getCharImg, getChars, getUrlByKey } from '../utils/charStore'
 import type { BoardCharacter } from '../utils/boardCharacters'
 import { getChapterFlow, type StoryChapter, type StoryFlowNode, type StoryRewards, type StorySegment } from '../utils/storyStore'
+import StoryPlayer from './StoryPlayer'
 
 interface Props {
   chapter: StoryChapter
@@ -73,7 +74,7 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
       <FlowLane nodes={flow} onChange={change} boardCharacters={boardCharacters} depth={0} label="章節開始" laneId="root" />
       {!flow.length && <div className="story-designer-empty">尚無節點，請從右上角新增第一段對話。</div>}
     </main>
-    {previewWindow && !previewWindow.closed && createPortal(<StoryDesignerPreview chapter={chapter} flow={flow} onClose={() => previewWindow.close()} />, previewWindow.document.body)}
+    {previewWindow && !previewWindow.closed && createPortal(<StoryPlayer chapter={chapter} initialNodes={flow} onLeave={() => previewWindow.close()} preview />, previewWindow.document.body)}
   </div>
 }
 
@@ -128,7 +129,7 @@ function DialogueCard({ segment, boardCharacters, onChange }: { segment: StorySe
     <div className="story-node-speaker">{image ? <img src={image} alt="" /> : <span>{segment.speaker.slice(0, 1)}</span>}<input value={segment.speaker} onChange={event => patch({ speaker: event.target.value })} /></div>
     <input className="story-node-section" value={segment.section ?? ''} placeholder="段落名稱" onChange={event => patch({ section: event.target.value })} />
     <textarea value={segment.text} onChange={event => patch({ text: event.target.value })} />
-    <div className="story-node-presentation"><select value={segment.presentation ?? 'dialogue'} onChange={event => patch({ presentation: event.target.value as StorySegment['presentation'] })}><option value="dialogue">角色對話</option><option value="narration">第三人稱旁白</option><option value="marquee">開場跑馬燈</option><option value="chapter">大章節字卡</option><option value="cg">CG 全圖</option><option value="battle">進入戰鬥提示</option></select>{segment.presentation==='marquee'&&<select value={segment.textDirection??'ltr'} onChange={event=>patch({textDirection:event.target.value as StorySegment['textDirection']})}><option value="ltr">左至右</option><option value="ttb">上至下</option><option value="btt">下至上</option><option value="rtl">右至左</option></select>}{segment.presentation==='cg'&&<><input value={segment.cgKey??''} placeholder="CG 圖片鍵值／網址" onChange={event=>patch({cgKey:event.target.value})}/><label>水平 {segment.cgPositionX??50}%<input type="range" min="0" max="100" value={segment.cgPositionX??50} onChange={event=>patch({cgPositionX:Number(event.target.value)})}/></label><label>垂直 {segment.cgPositionY??50}%<input type="range" min="0" max="100" value={segment.cgPositionY??50} onChange={event=>patch({cgPositionY:Number(event.target.value)})}/></label></>}</div>
+    <div className="story-node-presentation"><select value={segment.presentation ?? 'dialogue'} onChange={event => patch({ presentation: event.target.value as StorySegment['presentation'] })}><option value="dialogue">角色對話</option><option value="narration">第三人稱旁白</option><option value="marquee">開場跑馬燈</option><option value="chapter">大章節字卡</option><option value="cg">CG 全圖</option><option value="battle">進入戰鬥提示</option></select>{segment.presentation==='marquee'&&<select value={segment.textDirection??'ltr'} onChange={event=>patch({textDirection:event.target.value as StorySegment['textDirection']})}><option value="ltr">左至右</option><option value="ttb">上至下</option><option value="btt">下至上</option><option value="rtl">右至左</option></select>}{segment.presentation==='cg'&&<><input value={segment.cgKey??''} placeholder="CG 圖片鍵值／網址" onChange={event=>patch({cgKey:event.target.value})}/><label>起點 X {segment.cgPositionX??50}%<input type="range" min="0" max="100" value={segment.cgPositionX??50} onChange={event=>patch({cgPositionX:Number(event.target.value)})}/></label><label>起點 Y {segment.cgPositionY??50}%<input type="range" min="0" max="100" value={segment.cgPositionY??50} onChange={event=>patch({cgPositionY:Number(event.target.value)})}/></label><label>終點 X {segment.cgEndPositionX??segment.cgPositionX??50}%<input type="range" min="0" max="100" value={segment.cgEndPositionX??segment.cgPositionX??50} onChange={event=>patch({cgEndPositionX:Number(event.target.value)})}/></label><label>終點 Y {segment.cgEndPositionY??segment.cgPositionY??50}%<input type="range" min="0" max="100" value={segment.cgEndPositionY??segment.cgPositionY??50} onChange={event=>patch({cgEndPositionY:Number(event.target.value)})}/></label><label>運鏡秒數 {segment.cgDuration??6}s<input type="range" min="2" max="20" value={segment.cgDuration??6} onChange={event=>patch({cgDuration:Number(event.target.value)})}/></label></>}{(segment.presentation??'dialogue')==='dialogue'&&<><label>講話立繪 {segment.portraitActiveScale??100}%<input type="range" min="90" max="130" value={segment.portraitActiveScale??100} onChange={event=>patch({portraitActiveScale:Number(event.target.value)})}/></label><label>待機立繪 {segment.portraitInactiveScale??88}%<input type="range" min="70" max="100" value={segment.portraitInactiveScale??88} onChange={event=>patch({portraitInactiveScale:Number(event.target.value)})}/></label><label>待機亮度 {segment.portraitInactiveOpacity??45}%<input type="range" min="20" max="90" value={segment.portraitInactiveOpacity??45} onChange={event=>patch({portraitInactiveOpacity:Number(event.target.value)})}/></label></>}</div>
     <div className="story-node-controls"><select value={segment.boardCharacter ?? ''} onChange={event => { const value = event.target.value; const pieceId = pieceIdFromRef(value); const character = pieceId ? characters.find(item => item.id === pieceId) : boardCharacters.find(item => item.id === value); patch({ boardCharacter: value || undefined, speaker: character?.name ?? segment.speaker, pose: 'front' }) }}><option value="">無大頭貼</option><optgroup label="看板角色">{boardCharacters.map(character => <option key={character.id} value={character.id}>{character.name}</option>)}</optgroup><optgroup label="所有棋子">{characters.map(character => <option key={character.id} value={`piece:${character.id}`}>{character.name}</option>)}</optgroup></select>
       <select value={segment.side} onChange={event => patch({ side: event.target.value as 'left' | 'right' })}><option value="left">左側發言</option><option value="right">右側發言</option></select>
       <select value={segment.pose ?? 'front'} onChange={event => patch({ pose: event.target.value as 'front' | 'side' })}><option value="front">正面</option><option value="side">側面</option></select></div>
@@ -158,26 +159,4 @@ function RewardCard({ rewards, onChange }: { rewards: StoryRewards; onChange: (r
       </div>
     </article>
   </section>
-}
-
-function StoryDesignerPreview({ chapter, flow, onClose }: { chapter: StoryChapter; flow: StoryFlowNode[]; onClose: () => void }) {
-  const [nodes, setNodes] = useState(flow)
-  const [cursor, setCursor] = useState(0)
-  const node = nodes[cursor]
-  const segment = node?.type === 'common' ? node.segment : undefined
-  const speaker = segment?.speaker ?? chapter.title
-  const selectedPieceId = pieceIdFromRef(segment?.boardCharacter)
-  const speakerCharacter = getChars().find(character => character.id === selectedPieceId || character.name === speaker || character.name.includes(speaker) || speaker.includes(character.name))
-  const previewColors: Record<string, string> = { '劍': '#ef704d', '槍': '#29d889', '法': '#a86cff' }
-  const previewColor = speakerCharacter ? (previewColors[speakerCharacter.element] ?? '#d9bd72') : segment?.boardCharacter === 'black' ? '#a86cff' : segment?.boardCharacter === 'white' ? '#55c9ef' : '#d9bd72'
-  const image = selectedPieceId ? getCharImg(selectedPieceId) : segment?.boardCharacter ? getUrlByKey(`cb_board_${segment.boardCharacter}_front`) : null
-  const background = getUrlByKey(chapter.backgroundKey || `cb_story_map_${chapter.id}`) ?? ''
-  return <div className="story-designer-preview" style={{ backgroundImage: `linear-gradient(#03051155,#030511dd),url(${background})` }}>
-    <button className="story-preview-close" onClick={onClose}>× 關閉預覽</button><div className="story-preview-badge">PREVIEW　{chapter.title}</div>
-    {node?.type === 'branch' ? <div className="story-preview-choice"><small>玩家選項</small><h2>{node.title}</h2><div>{node.branches.map(branch => <button key={branch.id} onClick={() => setNodes(current => [...current.slice(0, cursor), ...branch.nodes, ...current.slice(cursor + 1)])}>{branch.label}</button>)}</div></div>
-      : node ? <button className={`story-preview-dialogue ${segment?.side === 'right' ? 'right' : ''}`} style={{ '--story-accent': previewColor } as React.CSSProperties} onClick={() => setCursor(value => value + 1)}>
-        <div className="story-preview-avatar">{image ? <img src={image} alt="" /> : <b>{speaker.slice(0, 1)}</b>}</div><div><span>{speaker}</span>{segment?.section && <small>{segment.section}</small>}<p>{segment?.text}</p><em>點擊繼續 ›</em></div>
-      </button> : <div className="story-preview-choice"><h2>預覽結束</h2><button onClick={() => { setNodes(flow); setCursor(0) }}>重新播放</button><button onClick={onClose}>返回編輯</button></div>}
-    <div className={`story-preview-cast ${segment?.side ?? 'left'}`}>{image ? <img src={image} alt={speaker} /> : null}</div>
-  </div>
 }
