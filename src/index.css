@@ -3682,7 +3682,7 @@ h2 {
   }
   .lv2-panel .lv2-grid-main {
     height: auto;
-    grid-template-rows: repeat(4, clamp(68px, 15dvh, 145px));
+    grid-template-rows: repeat(4, clamp(58px, 11.5dvh, 108px));
     align-content: start;
   }
   .lv2-panel .lv2-btn-primary {
@@ -3692,6 +3692,10 @@ h2 {
     max-height: 100%;
     box-sizing: border-box;
     border-radius: clamp(8px, 1.4dvh, 14px);
+  }
+  .lv2-panel .lv2-btn-primary .lv2-function-icon {
+    width: clamp(27px, 4.2dvh, 38px);
+    height: clamp(27px, 4.2dvh, 38px);
   }
   .lv2-support-panel,
   .lv2-support-panel .lv2-btn-grid,
@@ -3705,7 +3709,7 @@ h2 {
   .lv2-panel { bottom: auto; height: auto; }
   .lv2-panel .lv2-grid-main {
     height: auto;
-    grid-template-rows: repeat(4, clamp(48px, 14.5dvh, 78px));
+    grid-template-rows: repeat(4, clamp(44px, 11.5dvh, 66px));
   }
   .lv2-panel .lv2-btn-primary {
     height: 100%;
