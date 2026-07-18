@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getChars } from '../utils/charStore'
 import { usePlayerStore } from '../store/playerStore'
+import { applyGlobalFont, FONT_STORAGE_KEY, FREE_FONT_OPTIONS } from '../utils/fontSettings'
 
 interface Props {
   onClose: () => void
@@ -15,6 +16,7 @@ export default function Settings({ onClose }: Props) {
   const [usernameInput, setUsernameInput] = useState(username)
   const [coinInput, setCoinInput] = useState(String(coins))
   const [gemInput, setGemInput] = useState(String(gems))
+  const [fontId, setFontId] = useState(() => localStorage.getItem(FONT_STORAGE_KEY) ?? 'noto-sans')
   const chars = getChars()
 
   useEffect(() => setUsernameInput(username), [username])
@@ -43,6 +45,11 @@ export default function Settings({ onClose }: Props) {
         <span className="panel-title">⚙ 設定</span>
       </div>
       <div className="settings-body">
+        <section className="settings-section font-settings">
+          <h3>全系統字體</h3>
+          <label><span>免費字體</span><select value={fontId} onChange={event => { const value = applyGlobalFont(event.target.value); setFontId(value) }}>{FREE_FONT_OPTIONS.map(font => <option key={font.id} value={font.id}>{font.label}</option>)}</select></label>
+          <p>選擇後立即套用到大廳、戰鬥、故事與資料管理，並自動記住設定。</p>
+        </section>
         <section className="settings-section audio-settings">
           <h3>聲音設定</h3>
           <div className="audio-setting-row">

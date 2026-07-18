@@ -3,6 +3,9 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import './styles/teams.css'
 import App from './App.tsx'
+import { initializeGlobalFont } from './utils/fontSettings'
+
+initializeGlobalFont()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

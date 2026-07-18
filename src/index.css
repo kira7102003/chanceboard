@@ -1,8 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800;900&family=Noto+Serif+TC:wght@400;500;600;700;800;900&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
+  --app-font: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
   /* ── Backgrounds ── */
   --bg:      #04050d;
   --bg2:     #080a18;
@@ -38,7 +39,7 @@
   --yellow:  #ddaa22;
   --orange:  #ee7733;
 
-  font-family: 'Microsoft YaHei', 'Segoe UI', system-ui, sans-serif;
+  font-family: var(--app-font);
   font-size: 14px;
   color: var(--text);
   background: var(--bg);
@@ -46,6 +47,7 @@
 }
 
 body { margin: 0; }
+body, body *, body *::before, body *::after { font-family: var(--app-font) !important; }
 .route-loading {
   position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center;
   color: #ffe39a; font-size: 13px; font-weight: 800; letter-spacing: 2px;
@@ -3191,6 +3193,7 @@ h2 {
   background: rgba(8,10,24,.75);
 }
 .settings-section h3 { margin: 0 0 14px; color: var(--text-h); font-size: 15px; }
+.font-settings label { display:grid;gap:7px;color:var(--text);font-size:12px }.font-settings select{width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:8px;background:#080b18;color:var(--text-h)}.font-settings p{margin:9px 0 0;color:var(--text);font-size:11px}
 .settings-section h3 small { color: var(--text); font-size: 11px; font-weight: 500; }
 .settings-section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .settings-section-head h3 { margin-bottom: 0; }
