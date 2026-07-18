@@ -119,3 +119,13 @@ export function flattenStoryFlow(nodes: StoryFlowNode[]): StorySegment[] {
 export function saveStoryChapters(chapters: StoryChapter[]): void {
   localStorage.setItem(KEY, JSON.stringify(chapters))
 }
+
+/** Mark the cleared chapter and open the next chapter in map order. */
+export function unlockNextStoryChapter(chapterId: StoryChapterId): StoryChapter[] {
+  const chapters = getStoryChapters()
+  const clearedIndex = chapters.findIndex(chapter => chapter.id === chapterId)
+  if (clearedIndex < 0) return chapters
+  const next = chapters.map((chapter, index) => index === clearedIndex + 1 ? { ...chapter, unlocked: true } : chapter)
+  saveStoryChapters(next)
+  return next
+}
