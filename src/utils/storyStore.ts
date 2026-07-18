@@ -43,6 +43,8 @@ export interface StoryChapter {
   flow?: StoryFlowNode[]
   backgroundKey?: string
   rewards?: StoryRewards
+  mapX?: number
+  mapY?: number
 }
 
 export interface StoryRewards {

@@ -1019,6 +1019,13 @@ function AnimatedAssetUpload({ storageKey }: { storageKey: string }) {
   return <div className="animated-asset-upload"><div>{url ? <img src={url} alt="8-bit animation" /> : <span>8 BIT</span>}</div><label className="btn sm">{busy ? '上傳中…' : '上傳動畫圖'}<input type="file" accept="image/gif,image/webp,image/png" hidden disabled={busy} onChange={upload} /></label>{url && <button className="btn sm danger" onClick={() => { removeByKey(storageKey); setUrl(null) }}>移除</button>}<small>支援 GIF、動態 WebP、PNG；建議透明背景並使用像素風格。</small></div>
 }
 
+function StoryMapRouteEditor({chapters,onMove}:{chapters:StoryChapter[];onMove:(index:number,x:number,y:number)=>void}){
+  const stage=useRef<HTMLDivElement>(null),defaultsX=[9.5,28.5,45.5,62.5,80.5,93],defaultsY=[68,41,64,33,57,23]
+  const points=chapters.map((chapter,index)=>({x:chapter.mapX??defaultsX[index],y:chapter.mapY??defaultsY[index]}))
+  const begin=(event:React.PointerEvent,index:number)=>{event.preventDefault();const move=(next:PointerEvent)=>{const rect=stage.current?.getBoundingClientRect();if(!rect)return;onMove(index,Math.max(3,Math.min(97,(next.clientX-rect.left)/rect.width*100)),Math.max(5,Math.min(95,(next.clientY-rect.top)/rect.height*100)))};const end=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',end)};window.addEventListener('pointermove',move);window.addEventListener('pointerup',end)}
+  return <section className="adm-section story-route-admin"><div className="adm-section-label">世界地圖路線編輯器</div><p>拖曳章節據點調整位置，金色路線會自動連接；玩家的 8-bit 角色會沿這條路移動。</p><div className="story-route-admin-map" ref={stage}><svg viewBox="0 0 100 100" preserveAspectRatio="none"><polyline points={points.map(point=>`${point.x},${point.y}`).join(' ')}/></svg>{chapters.map((chapter,index)=><button type="button" key={chapter.id} style={{left:`${points[index].x}%`,top:`${points[index].y}%`}} onPointerDown={event=>begin(event,index)}><i>{chapter.piece}</i><span>第 {chapter.order} 章<br/><b>{chapter.title}</b></span></button>)}</div></section>
+}
+
 function StorySettings() {
   const [chapters, setChapters] = useState(getStoryChapters)
   const [designerIndex, setDesignerIndex] = useState<number | null>(null)
@@ -1030,10 +1037,12 @@ function StorySettings() {
     setChapters(next)
     saveStoryChapters(next)
   }
+  const updateMapPosition = (index: number, mapX: number, mapY: number) => update(index, { mapX, mapY })
   if (designerIndex !== null) return <StoryFlowDesigner chapter={chapters[designerIndex]} boardCharacters={boardCharacters}
     onSave={(flow, rewards) => update(designerIndex, { flow, rewards })} onClose={() => setDesignerIndex(null)} />
   return <div className="adm-basic" style={{ overflowY: 'auto' }}>
     <div className="diag-head"><div><h2>♟ 故事模式設定</h2><p>設定兵、騎士、城堡、主教、皇后、國王六張章節地圖與故事內容。</p></div></div>
+    <StoryMapRouteEditor chapters={chapters} onMove={updateMapPosition}/>
     {chapters.map((chapter, index) => <div className="adm-section" key={chapter.id}>
       <div className="adm-section-label">第 {chapter.order} 章 · {chapter.piece}</div>
       <div className="adm-basic-cols">
