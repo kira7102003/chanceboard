@@ -3,7 +3,7 @@ import './PixelSpritePlayer.css'
 export type FrameAdjust={x:number;y:number;scale:number}
 export const DEFAULT_ADJUST:FrameAdjust={x:0,y:0,scale:90}
 export const spriteAdjustKey=(charId:string,pose:string,action:string)=>`cb_pixel_adjust_${charId}_${pose}_${action}`
-export const loadSpriteAdjust=(charId:string,pose:string,action:string):FrameAdjust[]=>{try{const value=JSON.parse(localStorage.getItem(spriteAdjustKey(charId,pose,action))??'[]');return Array.from({length:4},(_,index)=>({...DEFAULT_ADJUST,...value[index]}))}catch{return Array.from({length:4},()=>({...DEFAULT_ADJUST}))}}
+export const loadSpriteAdjust=(charId:string,pose:string,action:string):FrameAdjust[]=>{try{const key=spriteAdjustKey(charId,pose,action),value=JSON.parse(localStorage.getItem(key)??'[]'),next=Array.from({length:4},(_,index)=>{const item={...DEFAULT_ADJUST,...value[index]};return {...item,scale:item.scale===100?90:item.scale}});if(value.some?.((item:FrameAdjust)=>item?.scale===100))localStorage.setItem(key,JSON.stringify(next));return next}catch{return Array.from({length:4},()=>({...DEFAULT_ADJUST}))}}
 const positions=['0 0','100% 0','0 100%','100% 100%']
 export default function PixelSpritePlayer({src,fps,adjustments,playing=true,selectedFrame=0,overlay=false}:{src:string;fps:number;adjustments:FrameAdjust[];playing?:boolean;selectedFrame?:number;overlay?:boolean}){
   const frame=Math.max(0,Math.min(3,selectedFrame))
