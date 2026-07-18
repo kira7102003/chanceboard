@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import './StoryFlowDesigner.css'
 import './StoryPlaybackV2.css'
 import { getCharImg, getChars, getUrlByKey } from '../utils/charStore'
@@ -29,16 +30,38 @@ const pieceIdFromRef = (value?: string) => value?.startsWith('piece:') ? value.s
 export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, onClose }: Props) {
   const [flow, setFlow] = useState(() => getChapterFlow(chapter))
   const [rewards, setRewards] = useState<StoryRewards>(chapter.rewards ?? {})
-  const [preview, setPreview] = useState(false)
+  const [previewWindow, setPreviewWindow] = useState<Window | null>(null)
   const [saved, setSaved] = useState(false)
   const change = (next: StoryFlowNode[]) => { setFlow(next); setSaved(false) }
   const save = () => { onSave(flow, rewards); setSaved(true) }
+  const openPreview = () => {
+    if (previewWindow && !previewWindow.closed) { previewWindow.focus(); return }
+    const popup = window.open('', 'chanceboard-story-preview', 'popup=yes,width=1440,height=900,resizable=yes,scrollbars=no')
+    if (!popup) { window.alert('瀏覽器已阻擋預覽視窗，請允許此網站開啟彈出式視窗。'); return }
+    popup.document.title = `${chapter.title}｜故事預覽`
+    popup.document.documentElement.lang = 'zh-Hant'
+    popup.document.body.innerHTML = ''
+    popup.document.body.style.margin = '0'
+    document.querySelectorAll<HTMLLinkElement | HTMLStyleElement>('link[rel="stylesheet"], style').forEach(source => {
+      const copy = source.cloneNode(true) as HTMLLinkElement | HTMLStyleElement
+      if (copy instanceof HTMLLinkElement) copy.href = source instanceof HTMLLinkElement ? source.href : ''
+      popup.document.head.appendChild(copy)
+    })
+    setPreviewWindow(popup)
+    popup.focus()
+  }
+  useEffect(() => {
+    if (!previewWindow) return
+    const close = () => setPreviewWindow(null)
+    previewWindow.addEventListener('beforeunload', close)
+    return () => previewWindow.removeEventListener('beforeunload', close)
+  }, [previewWindow])
 
   return <div className="story-designer">
     <header className="story-designer-head">
       <div><button onClick={onClose}>← 返回章節設定</button><span className="story-designer-dot" /><b>{chapter.piece}　{chapter.title}｜故事流程</b></div>
       <div className="story-designer-legend"><i className="dialogue" />對話<i className="choice" />選項<i className="route" />分支</div>
-      <div className="story-add-toolbar"><button onClick={() => setPreview(true)}>▶ 預覽</button><button onClick={() => change([...flow, makeCommon(boardCharacters[0])])}>＋ 對話</button><button onClick={() => change([...flow, makeBranch()])}>＋ 分支</button><button onClick={() => change([...flow, makePresentation('narration')])}>＋ 旁白</button><button onClick={() => change([...flow, makePresentation('marquee')])}>＋ 跑馬燈</button><button onClick={() => change([...flow, makePresentation('chapter')])}>＋ 章節</button><button onClick={() => change([...flow, makePresentation('cg')])}>＋ CG</button><button onClick={() => change([...flow, makePresentation('battle')])}>＋ 戰鬥</button><button className="primary" onClick={save}>{saved ? '✓ 已儲存' : '儲存'}</button></div>
+      <div className="story-add-toolbar"><button onClick={openPreview}>↗ 開新視窗預覽</button><button onClick={() => change([...flow, makeCommon(boardCharacters[0])])}>＋ 對話</button><button onClick={() => change([...flow, makeBranch()])}>＋ 分支</button><button onClick={() => change([...flow, makePresentation('narration')])}>＋ 旁白</button><button onClick={() => change([...flow, makePresentation('marquee')])}>＋ 跑馬燈</button><button onClick={() => change([...flow, makePresentation('chapter')])}>＋ 章節</button><button onClick={() => change([...flow, makePresentation('cg')])}>＋ CG</button><button onClick={() => change([...flow, makePresentation('battle')])}>＋ 戰鬥</button><button className="primary" onClick={save}>{saved ? '✓ 已儲存' : '儲存'}</button></div>
     </header>
     <div className="story-designer-sub">以卡片編排章節。實線代表順序，彩色路線代表玩家選項；每條分支都能繼續加入對話或下一層選項。</div>
     <nav className="story-designer-palette">
@@ -50,7 +73,7 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
       <FlowLane nodes={flow} onChange={change} boardCharacters={boardCharacters} depth={0} label="章節開始" laneId="root" />
       {!flow.length && <div className="story-designer-empty">尚無節點，請從右上角新增第一段對話。</div>}
     </main>
-    {preview && <StoryDesignerPreview chapter={chapter} flow={flow} onClose={() => setPreview(false)} />}
+    {previewWindow && !previewWindow.closed && createPortal(<StoryDesignerPreview chapter={chapter} flow={flow} onClose={() => previewWindow.close()} />, previewWindow.document.body)}
   </div>
 }
 
