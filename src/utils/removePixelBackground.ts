@@ -1,5 +1,6 @@
 const loadImage = (src: string) => new Promise<HTMLImageElement>((resolve, reject) => {
   const image = new Image()
+  image.crossOrigin = 'anonymous'
   image.onload = () => resolve(image)
   image.onerror = () => reject(new Error('圖片讀取失敗'))
   image.src = src
