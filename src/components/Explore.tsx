@@ -10,7 +10,6 @@ import './Explore.css'
 interface Props { onClose: () => void }
 const fmt = (seconds: number) => `${Math.max(0, Math.floor(seconds / 3600))}:${String(Math.max(0, Math.floor(seconds % 3600 / 60))).padStart(2, '0')}:${String(Math.max(0, Math.floor(seconds % 60))).padStart(2, '0')}`
 const MANUAL_MINING_DURATION_MS = 30_000
-const MINING_TIME_BONUS_CHANCE = 0.03
 
 export default function Explore({ onClose }: Props) {
   const player = usePlayerStore(), chars = useMemo(() => getChars(), []), config = useMemo(() => getMiningConfig(), [])
@@ -58,7 +57,7 @@ export default function Explore({ onClose }: Props) {
     setCombo(nextCombo);setLastStrike(Date.now());setActiveMiner(charId);setSkillCooldowns(value=>({...value,[cooldownKey]:Date.now()+miningCooldown*1000}))
     setAttacking(attackKey)
     setManualPositions(pos=>pos.map((point,index)=>index===0?{x:Math.max(4,Math.min(96,object.x+3)),y:Math.max(8,Math.min(92,object.y+5))}:point))
-    window.setTimeout(()=>{if(Date.now()>=manualEndAt){setAttacking('');return}const ids=new Set(hitObjects.map(item=>item.id)),foundTimeBonus=Math.random()<1-Math.pow(1-MINING_TIME_BONUS_CHANCE,hitObjects.length),bonusSeconds=foundTimeBonus?5+Math.floor(Math.random()*11):0;setDigMarks(marks=>[...marks.slice(-23),...hitObjects.map((item,index)=>({id:Date.now()+index,x:item.x,y:item.y,size:18+Math.random()*24}))]);setManualDebris(items=>items.filter(item=>!ids.has(item.id)));setSelectedDebris(null);if(bonusSeconds>0){setManualEndAt(end=>end+bonusSeconds*1000);setMessage(`挖到時間獎勵：+${bonusSeconds} 秒！`)}setManualHp(current=>{const next=[...current],before=next[target];next[target]=Math.max(0,before-damage*hitObjects.length);if(before>0&&next[target]===0){const rewards=rollMiningRewards(node),summary=Object.entries(rewards).map(([key,amount])=>`${rewardLabel[key]??key} +${amount}`).join('、')||'沒有額外掉落';player.addResourceRewards(rewards);setMessage(`${node.name}已清除：${summary}${bonusSeconds>0?`；時間 +${bonusSeconds} 秒`:''}`)}return next});setAttacking('')},680)
+    window.setTimeout(()=>{if(Date.now()>=manualEndAt){setAttacking('');return}const ids=new Set(hitObjects.map(item=>item.id));setDigMarks(marks=>[...marks.slice(-23),...hitObjects.map((item,index)=>({id:Date.now()+index,x:item.x,y:item.y,size:18+Math.random()*24}))]);setManualDebris(items=>items.filter(item=>!ids.has(item.id)));setSelectedDebris(null);setManualHp(current=>{const next=[...current],before=next[target];next[target]=Math.max(0,before-damage*hitObjects.length);if(before>0&&next[target]===0){const rewards=rollMiningRewards(node),summary=Object.entries(rewards).map(([key,amount])=>`${rewardLabel[key]??key} +${amount}`).join('、')||'沒有額外掉落';player.addResourceRewards(rewards);setMessage(`${node.name}已清除：${summary}`)}return next});setAttacking('')},680)
   }
   const moveOnGrid=(event:React.MouseEvent<HTMLElement>)=>{if(manualFinished||!activeMiner||(event.target as HTMLElement).closest('button'))return;const rect=event.currentTarget.getBoundingClientRect(),x=Math.round((event.clientX-rect.left)/rect.width*49)/49*100,y=Math.round((event.clientY-rect.top)/rect.height*49)/49*100;setManualPositions(points=>points.map((point,index)=>selected[index]===activeMiner?{x,y}:point))}
   if (manual) return <div className="panel-overlay mining-manual">
