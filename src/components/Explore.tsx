@@ -9,6 +9,7 @@ import './Explore.css'
 
 interface Props { onClose: () => void }
 const fmt = (seconds: number) => `${Math.max(0, Math.floor(seconds / 3600))}:${String(Math.max(0, Math.floor(seconds % 3600 / 60))).padStart(2, '0')}:${String(Math.max(0, Math.floor(seconds % 60))).padStart(2, '0')}`
+const MANUAL_MINING_DURATION_MS = 30_000
 
 export default function Explore({ onClose }: Props) {
   const player = usePlayerStore(), chars = useMemo(() => getChars(), []), config = useMemo(() => getMiningConfig(), [])
@@ -42,7 +43,7 @@ export default function Explore({ onClose }: Props) {
     const reward=rollMiningRewards(state,Math.max(1,state.broken)),summary=Object.entries(reward).map(([key,amount])=>`${rewardLabel[key]??key} +${amount}`).join('、')||'沒有額外掉落'
     player.addResourceRewards(reward); persistJobs(run.jobs.filter(job => job.nodeId !== nodeId)); setMessage(`${state.name}完成：${summary}`)
   }
-  const enterManual = (choice:number|React.MouseEvent=target) => { const chosen=typeof choice==='number'?choice:target;if (!selected.length) return setMessage('請先選擇一位角色，再點擊要進入的礦坑'); const miner=selected[0];setSelected([miner]);setManualPositions([{ x: 12, y: 78 }]); setManualDebris(Array.from({length:34},(_,id)=>({id,x:4+Math.floor(Math.random()*46)*2,y:7+Math.floor(Math.random()*43)*2,kind:(id%7===0?'crystal':id%5===0?'pit':'rock') as 'rock'|'crystal'|'pit'}))); setSelectedDebris(null);setManualHp(config.nodes.map(node => node.maxHp)); setTarget(chosen); setActiveMiner(miner);setCombo(0);setLastStrike(0);setDigMarks([]);setSkillCooldowns({});setAttacking(''); setMessage(`點選地圖上的礦石，再用普攻或招式挖掘 ${config.nodes[chosen].name}`); setManualEndAt(Date.now()+15000); setManual(true) }
+  const enterManual = (choice:number|React.MouseEvent=target) => { const chosen=typeof choice==='number'?choice:target;if (!selected.length) return setMessage('請先選擇一位角色，再點擊要進入的礦坑'); const miner=selected[0];setSelected([miner]);setManualPositions([{ x: 12, y: 78 }]); setManualDebris(Array.from({length:34},(_,id)=>({id,x:4+Math.floor(Math.random()*46)*2,y:7+Math.floor(Math.random()*43)*2,kind:(id%7===0?'crystal':id%5===0?'pit':'rock') as 'rock'|'crystal'|'pit'}))); setSelectedDebris(null);setManualHp(config.nodes.map(node => node.maxHp)); setTarget(chosen); setActiveMiner(miner);setCombo(0);setLastStrike(0);setDigMarks([]);setSkillCooldowns({});setAttacking(''); setMessage(`30 秒內使用普攻或招式挖掘 ${config.nodes[chosen].name}；掉落機率與自動挖掘相同`); setManualEndAt(Date.now()+MANUAL_MINING_DURATION_MS); setManual(true) }
   const manualSeconds=Math.max(0,Math.ceil((manualEndAt-now)/1000)),manualFinished=manualSeconds<=0||manualHp[target]<=0
   const rewardLabel:Record<string,string>={swordSoul:'劍魂',gunSoul:'槍魂',magicSoul:'法魂',coins:'金幣',gems:'鑽石',silver:'銀',copper:'銅',iron:'鐵',wood:'木'}
   const attackRock = (charId: string, moveId?: string) => {
