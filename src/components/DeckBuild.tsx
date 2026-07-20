@@ -1,14 +1,40 @@
 import { useEffect, useRef, useState } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { usePlayerStore } from '../store/playerStore'
-import { cards as allCards } from '../data/db'
+import { cards as allCards, deckWeights } from '../data/db'
 import { randomDeck } from '../engine/randomDeck'
 import { CARD_ICON } from '../data/cardIcons'
 import { getCardImg } from '../utils/charStore'
 import type { Card } from '../types/card'
+import type { PieceType } from '../types/piece'
 import GameImage from './GameImage'
 
 const DECK_SIZE = 10
+
+const BUILTIN_DECKS: Array<{ id: PieceType; name: string }> = [
+  { id: 'pawn', name: '兵・均衡' }, { id: 'knight', name: '騎士・進攻' },
+  { id: 'castle', name: '城堡・防守' }, { id: 'bishop', name: '主教・法術' },
+  { id: 'queen', name: '皇后・祈願' }, { id: 'king', name: '國王・全能' },
+]
+
+function buildBuiltinDeck(piece: PieceType, inventory: Record<string, number>): string[] {
+  const candidates = deckWeights
+    .filter(item => item.weightsByPiece[piece] != null && (inventory[item.cardId] ?? 0) > 0)
+    .sort((a, b) => (b.weightsByPiece[piece] ?? 0) - (a.weightsByPiece[piece] ?? 0))
+  const result: string[] = []
+  while (result.length < DECK_SIZE) {
+    let added = false
+    for (const item of candidates) {
+      const owned = inventory[item.cardId] ?? 0
+      if (result.filter(id => id === item.cardId).length >= owned) continue
+      result.push(item.cardId)
+      added = true
+      if (result.length === DECK_SIZE) break
+    }
+    if (!added) break
+  }
+  return result
+}
 
 const SUIT_COLOR: Record<string, string> = {
   red: '#ee4444', green: '#22cc77', blue: '#5566ee', yellow: '#ddaa22', flower: '#bb55ee',
@@ -85,13 +111,20 @@ export default function DeckBuild({ onConfirm, onBack }: Props) {
   }
   const loadPreset = (id: string) => {
     setSelectedPresetId(id)
+    if (id.startsWith('builtin:')) {
+      setSelected(buildBuiltinDeck(id.slice(8) as PieceType, cardInventory))
+      return
+    }
     const deck = savedDecks.find(item => item.id === id)
     if (deck) setSelected(deck.cardIds.slice(0, DECK_SIZE))
   }
   const saveCurrent = () => {
     if (selected.length !== DECK_SIZE) return
     const name = window.prompt('請輸入牌組名稱', `牌組 ${savedDecks.length + 1}`)?.trim()
-    if (name) saveDeck({ name, cardIds: selected })
+    if (name) {
+      const id = saveDeck({ name, cardIds: selected })
+      if (id) setSelectedPresetId(id)
+    }
   }
   const randomize = () => {
     if (randomPhase) return
@@ -149,7 +182,12 @@ export default function DeckBuild({ onConfirm, onBack }: Props) {
         <div className="dk-preset-controls">
           <select className="dk-preset-select" value={selectedPresetId} onChange={e => loadPreset(e.target.value)} aria-label="選擇牌組">
             <option value="">自選牌組</option>
-            {savedDecks.map(deck => <option key={deck.id} value={deck.id}>{deck.name}{deck.id === defaultDeckId ? '（預設）' : ''}</option>)}
+            <optgroup label="六棋子預設牌組">
+              {BUILTIN_DECKS.map(deck => <option key={deck.id} value={`builtin:${deck.id}`}>{deck.name}</option>)}
+            </optgroup>
+            <optgroup label="我的牌組">
+              {savedDecks.map(deck => <option key={deck.id} value={deck.id}>{deck.name}{deck.id === defaultDeckId ? '（預設）' : ''}</option>)}
+            </optgroup>
           </select>
           <button className="btn dk-random-btn" disabled={!!randomPhase} onClick={randomize}>🎲 隨機配置</button>
         </div>
@@ -222,8 +260,8 @@ export default function DeckBuild({ onConfirm, onBack }: Props) {
       <div className="dk-footer">
         <button className="btn" disabled={selected.length === 0 || !!randomPhase} onClick={() => { setSelected([]); setSelectedPresetId('') }}>清空</button>
         <button className="btn" disabled={selected.length !== DECK_SIZE || savedDecks.length >= 10} onClick={saveCurrent}>儲存牌組</button>
-        {selectedPresetId && <button className="btn" onClick={() => setDefaultDeck(selectedPresetId)}>{selectedPresetId === defaultDeckId ? '已設為預設' : '設為預設'}</button>}
-        {selectedPresetId && <button className="btn danger" onClick={() => { deleteDeck(selectedPresetId); setSelectedPresetId('') }}>刪除牌組</button>}
+        {selectedPresetId && !selectedPresetId.startsWith('builtin:') && <button className="btn" onClick={() => setDefaultDeck(selectedPresetId)}>{selectedPresetId === defaultDeckId ? '已設為預設' : '設為預設'}</button>}
+        {selectedPresetId && !selectedPresetId.startsWith('builtin:') && <button className="btn danger" onClick={() => { deleteDeck(selectedPresetId); setSelectedPresetId('') }}>刪除牌組</button>}
         <button className="btn primary" disabled={selected.length !== DECK_SIZE || !!randomPhase} onClick={() => onConfirm(selected)}>
           {isSolo ? '確認牌組 — 開始挑戰' : '確認牌組 — 等待對手'}
         </button>

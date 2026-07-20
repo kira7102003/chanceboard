@@ -42,7 +42,7 @@ interface PlayerState {
   removeOwnedChar: (id: string) => void
   clearCollection: () => void
   setDefaultTeam: (id: string | null) => void
-  saveDeck: (deck: Omit<SavedDeck, 'id'>) => void
+  saveDeck: (deck: Omit<SavedDeck, 'id'>) => string | null
   deleteDeck: (id: string) => void
   setDefaultDeck: (id: string | null) => void
   claimDailyReward: (userId: string, dateKey: string, coins: number, gems: number) => boolean
@@ -204,9 +204,10 @@ export const usePlayerStore = create<PlayerState>()(
       clearCollection: () => set({ ownedCharIds: [] }),
       setDefaultTeam: (id) => set({ defaultTeamId: id }),
       saveDeck: (deck) => {
-        if (deck.cardIds.length !== 10 || get().savedDecks.length >= 10) return
+        if (deck.cardIds.length !== 10 || get().savedDecks.length >= 10) return null
         const id = `deck_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`
         set(s => ({ savedDecks: [...s.savedDecks, { ...deck, cardIds: [...deck.cardIds], id }] }))
+        return id
       },
       deleteDeck: (id) => set(s => ({
         savedDecks: s.savedDecks.filter(deck => deck.id !== id),
