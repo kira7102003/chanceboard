@@ -2693,16 +2693,16 @@ h2 {
 
 /* Trapezoid duel presentation (selectable in Data Management). */
 .ma-trapezoid .ma-battle-row{padding:0;gap:0;background:linear-gradient(90deg,#02030ae8,#070814b8 50%,#02030ae8)}
-.ma-trapezoid .ma-zone-skill{position:relative;flex:0 0 35%;height:82vh;gap:0;overflow:hidden;clip-path:polygon(12% 0,100% 0,88% 100%,0 100%);background:#080a14;animation:maTrapSkillIn var(--ma-duration,2.3s) cubic-bezier(.2,.72,.2,1) both}
-.ma-trapezoid .ma-from-right .ma-zone-skill{clip-path:polygon(0 0,88% 0,100% 100%,12% 100%)}
+.ma-trapezoid .ma-zone-skill{position:relative;flex:0 0 43%;height:90vh;gap:0;overflow:hidden;clip-path:polygon(10% 0,100% 0,90% 100%,0 100%);background:radial-gradient(circle at center,#14182b,#05060d 72%);animation:maTrapSkillIn var(--ma-duration,2.3s) cubic-bezier(.2,.72,.2,1) both}
+.ma-trapezoid .ma-from-right .ma-zone-skill{clip-path:polygon(0 0,90% 0,100% 100%,10% 100%)}
 .ma-trapezoid .ma-skill-wrap{height:100%}
-.ma-trapezoid .ma-skill-img{width:100%;max-width:none;height:100%;max-height:none;border-radius:0;background:#080a14;object-fit:cover;transform-origin:center}
+.ma-trapezoid .ma-skill-img{width:100%;max-width:none;height:100%;max-height:none;padding:2vh 3vw;border-radius:0;background:transparent;object-fit:contain;object-position:center;transform-origin:center}
 .ma-trapezoid .ma-skill-name{position:absolute;left:7%;right:7%;bottom:5%;padding:8px 12px;background:#050611c9;border-top:1px solid currentColor;font-size:clamp(1rem,2.2vw,2rem)}
-.ma-trapezoid .ma-attribute-title{position:relative;z-index:4;flex:0 0 18%;height:94vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;color:var(--ma-color);text-align:center;text-shadow:0 0 18px currentColor,0 4px 6px #000}
+.ma-trapezoid .ma-attribute-title{position:relative;z-index:4;flex:0 0 14%;height:94vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;color:var(--ma-color);text-align:center;text-shadow:0 0 18px currentColor,0 4px 6px #000}
 .ma-trapezoid .ma-attribute-title:before,.ma-trapezoid .ma-attribute-title:after{content:'';width:2px;height:24%;background:linear-gradient(transparent,var(--ma-color),transparent);box-shadow:0 0 16px var(--ma-color)}
 .ma-trapezoid .ma-attribute-title b{font-family:'Cinzel','Microsoft YaHei',serif;font-size:clamp(3.4rem,8vw,8.5rem);line-height:.95;letter-spacing:.08em;writing-mode:vertical-rl;animation:maAttributePop var(--ma-duration,2.3s) ease both}
 .ma-trapezoid .ma-attribute-title span{max-width:90%;margin:10px 0;color:#f3ead4;font-size:clamp(.8rem,1.4vw,1.25rem);font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ma-trapezoid .ma-zone-target{flex:0 0 47%;height:90vh;padding:2vh 2vw}
+.ma-trapezoid .ma-zone-target{flex:0 0 43%;height:90vh;padding:2vh 2vw}
 .ma-trapezoid .ma-zone-target>.ma-portrait{max-width:100%;height:82vh}
 .ma-trapezoid .ma-group-row{height:86vh;gap:0}
 .ma-trapezoid .ma-group-row>div{height:100%}
@@ -2712,7 +2712,7 @@ h2 {
 .ma-trapezoid .ma-from-right .ma-zone-skill{animation-name:maTrapSkillInRight}
 @keyframes maTrapSkillInRight{0%{opacity:0;transform:translateX(14vw) scale(.92)}16%,80%{opacity:1;transform:translateX(0) scale(1)}100%{opacity:0;transform:translateX(-5vw) scale(1.04)}}
 @keyframes maAttributePop{0%,10%{opacity:0;transform:scale(.45)}24%,78%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.16)}}
-@media(max-width:700px){.ma-trapezoid .ma-zone-skill{flex-basis:34%;height:72vh}.ma-trapezoid .ma-attribute-title{flex-basis:16%}.ma-trapezoid .ma-zone-target{flex-basis:50%;height:76vh;padding:1vh 1vw}.ma-trapezoid .ma-attribute-title b{font-size:clamp(2.2rem,10vw,4rem)}.ma-trapezoid .ma-skill-name{font-size:.72rem}.ma-trapezoid .ma-attribute-title span{display:none}}
+@media(max-width:700px){.ma-trapezoid .ma-zone-skill{flex-basis:42%;height:76vh}.ma-trapezoid .ma-skill-img{padding:1vh 2vw}.ma-trapezoid .ma-attribute-title{flex-basis:16%}.ma-trapezoid .ma-zone-target{flex-basis:42%;height:76vh;padding:1vh 1vw}.ma-trapezoid .ma-attribute-title b{font-size:clamp(2.2rem,10vw,4rem)}.ma-trapezoid .ma-skill-name{font-size:.72rem}.ma-trapezoid .ma-attribute-title span{display:none}}
 
 .battle-fx-options{display:grid;grid-template-columns:repeat(2,minmax(220px,1fr));gap:14px;max-width:780px}
 .battle-fx-options button{min-height:130px;display:grid;place-content:center;gap:8px;padding:18px;border:1px solid #343a57;border-radius:14px;background:linear-gradient(145deg,#121729,#070914);color:#cbd2e2;cursor:pointer;text-align:center;transition:.2s}
