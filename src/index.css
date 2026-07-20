@@ -2096,14 +2096,15 @@ h2 {
   text-shadow:0 1px 0 #000,0 0 9px #d7b85a66;
   box-shadow:0 0 0 1px #05060b,0 0 0 3px #b9913d88,0 10px 30px #000c,0 0 24px color-mix(in srgb,var(--action-glow,#d9b452) 42%,transparent);
 }
-.act-confirm:not(:disabled){background:linear-gradient(#08090e,#08090e) padding-box,conic-gradient(var(--action-tone) var(--action-progress),#242735 0) border-box}
+.act-confirm:not(:disabled){background:linear-gradient(#08090e,#08090e) padding-box,repeating-conic-gradient(from -1deg,transparent 0 22deg,#08090e 22deg 24deg) border-box,conic-gradient(var(--action-tone) var(--action-progress),#242735 0) border-box}
 .act-confirm:before {
   content:'';position:absolute;z-index:0;inset:7px;border:1px solid #d8b968;border-radius:50%;opacity:1;transition:none;
   background:
     linear-gradient(90deg,transparent 49.3%,#c9aa5950 49.5% 50.5%,transparent 50.7%),
     linear-gradient(0deg,transparent 49.3%,#c9aa5950 49.5% 50.5%,transparent 50.7%),
-    repeating-conic-gradient(from -1deg,#e5c76b 0 1deg,transparent 1deg 15deg),
-    radial-gradient(circle,transparent 0 44%,#d3b45d88 45% 46%,transparent 47% 60%,#695126 61% 62%,transparent 63%),
+    conic-gradient(from -24deg,transparent 0 312deg,#d9bd6530 338deg,transparent 360deg),
+    repeating-conic-gradient(from -1deg,#e5c76b 0 1deg,transparent 1deg 24deg),
+    radial-gradient(circle,transparent 0 25%,#8f753e66 26% 27%,transparent 28% 43%,#d3b45d88 44% 45%,transparent 46% 59%,#695126 60% 61%,transparent 62%),
     radial-gradient(circle at 38% 30%,#403318,#17140f 48%,#08090e 78%);
   box-shadow:inset 0 0 0 5px #07080dcc,inset 0 0 20px #000,0 0 0 2px #090a10,0 0 0 3px #6f572b;
 }
@@ -2116,6 +2117,7 @@ h2 {
 .act-confirm:not(:disabled):hover {
   background:
     linear-gradient(#08090e,#08090e) padding-box,
+    repeating-conic-gradient(from -1deg,transparent 0 22deg,#08090e 22deg 24deg) border-box,
     conic-gradient(var(--action-tone) var(--action-progress),#242735 0) border-box;
   border-color:transparent;transform:none;filter:brightness(1.035);
   box-shadow:0 0 0 1px #05060b,0 0 0 3px #c6a14b99,0 10px 30px #000c,0 0 29px color-mix(in srgb,var(--action-glow,#d9b452) 52%,transparent);
