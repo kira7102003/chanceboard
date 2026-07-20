@@ -600,6 +600,45 @@ body, body *, body *::before, body *::after { font-family: var(--app-font) !impo
 .battle-act-row .log-panel .log-pass,
 .end-log-lines .log-pass { border-left-color: #414963 !important; }
 
+/* Current actor banner: this is the primary call-to-action context. */
+.battle-act-row .act-who-turn {
+  position: relative;
+  display: inline-flex; align-items: center; gap: 7px;
+  min-height: 34px; padding: 4px 13px 4px 8px;
+  border: 1px solid rgba(225,181,76,.62);
+  border-left: 4px solid #e1b54c;
+  border-radius: 7px;
+  background: linear-gradient(105deg, rgba(108,74,15,.54), rgba(24,28,49,.94) 58%, rgba(10,14,30,.94));
+  box-shadow: inset 0 1px rgba(255,255,255,.07), 0 0 16px rgba(215,168,54,.18), 0 4px 12px rgba(0,0,0,.3);
+  color: #f7e7b4;
+  white-space: nowrap;
+}
+.battle-act-row .act-who-turn::before {
+  content: '';
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #ffe58b;
+  box-shadow: 0 0 5px #ffe58b, 0 0 13px #d9a82e;
+  animation: actTurnPulse 1.25s ease-in-out infinite;
+}
+.battle-act-row .act-turn-label {
+  color: #fff2c5; font-size: 12px; font-weight: 850; letter-spacing: .08em;
+}
+.battle-act-row .act-who-turn small {
+  padding: 2px 5px; border-radius: 4px;
+  color: #b9c5e3; background: rgba(72,91,137,.28);
+  font-size: 9px; font-weight: 800;
+}
+.battle-act-row .act-who-turn b {
+  font-size: clamp(14px, 1.2vw, 18px) !important;
+  letter-spacing: .02em;
+  text-shadow: 0 0 10px currentColor, 0 2px 4px #000 !important;
+}
+@keyframes actTurnPulse { 50% { opacity: .45; transform: scale(.72); } }
+@media (max-width: 700px) {
+  .battle-act-row .act-who-turn { min-height: 30px; padding: 3px 8px 3px 6px; gap: 5px; }
+  .battle-act-row .act-who-turn b { font-size: 13px !important; max-width: 35vw; overflow: hidden; text-overflow: ellipsis; }
+}
+
 @media (max-width: 640px) {
   .lobby-v2 {
     display: block;

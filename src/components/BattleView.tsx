@@ -571,8 +571,10 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                         ? (
                           /* 一行流式：輪到 X → 招式鈕(含牌耗) → 移動到 後/中/前，塞不下自動換行 */
                           <div className="act-flow">
-                            <div className="act-who">
-                              輪到【我方】<b style={{ color: EL_COLOR[au.element] }}>{EL_ICON[au.element]} {au.name}</b>
+                            <div className="act-who act-who-turn">
+                              <span className="act-turn-label">輪到</span>
+                              <small>我方</small>
+                              <b style={{ color: EL_COLOR[au.element] }}>{EL_ICON[au.element]} {au.name}</b>
                             </div>
                             <MoveGrid
                               unit={au}
