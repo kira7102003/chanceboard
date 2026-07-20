@@ -369,7 +369,6 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                       <Portrait img={t.charImg} name={t.name} flip={targetOnRight !== (t.facing === 'right')} showName={false} />
                     </div>
                   ))}
-                  <div className="ma-char-name ma-group-name">群體</div>
                 </div>
               )
               : moveAnim.targetName
@@ -397,7 +396,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                 </div>
                 <div className="ma-skill-name" style={{ color: moveAnim.color }}>{moveAnim.name}</div>
               </div>
-              {presentationStyle === 'trapezoid' && <div className="ma-attribute-title" style={{ '--ma-color': moveAnim.color } as React.CSSProperties}><b>{moveAnim.attributeText}</b><span>{moveAnim.name}</span></div>}
+              {presentationStyle === 'trapezoid' && <div className="ma-attribute-title" style={{ '--ma-color': moveAnim.color } as React.CSSProperties}><b>{moveAnim.attributeText}</b>{moveAnim.isGroup&&<i>群</i>}<span>{moveAnim.name}</span></div>}
               {moveAnim.hasTarget && !moveAnim.selfTargetOnly && TargetZone}
             </div>
           </div>

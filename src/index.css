@@ -2721,6 +2721,7 @@ h2 {
 .ma-trapezoid .ma-attribute-title{position:relative;z-index:4;flex:0 0 14%;height:94vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;color:var(--ma-color);text-align:center;text-shadow:0 0 18px currentColor,0 4px 6px #000}
 .ma-trapezoid .ma-attribute-title:before,.ma-trapezoid .ma-attribute-title:after{content:'';width:2px;height:24%;background:linear-gradient(transparent,var(--ma-color),transparent);box-shadow:0 0 16px var(--ma-color)}
 .ma-trapezoid .ma-attribute-title b{font-family:'Cinzel','Microsoft YaHei',serif;font-size:clamp(3.4rem,8vw,8.5rem);line-height:.95;letter-spacing:.08em;writing-mode:vertical-rl;animation:maAttributePop var(--ma-duration,2.3s) ease both}
+.ma-trapezoid .ma-attribute-title i{display:grid;place-items:center;width:clamp(30px,3.2vw,52px);aspect-ratio:1;margin:9px 0 2px;border:1px solid currentColor;border-radius:50%;background:#070914d9;color:var(--ma-color);font-family:'Cinzel','Microsoft YaHei',serif;font-size:clamp(1rem,2vw,1.8rem);font-weight:900;font-style:normal;box-shadow:0 0 14px color-mix(in srgb,var(--ma-color) 48%,transparent),inset 0 0 10px color-mix(in srgb,var(--ma-color) 18%,transparent)}
 .ma-trapezoid .ma-attribute-title span{max-width:90%;margin:10px 0;color:#f3ead4;font-size:clamp(.8rem,1.4vw,1.25rem);font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ma-trapezoid .ma-zone-target{flex:0 0 43%;height:min(82vh,760px);padding:0 2vw}
 .ma-trapezoid .ma-zone-target>.ma-portrait{max-width:100%;height:100%}
