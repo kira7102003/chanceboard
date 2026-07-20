@@ -2091,8 +2091,23 @@ h2 {
 .cardface.mini { box-shadow: 0 4px 12px rgba(0,0,0,.32); }
 .act-confirm {
   color: #fff0bd;
-  box-shadow: inset 0 0 18px rgba(200,161,90,.12), 0 5px 18px rgba(0,0,0,.36);
+  border-width: 4px!important;
+  color: #fff2bd;
+  text-shadow: 0 1px 0 #4b3100,0 0 12px #ffd76a88;
+  box-shadow: inset 0 0 0 2px #080a13,inset 0 0 25px rgba(244,193,72,.2),0 0 0 1px #d5ad4d55,0 8px 26px #000b,0 0 24px color-mix(in srgb,var(--action-tone,#d9b452) 25%,transparent);
+  background-color:#12101a;
 }
+.act-confirm:before {
+  content:'';position:absolute;z-index:-1;inset:8px;border:1px solid #f4d57a88;border-radius:50%;
+  background:radial-gradient(circle at 36% 28%,#fff4c933 0 5%,transparent 6%),radial-gradient(circle,#503710 0,#171018 66%,#06070d 100%);
+  box-shadow:inset 0 0 18px #000,0 0 10px #e6bd5555;
+}
+.act-confirm:after {
+  content:'◆';position:absolute;left:50%;top:7px;translate:-50% -50%;color:#ffe08a;font-size:8px;text-shadow:0 0 7px #ffd25f;
+}
+.act-confirm-progress{opacity:.16;mix-blend-mode:screen}
+.act-confirm-label{font-family:'Cinzel','Microsoft YaHei',serif;font-size:21px!important;letter-spacing:2px}
+.act-confirm small{color:#e9cc79;font-weight:800;font-variant-numeric:tabular-nums}
 .act-confirm:not(:disabled):hover {
   background:
     linear-gradient(145deg, rgba(145,104,32,.9), rgba(54,39,14,.96)) padding-box,
@@ -2693,18 +2708,18 @@ h2 {
 
 /* Trapezoid duel presentation (selectable in Data Management). */
 .ma-trapezoid .ma-battle-row{padding:0;gap:0;background:linear-gradient(90deg,#02030ae8,#070814b8 50%,#02030ae8)}
-.ma-trapezoid .ma-zone-skill{position:relative;flex:0 0 43%;height:90vh;gap:0;overflow:hidden;clip-path:polygon(10% 0,100% 0,90% 100%,0 100%);background:radial-gradient(circle at center,#14182b,#05060d 72%);animation:maTrapSkillIn var(--ma-duration,2.3s) cubic-bezier(.2,.72,.2,1) both}
+.ma-trapezoid .ma-zone-skill{position:relative;flex:0 0 43%;height:min(82vh,760px);gap:0;overflow:hidden;clip-path:polygon(10% 0,100% 0,90% 100%,0 100%);background:radial-gradient(circle at center,#14182b,#05060d 72%);animation:maTrapSkillIn var(--ma-duration,2.3s) cubic-bezier(.2,.72,.2,1) both}
 .ma-trapezoid .ma-from-right .ma-zone-skill{clip-path:polygon(0 0,90% 0,100% 100%,10% 100%)}
 .ma-trapezoid .ma-skill-wrap{height:100%}
-.ma-trapezoid .ma-skill-img{width:100%;max-width:none;height:100%;max-height:none;padding:2vh 3vw;border-radius:0;background:transparent;object-fit:contain;object-position:center;transform-origin:center}
+.ma-trapezoid .ma-skill-img{width:100%;max-width:none;height:100%;max-height:none;padding:0;border-radius:0;background:transparent;object-fit:contain;object-position:center;transform-origin:center}
 .ma-trapezoid .ma-skill-name{position:absolute;left:7%;right:7%;bottom:5%;padding:8px 12px;background:#050611c9;border-top:1px solid currentColor;font-size:clamp(1rem,2.2vw,2rem)}
 .ma-trapezoid .ma-attribute-title{position:relative;z-index:4;flex:0 0 14%;height:94vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;color:var(--ma-color);text-align:center;text-shadow:0 0 18px currentColor,0 4px 6px #000}
 .ma-trapezoid .ma-attribute-title:before,.ma-trapezoid .ma-attribute-title:after{content:'';width:2px;height:24%;background:linear-gradient(transparent,var(--ma-color),transparent);box-shadow:0 0 16px var(--ma-color)}
 .ma-trapezoid .ma-attribute-title b{font-family:'Cinzel','Microsoft YaHei',serif;font-size:clamp(3.4rem,8vw,8.5rem);line-height:.95;letter-spacing:.08em;writing-mode:vertical-rl;animation:maAttributePop var(--ma-duration,2.3s) ease both}
 .ma-trapezoid .ma-attribute-title span{max-width:90%;margin:10px 0;color:#f3ead4;font-size:clamp(.8rem,1.4vw,1.25rem);font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ma-trapezoid .ma-zone-target{flex:0 0 43%;height:90vh;padding:2vh 2vw}
-.ma-trapezoid .ma-zone-target>.ma-portrait{max-width:100%;height:82vh}
-.ma-trapezoid .ma-group-row{height:86vh;gap:0}
+.ma-trapezoid .ma-zone-target{flex:0 0 43%;height:min(82vh,760px);padding:0 2vw}
+.ma-trapezoid .ma-zone-target>.ma-portrait{max-width:100%;height:100%}
+.ma-trapezoid .ma-group-row{height:100%;gap:0}
 .ma-trapezoid .ma-group-row>div{height:100%}
 .ma-trapezoid .ma-group-row .ma-portrait{max-width:100%;height:100%;object-position:center bottom}
 .ma-trapezoid .ma-group-name{bottom:1vh;font-size:clamp(1.4rem,3vw,2.5rem)}
@@ -2712,7 +2727,7 @@ h2 {
 .ma-trapezoid .ma-from-right .ma-zone-skill{animation-name:maTrapSkillInRight}
 @keyframes maTrapSkillInRight{0%{opacity:0;transform:translateX(14vw) scale(.92)}16%,80%{opacity:1;transform:translateX(0) scale(1)}100%{opacity:0;transform:translateX(-5vw) scale(1.04)}}
 @keyframes maAttributePop{0%,10%{opacity:0;transform:scale(.45)}24%,78%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.16)}}
-@media(max-width:700px){.ma-trapezoid .ma-zone-skill{flex-basis:42%;height:76vh}.ma-trapezoid .ma-skill-img{padding:1vh 2vw}.ma-trapezoid .ma-attribute-title{flex-basis:16%}.ma-trapezoid .ma-zone-target{flex-basis:42%;height:76vh;padding:1vh 1vw}.ma-trapezoid .ma-attribute-title b{font-size:clamp(2.2rem,10vw,4rem)}.ma-trapezoid .ma-skill-name{font-size:.72rem}.ma-trapezoid .ma-attribute-title span{display:none}}
+@media(max-width:700px){.ma-trapezoid .ma-zone-skill{flex-basis:42%;height:76vh}.ma-trapezoid .ma-skill-img{padding:0}.ma-trapezoid .ma-attribute-title{flex-basis:16%}.ma-trapezoid .ma-zone-target{flex-basis:42%;height:76vh;padding:0 1vw}.ma-trapezoid .ma-attribute-title b{font-size:clamp(2.2rem,10vw,4rem)}.ma-trapezoid .ma-skill-name{font-size:.72rem}.ma-trapezoid .ma-attribute-title span{display:none}}
 
 .battle-fx-options{display:grid;grid-template-columns:repeat(2,minmax(220px,1fr));gap:14px;max-width:780px}
 .battle-fx-options button{min-height:130px;display:grid;place-content:center;gap:8px;padding:18px;border:1px solid #343a57;border-radius:14px;background:linear-gradient(145deg,#121729,#070914);color:#cbd2e2;cursor:pointer;text-align:center;transition:.2s}
