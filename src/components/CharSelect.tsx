@@ -268,6 +268,7 @@ export default function CharSelect({ onConfirm, onToggle, onBack }: Props) {
 
       {/* ── Header */}
       <div className="cs-header">
+        <div className="cs-screen-title"><small>FORMATION</small><b>選擇出戰角色</b><span>{selectedCharIds.length}<i>/3</i></span></div>
         <div className="cs-filter-bar">
           {(['all', '劍', '槍', '法'] as ElFilter[]).map(el => (
             <button
@@ -374,6 +375,7 @@ export default function CharSelect({ onConfirm, onToggle, onBack }: Props) {
             資訊
           </button>
         )}
+        <div className="cs-stage-tip">拖曳切換角色 · 點擊中央立繪加入隊伍</div>
       </div>
 
       {/* ── Nav arrows + current name */}
@@ -391,6 +393,7 @@ export default function CharSelect({ onConfirm, onToggle, onBack }: Props) {
         </button>
         <div className="cs-nav-label">
           <span className="cs-nav-cur-name">{focusedChar?.name ?? ''}</span>
+          {focusedChar&&<span className="cs-nav-cur-detail"><b style={{color:EL_COLOR[focusedChar.element]}}>{EL_LABEL[focusedChar.element]}</b><i>HP {focusedChar.hp}</i><i>ATK {focusedChar.atk}</i><i>DEF {focusedChar.def}</i><i>SPD {focusedChar.spd}</i></span>}
         </div>
         <button className="cs-nav-btn next" onClick={() => setFocusIdx(nextIdx)}>
           <span className="cs-nav-arrow">›</span>
@@ -407,22 +410,21 @@ export default function CharSelect({ onConfirm, onToggle, onBack }: Props) {
 
       {/* ── Confirm + Selected in one row */}
       <div className="cs-confirm-row">
-        <button className="btn primary" disabled={!ready} onClick={() => onConfirm(selectedCharIds)}>
-          確認選角 →
-        </button>
-        {!ready && selectedCharIds.length === 0 && <span className="hint">還需 3 位</span>}
-        {selectedCharIds.map((id, i) => {
+        <div className="cs-squad-slots">{Array.from({length:3},(_,i) => {
+          const id=selectedCharIds[i]
           const col  = ['#e85533', '#ddaa22', '#33aacc'][i]
           const char = allChars.find(c => c.id === id)
-          if (!char) return null
+          if (!char) return <div className="cs-squad-slot empty" key={i}><span>{i+1}</span><b>{'前中後'[i]}衛</b><small>尚未選擇</small></div>
           return (
-            <span key={id} className="cs-chip" style={{ borderColor: `${col}66` }}
+            <button key={id} className="cs-squad-slot selected" style={{'--slot-color':col} as React.CSSProperties}
               onClick={() => onToggle(id)}>
-              <b style={{ color: col }}>{'前中後'[i]}</b>
-              {char.name}
-            </span>
+              <CharPortrait id={id} size={44} height={58}/><span>{i+1}</span><b>{'前中後'[i]}衛</b><small>{char.name}</small><i>×</i>
+            </button>
           )
-        })}
+        })}</div>
+        <button className="btn primary cs-confirm-action" disabled={!ready} onClick={() => onConfirm(selectedCharIds)}>
+          <small>{ready?'隊伍已就緒':`還需 ${3-selectedCharIds.length} 位`}</small><b>確認出戰</b><span>›</span>
+        </button>
       </div>
 
       <button className="btn flow-back-lobby" onClick={onBack}>← 返回大廳</button>
