@@ -12,6 +12,7 @@ import ScorePanel from './ScorePanel'
 import { getCharWideImg, getMoveImg, getCardImg, getMoveImageFacing, getCharacterBImage, getCharacterBImageFacing } from '../utils/charStore'
 import BattleLog from './battle/BattleLog'
 import { useFitBattleLayout } from '../hooks/useFitBattleLayout'
+import { getBattlePresentationStyle } from '../utils/battlePresentation'
 
 const DIST_COLOR: Record<string, string> = { '前': '#e85533', '中': '#ddaa22', '後': '#33aacc' }
 
@@ -105,6 +106,7 @@ interface MoveAnim {
   isGroup: boolean
   groupTargets: Array<{ name: string; charImg: string | null; facing: 'left' | 'right' }>
   color: string
+  attributeText: string
   dealsDamage: boolean
   hasTarget: boolean
   selfTargetOnly: boolean
@@ -113,6 +115,7 @@ interface MoveAnim {
 
 export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onExecuteMove, onPass, onToggleAuto, onEnd, onSoloReplay, bgUrl }: Props) {
   const { game, mySide, isSolo, isAIBattle, soloScore, autoSpeed, setAutoSpeed } = useGameStore()
+  const presentationStyle = getBattlePresentationStyle()
   const logRef         = useRef<HTMLDivElement>(null)
   const animTimer      = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastAnimIdx    = useRef(-1)
@@ -214,6 +217,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
         isGroup: !targetName,
         groupTargets: resolvedGroupTargets,
         color: SLOT_COLOR[moveSlot as MoveSlot] ?? '#aaa',
+        attributeText: moveSlot === '劍' ? '劍擊' : moveSlot === '槍' ? '槍擊' : moveSlot === '法' ? '法術' : moveSlot === '願' ? '祈願' : moveName,
         dealsDamage: dealsDamage ?? true,
         hasTarget: hasTarget ?? (!!targetName || !!groupTargets?.length),
         selfTargetOnly: selfTargetOnly ?? false,
@@ -377,7 +381,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
         )
 
         return (
-          <div className={`move-anim-overlay${manualAnimation ? ' ma-manual' : ''}`} key={animKey}
+          <div className={`move-anim-overlay${manualAnimation ? ' ma-manual' : ''}${presentationStyle === 'trapezoid' ? ' ma-trapezoid' : ''}`} key={animKey}
             style={{ '--ma-duration': manualAnimation ? '3.4s' : '2.3s' } as React.CSSProperties}>
             <div className={`ma-battle-row ${targetOnRight ? 'ma-from-left' : 'ma-from-right'} ${!moveAnim.dealsDamage || !moveAnim.hasTarget ? 'ma-nondamage' : ''}`}>
               <div className="ma-zone-skill">
@@ -393,6 +397,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                 </div>
                 <div className="ma-skill-name" style={{ color: moveAnim.color }}>{moveAnim.name}</div>
               </div>
+              {presentationStyle === 'trapezoid' && <div className="ma-attribute-title" style={{ '--ma-color': moveAnim.color } as React.CSSProperties}><b>{moveAnim.attributeText}</b><span>{moveAnim.name}</span></div>}
               {moveAnim.hasTarget && !moveAnim.selfTargetOnly && TargetZone}
             </div>
           </div>

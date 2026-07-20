@@ -18,6 +18,7 @@ import { supabase } from '../utils/supabase'
 import PixelCharacterActor from './PixelCharacterActor'
 import PixelSkeletonEditor from './PixelSkeletonEditor'
 import { getMiningConfig, saveMiningConfig, type MiningConfig } from '../utils/miningStore'
+import { getBattlePresentationStyle, saveBattlePresentationStyle, type BattlePresentationStyle } from '../utils/battlePresentation'
 
 const EL_COLOR: Record<string, string>   = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee' }
 const SLOT_COLOR: Record<string, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee', '願': '#ddaa22', '被': '#666688' }
@@ -145,6 +146,9 @@ export default function Admin({ onBack }: Props) {
           <div className={`adm-list-item ${selId === '__mining__' ? 'active' : ''}`} onClick={() => { setSelId('__mining__'); setTab('basic') }}>
             <div className="adm-list-tool-icon">⛏</div><div className="adm-list-text"><div className="adm-list-name" style={{ color: '#c8a15a' }}>挖礦設定</div><div className="adm-list-sub">礦點 · 血量 · 每週加成</div></div>
           </div>
+          <div className={`adm-list-item ${selId === '__battlefx__' ? 'active' : ''}`} onClick={() => { setSelId('__battlefx__'); setTab('basic') }}>
+            <div className="adm-list-tool-icon">⚔</div><div className="adm-list-text"><div className="adm-list-name" style={{ color: '#c8a15a' }}>戰鬥特效設定</div><div className="adm-list-sub">原版／梯形對決演出</div></div>
+          </div>
           {/* Card images entry */}
           <div
             className={`adm-list-item ${selId === '__cards__' ? 'active' : ''}`}
@@ -230,6 +234,8 @@ export default function Admin({ onBack }: Props) {
             <div className="adm-panel"><LogisticsSettings /></div>
           ) : selId === '__mining__' ? (
             <div className="adm-panel"><MiningSettings chars={chars} /></div>
+          ) : selId === '__battlefx__' ? (
+            <div className="adm-panel"><BattlePresentationSettings /></div>
           ) : selId === '__cards__' ? (
             <div className="adm-panel"><CardImgSettings /></div>
           ) : selId === '__daily__' ? (
@@ -257,6 +263,12 @@ export default function Admin({ onBack }: Props) {
       </div>
     </div>
   )
+}
+
+function BattlePresentationSettings() {
+  const [style, setStyle] = useState<BattlePresentationStyle>(() => getBattlePresentationStyle())
+  const choose = (next: BattlePresentationStyle) => { setStyle(next); saveBattlePresentationStyle(next) }
+  return <div className="adm-basic"><div className="diag-head"><div><h2>⚔ 戰鬥動畫特效</h2><p>切換招式施放時的全畫面演出；設定會套用到單人與雙人戰鬥。</p></div></div><section className="adm-section"><div className="adm-section-label">演出樣式</div><div className="battle-fx-options"><button className={style==='classic'?'active':''} onClick={()=>choose('classic')}><b>原本特效</b><span>招式圖片與受擊立繪並列</span></button><button className={style==='trapezoid'?'active':''} onClick={()=>choose('trapezoid')}><b>梯形對決特效</b><span>梯形招式圖＋大型屬性字＋受擊立繪</span></button></div></section></div>
 }
 
 function CharacterDiagnostics({ chars }: { chars: Character[] }) {
