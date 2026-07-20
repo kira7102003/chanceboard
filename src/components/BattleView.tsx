@@ -396,7 +396,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                 </div>
                 <div className="ma-skill-name" style={{ color: moveAnim.color }}>{moveAnim.name}</div>
               </div>
-              {presentationStyle === 'trapezoid' && <div className="ma-attribute-title" style={{ '--ma-color': moveAnim.color } as React.CSSProperties}><b>{moveAnim.attributeText}</b>{moveAnim.isGroup&&<i>群</i>}<span>{moveAnim.name}</span></div>}
+              {presentationStyle === 'trapezoid' && <div className="ma-attribute-title" style={{ '--ma-color': moveAnim.color } as React.CSSProperties}><b>{moveAnim.attributeText}</b>{moveAnim.isGroup&&<i>群</i>}</div>}
               {moveAnim.hasTarget && !moveAnim.selfTargetOnly && TargetZone}
             </div>
           </div>
