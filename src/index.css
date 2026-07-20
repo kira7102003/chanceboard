@@ -2100,7 +2100,7 @@ h2 {
 .act-confirm:before {
   content:'';position:absolute;z-index:-1;inset:8px;border:1px solid #f4d57a88;border-radius:50%;
   background:radial-gradient(circle at 36% 28%,#fff4c933 0 5%,transparent 6%),radial-gradient(circle,#503710 0,#171018 66%,#06070d 100%);
-  box-shadow:inset 0 0 18px #000,0 0 10px #e6bd5555;
+  box-shadow:inset 0 0 18px #000,0 0 10px #e6bd5555;opacity:1;transition:none;
 }
 .act-confirm:after {
   content:'◆';position:absolute;left:50%;top:7px;translate:-50% -50%;color:#ffe08a;font-size:8px;text-shadow:0 0 7px #ffd25f;
@@ -2110,9 +2110,10 @@ h2 {
 .act-confirm small{color:#e9cc79;font-weight:800;font-variant-numeric:tabular-nums}
 .act-confirm:not(:disabled):hover {
   background:
-    linear-gradient(145deg, rgba(145,104,32,.9), rgba(54,39,14,.96)) padding-box,
+    linear-gradient(145deg, rgba(116,82,24,.9), rgba(42,31,12,.96)) padding-box,
     conic-gradient(var(--action-tone) var(--action-progress), rgba(255,255,255,.12) 0) border-box;
-  box-shadow: inset 0 0 20px rgba(232,204,136,.16), 0 0 18px rgba(200,161,90,.18);
+  border-color:transparent;transform:none;filter:brightness(1.035);
+  box-shadow:inset 0 0 0 2px #080a13,inset 0 0 25px rgba(244,193,72,.2),0 0 0 1px #d5ad4d55,0 8px 26px #000b,0 0 28px color-mix(in srgb,var(--action-tone,#d9b452) 30%,transparent);
 }
 
 /* 卡面（照抄 .cardface 戰鬥尺寸 122×172：花色計數卡與花牌卡） */
