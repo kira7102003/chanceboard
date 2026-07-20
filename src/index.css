@@ -2004,10 +2004,10 @@ h2 {
     linear-gradient(145deg, rgba(116,82,24,.9), rgba(42,31,12,.96)) padding-box,
     conic-gradient(var(--action-tone) var(--action-progress), rgba(255,255,255,.12) 0) border-box;
 }
-.act-confirm[data-time-tone="green"] { --action-tone: #32d875; }
-.act-confirm[data-time-tone="yellow"] { --action-tone: #f0c84b; }
-.act-confirm[data-time-tone="red"] { --action-tone: #f05252; animation: action-time-danger .7s ease-in-out infinite alternate; }
-@keyframes action-time-danger { to { box-shadow: 0 0 18px rgba(240,82,82,.55), inset 0 0 12px rgba(240,82,82,.12); } }
+.act-confirm[data-time-tone="green"] { --action-tone: #d8dde7; --action-glow: #32d875; }
+.act-confirm[data-time-tone="yellow"] { --action-tone: #d8dde7; --action-glow: #e6b94c; }
+.act-confirm[data-time-tone="red"] { --action-tone: #d8dde7; --action-glow: #f05252; animation: action-time-danger .7s ease-in-out infinite alternate; }
+@keyframes action-time-danger { to { box-shadow:0 0 0 1px #05060b,0 0 0 3px #b9913d88,0 10px 30px #000c,0 0 32px color-mix(in srgb,var(--action-glow) 68%,transparent); } }
 .act-confirm:disabled { opacity: .72; cursor: not-allowed; color: #abb0c0; border-color: #555c70; background: #242938; }
 .act-confirm-progress {
   position: absolute; z-index: -1; inset: 0 auto 0 0;
@@ -2092,7 +2092,7 @@ h2 {
 .act-confirm {
   border-width:3px!important;color:#f4d98d;
   text-shadow:0 1px 0 #000,0 0 9px #d7b85a66;
-  box-shadow:0 0 0 1px #05060b,0 0 0 3px #b9913d88,0 10px 30px #000c,0 0 18px color-mix(in srgb,var(--action-tone,#d9b452) 18%,transparent);
+  box-shadow:0 0 0 1px #05060b,0 0 0 3px #b9913d88,0 10px 30px #000c,0 0 24px color-mix(in srgb,var(--action-glow,#d9b452) 42%,transparent);
 }
 .act-confirm:not(:disabled){background:linear-gradient(#08090e,#08090e) padding-box,conic-gradient(var(--action-tone) var(--action-progress),#242735 0) border-box}
 .act-confirm:before {
@@ -2116,7 +2116,7 @@ h2 {
     linear-gradient(#08090e,#08090e) padding-box,
     conic-gradient(var(--action-tone) var(--action-progress),#242735 0) border-box;
   border-color:transparent;transform:none;filter:brightness(1.035);
-  box-shadow:0 0 0 1px #05060b,0 0 0 3px #c6a14b99,0 10px 30px #000c,0 0 22px color-mix(in srgb,var(--action-tone,#d9b452) 24%,transparent);
+  box-shadow:0 0 0 1px #05060b,0 0 0 3px #c6a14b99,0 10px 30px #000c,0 0 29px color-mix(in srgb,var(--action-glow,#d9b452) 52%,transparent);
 }
 
 /* 卡面（照抄 .cardface 戰鬥尺寸 122×172：花色計數卡與花牌卡） */
