@@ -281,7 +281,8 @@ export const useGameStore = create<Store>((set, get) => ({
     get().stopATBLoop()
     set({
       game: null, appPhase: 'charSelect',
-      selectedCharIds: [], opponentCharIds: [],
+      // 再次挑戰回到選角時保留上一場實際選擇與排列，玩家可直接確認或自行更換。
+      opponentCharIds: [],
       myDeckIds: [], opponentDeckIds: [],
       soloScore: null, pendingUnitId: null,
       _animationPauseUntilMs: 0,
