@@ -217,7 +217,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
         isGroup: !targetName,
         groupTargets: resolvedGroupTargets,
         color: SLOT_COLOR[moveSlot as MoveSlot] ?? '#aaa',
-        attributeText: moveSlot === '劍' ? '劍擊' : moveSlot === '槍' ? '槍擊' : moveSlot === '法' ? '法術' : moveSlot === '願' ? '祈願' : moveName,
+        attributeText: moveSlot === '劍' ? '劍' : moveSlot === '槍' ? '槍' : moveSlot === '法' ? '法' : moveSlot === '願' ? '願' : moveName,
         dealsDamage: dealsDamage ?? true,
         hasTarget: hasTarget ?? (!!targetName || !!groupTargets?.length),
         selfTargetOnly: selfTargetOnly ?? false,
