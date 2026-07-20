@@ -410,10 +410,8 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
           <span className="bh-timer-secs">{10 - Math.floor((game.clock % 100) / 10)}</span>s
         </div>
         <div className="bh-item bh-sep">牌庫 <b>{game.drawPublic.length}</b> · 棄牌堆 <b>{game.discardPublic.length}</b></div>
-        {!isAIBattle && (
-          <div className="bh-item bh-sep">
-            對方手牌 <b>{oppHand.length}</b>{myCustomLeft > 0 && <> · 自訂剩 <b>{myCustomLeft}</b></>}
-          </div>
+        {!isAIBattle && myCustomLeft > 0 && (
+          <div className="bh-item bh-sep">自訂剩 <b>{myCustomLeft}</b></div>
         )}
         <div className="bh-atb">
           <span className="atb-label">順序</span>
@@ -440,6 +438,16 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
           })()}
         </div>
         <div style={{ flex: 1 }} />
+        {!isAIBattle && (
+          <div
+            className="bh-enemy-hand"
+            title={`對方目前持有 ${oppHand.length} 張手牌`}
+            aria-label={`對方目前持有 ${oppHand.length} 張手牌`}
+          >
+            <span className="bh-enemy-hand-icon" aria-hidden="true">▤</span>
+            <b>{oppHand.length}</b>
+          </div>
+        )}
         {isAIBattle
           ? <span style={{ fontSize: 12, color: '#9955ee', letterSpacing: 1 }}>🤖 AI 對戰觀戰中</span>
           : (

@@ -2025,8 +2025,18 @@ h2 {
   border-bottom-color: rgba(200,161,90,.24);
   box-shadow: 0 5px 20px rgba(0,0,0,.38);
 }
-.bh-item { color: #747b9e; }
-.bh-item b { color: #d7dbef; }
+.bh-item {
+  color: #b8bfd9;
+  font-weight: 650;
+  text-shadow: 0 1px 2px rgba(0,0,0,.9);
+}
+.bh-item b { color: #fff1bf; font-weight: 850; }
+.atb-label {
+  color: #d5daeb;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-shadow: 0 1px 3px #000;
+}
 .battle-arena {
   background: linear-gradient(180deg, rgba(3,6,17,.08), rgba(3,5,14,.28));
 }
@@ -2259,6 +2269,20 @@ h2 {
 
 /* 自動戰鬥切換鈕（照抄 #autoBattleBtn：亮起=金色） */
 .auto-toggle { white-space: nowrap; }
+.bh-enemy-hand {
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  min-width: 40px; height: 27px; margin-right: 6px; padding: 0 9px;
+  border: 1px solid rgba(200,161,90,.38); border-radius: 7px;
+  color: #c9d0e7; background: linear-gradient(160deg, rgba(27,32,55,.96), rgba(8,11,25,.96));
+  box-shadow: inset 0 1px rgba(255,255,255,.05), 0 3px 10px rgba(0,0,0,.35);
+  cursor: help; flex-shrink: 0;
+}
+.bh-enemy-hand:hover {
+  border-color: rgba(238,203,116,.8);
+  box-shadow: inset 0 1px rgba(255,255,255,.08), 0 0 12px rgba(200,161,90,.22);
+}
+.bh-enemy-hand-icon { color: #d9deef; font-size: 14px; line-height: 1; }
+.bh-enemy-hand b { color: #ffe39a; font-size: 12px; font-variant-numeric: tabular-nums; }
 .auto-toggle.on {
   border-color: var(--gold); color: var(--gold2);
   background: rgba(200,161,90,.12);
