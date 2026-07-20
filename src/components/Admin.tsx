@@ -940,6 +940,10 @@ function BgSettings() {
   return (
     <div className="adm-basic" style={{ overflowY: 'auto' }}>
       <div className="adm-section">
+        <div className="adm-section-label">全域 BGM</div>
+        <AudioUpload storageKey="cb_audio_bgm" />
+      </div>
+      <div className="adm-section">
         <div className="adm-section-label">大廳背景（大廳 / 選角 / 組牌畫面）</div>
         <ImageCrop storageKey="cb_bg_main" cropW={1376} cropH={768} />
       </div>
@@ -993,6 +997,21 @@ function BgSettings() {
       </div>
     </div>
   )
+}
+
+function AudioUpload({storageKey}:{storageKey:string}){
+  const [url,setUrl]=useState(()=>getUrlByKey(storageKey)),[busy,setBusy]=useState(false),[error,setError]=useState('')
+  const upload=async(event:React.ChangeEvent<HTMLInputElement>)=>{
+    const file=event.target.files?.[0];event.target.value='';if(!file)return
+    if(file.size>20*1024*1024){setError('音樂檔案不可超過 20 MB');return}
+    setBusy(true);setError('')
+    try{
+      const dataUrl=await new Promise<string>((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=()=>reject(reader.error);reader.readAsDataURL(file)})
+      setUrl(await uploadByKey(storageKey,dataUrl))
+    }catch(reason){setError(reason instanceof Error?reason.message:'BGM 上傳失敗')}
+    finally{setBusy(false)}
+  }
+  return <div className="audio-upload-admin">{url?<audio controls src={url} data-audio-kind="music"/>:<span>尚未上傳 BGM</span>}<label className="btn sm">{busy?'上傳中…':url?'更換 BGM':'上傳 BGM'}<input hidden disabled={busy} type="file" accept="audio/mpeg,audio/ogg,audio/wav,audio/mp4,.mp3,.ogg,.wav,.m4a" onChange={upload}/></label>{url&&<button className="btn sm danger" disabled={busy} onClick={()=>{removeByKey(storageKey);setUrl(null)}}>移除</button>}{error&&<small>{error}</small>}<p>支援 MP3、OGG、WAV、M4A，最大 20 MB；遊戲中會自動循環播放。</p></div>
 }
 
 function LogisticsSettings() {

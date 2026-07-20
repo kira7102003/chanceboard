@@ -1,11 +1,11 @@
-import { lazy, Suspense, useState, useEffect } from 'react'
+import { lazy, Suspense, useState, useEffect, useRef } from 'react'
 import Lobby      from './components/Lobby'
 import Login       from './components/Login'
 import DailyCheckIn from './components/DailyCheckIn'
 import { useGameStore }           from './store/gameStore'
 import { usePlayerStore }         from './store/playerStore'
 import { useRoom, loadSession, clearSession } from './hooks/useRoom'
-import { initFromCloud, getBgUrl, getAvailableBattleBgUrls, warmImageCache } from './utils/charStore'
+import { initFromCloud, getBgUrl, getAvailableBattleBgUrls, getUrlByKey, warmImageCache } from './utils/charStore'
 import { useSolo }                from './hooks/useSolo'
 import { useAIBattle }           from './hooks/useAIBattle'
 import { supabase }               from './utils/supabase'
@@ -29,6 +29,20 @@ function RotatePrompt() {
       <div className="rotate-sub">Please rotate to landscape</div>
     </div>
   )
+}
+
+function GlobalBgm({ src, enabled, volume }: { src: string; enabled: boolean; volume: number }) {
+  const ref=useRef<HTMLAudioElement>(null)
+  useEffect(()=>{
+    const audio=ref.current
+    if(audio){audio.muted=!enabled;audio.volume=volume/100}
+    const play=()=>{if(enabled)ref.current?.play().catch(()=>{})}
+    play()
+    window.addEventListener('pointerdown',play,{once:true})
+    window.addEventListener('keydown',play,{once:true})
+    return()=>{window.removeEventListener('pointerdown',play);window.removeEventListener('keydown',play)}
+  },[src,enabled,volume])
+  return <audio ref={ref} src={src} data-audio-kind="music" autoPlay loop preload="auto" />
 }
 
 // ── Waiting room (online only) ────────────────────────────────────────────────
@@ -67,6 +81,7 @@ export default function App() {
   const [user,      setUser]      = useState<User | null>(null)
   const [authReady, setAuthReady] = useState(false)
   const { musicEnabled, soundEnabled, musicVolume, soundVolume } = usePlayerStore()
+  const bgmUrl=getUrlByKey('cb_audio_bgm')
 
   useEffect(() => {
     const applyOne = (audio: HTMLAudioElement) => {
@@ -216,6 +231,7 @@ export default function App() {
 
   return (
     <>
+    {bgmUrl&&<GlobalBgm key={bgmUrl} src={bgmUrl} enabled={musicEnabled} volume={musicVolume}/>}
     <RotatePrompt />
     {cloudSynced && <DailyCheckIn userId={user.id} />}
     <div className="app" style={activeBgUrl ? {

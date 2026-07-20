@@ -34,13 +34,15 @@ export const handler = async (event) => {
 
     const { path, contentType, size } = JSON.parse(event.body ?? '{}')
     if (!path) return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Missing path' }) }
-    if (!/^(?:(?:chars|moves|story|backgrounds|cards)\/[a-zA-Z0-9_.-]+\.(?:webp|json)|chars\.json|moves\.json|image-manifest\.json|daily-rewards\.json)$/.test(path)) {
+    if (!/^(?:(?:chars|moves|story|backgrounds|cards)\/[a-zA-Z0-9_.-]+\.(?:webp|json)|audio\/[a-zA-Z0-9_.-]+\.audio|chars\.json|moves\.json|image-manifest\.json|daily-rewards\.json)$/.test(path)) {
       return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Invalid path' }) }
     }
-    if (typeof size !== 'number' || size < 1 || size > 8 * 1024 * 1024) {
+    const isAudio = path.startsWith('audio/')
+    const maxSize = isAudio ? 20 * 1024 * 1024 : 8 * 1024 * 1024
+    if (typeof size !== 'number' || size < 1 || size > maxSize) {
       return { statusCode: 413, headers: CORS, body: JSON.stringify({ error: 'File too large' }) }
     }
-    if (!['image/webp', 'image/png', 'application/json'].includes(contentType)) {
+    if (!['image/webp', 'image/png', 'application/json', 'audio/mpeg', 'audio/ogg', 'audio/wav', 'audio/x-wav', 'audio/mp4', 'audio/x-m4a'].includes(contentType)) {
       return { statusCode: 415, headers: CORS, body: JSON.stringify({ error: 'Unsupported file type' }) }
     }
 

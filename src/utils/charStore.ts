@@ -90,6 +90,7 @@ const FLAG = (key: string) => `${key}_sb`
 
 // Map storageKey → Supabase Storage path
 function storagePath(storageKey: string): string {
+  if (storageKey.startsWith('cb_audio_'))     return `audio/${storageKey}.audio`
   if (storageKey.startsWith('cb_move_img_'))  return `moves/${storageKey}.webp`
   if (storageKey.startsWith('cb_story_img_')) return `story/${storageKey}.webp`
   if (storageKey.startsWith('cb_bg_'))        return `backgrounds/${storageKey}.webp`
