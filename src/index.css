@@ -2090,30 +2090,33 @@ h2 {
 }
 .cardface.mini { box-shadow: 0 4px 12px rgba(0,0,0,.32); }
 .act-confirm {
-  color: #fff0bd;
-  border-width: 4px!important;
-  color: #fff2bd;
-  text-shadow: 0 1px 0 #4b3100,0 0 12px #ffd76a88;
-  box-shadow: inset 0 0 0 2px #080a13,inset 0 0 25px rgba(244,193,72,.2),0 0 0 1px #d5ad4d55,0 8px 26px #000b,0 0 24px color-mix(in srgb,var(--action-tone,#d9b452) 25%,transparent);
-  background-color:#12101a;
+  border-width:3px!important;color:#f4d98d;
+  text-shadow:0 1px 0 #000,0 0 9px #d7b85a66;
+  box-shadow:0 0 0 1px #05060b,0 0 0 3px #b9913d88,0 10px 30px #000c,0 0 18px color-mix(in srgb,var(--action-tone,#d9b452) 18%,transparent);
 }
+.act-confirm:not(:disabled){background:linear-gradient(#08090e,#08090e) padding-box,conic-gradient(var(--action-tone) var(--action-progress),#242735 0) border-box}
 .act-confirm:before {
-  content:'';position:absolute;z-index:-1;inset:8px;border:1px solid #f4d57a88;border-radius:50%;
-  background:radial-gradient(circle at 36% 28%,#fff4c933 0 5%,transparent 6%),radial-gradient(circle,#503710 0,#171018 66%,#06070d 100%);
-  box-shadow:inset 0 0 18px #000,0 0 10px #e6bd5555;opacity:1;transition:none;
+  content:'';position:absolute;z-index:0;inset:7px;border:1px solid #d8b968;border-radius:50%;opacity:1;transition:none;
+  background:
+    linear-gradient(90deg,transparent 49.3%,#c9aa5950 49.5% 50.5%,transparent 50.7%),
+    linear-gradient(0deg,transparent 49.3%,#c9aa5950 49.5% 50.5%,transparent 50.7%),
+    repeating-conic-gradient(from -1deg,#e5c76b 0 1deg,transparent 1deg 15deg),
+    radial-gradient(circle,transparent 0 44%,#d3b45d88 45% 46%,transparent 47% 60%,#695126 61% 62%,transparent 63%),
+    radial-gradient(circle at 38% 30%,#403318,#17140f 48%,#08090e 78%);
+  box-shadow:inset 0 0 0 5px #07080dcc,inset 0 0 20px #000,0 0 0 2px #090a10,0 0 0 3px #6f572b;
 }
 .act-confirm:after {
-  content:'◆';position:absolute;left:50%;top:7px;translate:-50% -50%;color:#ffe08a;font-size:8px;text-shadow:0 0 7px #ffd25f;
+  content:'◆';position:absolute;left:50%;top:5px;translate:-50% -50%;color:#f0d77b;font-size:7px;text-shadow:0 0 5px #d9b34c;
 }
-.act-confirm-progress{opacity:.16;mix-blend-mode:screen}
-.act-confirm-label{font-family:'Cinzel','Microsoft YaHei',serif;font-size:21px!important;letter-spacing:2px}
-.act-confirm small{color:#e9cc79;font-weight:800;font-variant-numeric:tabular-nums}
+.act-confirm-progress{display:none}
+.act-confirm-label{z-index:1;font-family:'Cinzel','Times New Roman','Microsoft YaHei',serif;font-size:20px!important;font-weight:800;letter-spacing:3px}
+.act-confirm small{z-index:1;color:#c9af69;font-family:'Cinzel','Times New Roman',serif;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.5px}
 .act-confirm:not(:disabled):hover {
   background:
-    linear-gradient(145deg, rgba(116,82,24,.9), rgba(42,31,12,.96)) padding-box,
-    conic-gradient(var(--action-tone) var(--action-progress), rgba(255,255,255,.12) 0) border-box;
+    linear-gradient(#08090e,#08090e) padding-box,
+    conic-gradient(var(--action-tone) var(--action-progress),#242735 0) border-box;
   border-color:transparent;transform:none;filter:brightness(1.035);
-  box-shadow:inset 0 0 0 2px #080a13,inset 0 0 25px rgba(244,193,72,.2),0 0 0 1px #d5ad4d55,0 8px 26px #000b,0 0 28px color-mix(in srgb,var(--action-tone,#d9b452) 30%,transparent);
+  box-shadow:0 0 0 1px #05060b,0 0 0 3px #c6a14b99,0 10px 30px #000c,0 0 22px color-mix(in srgb,var(--action-tone,#d9b452) 24%,transparent);
 }
 
 /* 卡面（照抄 .cardface 戰鬥尺寸 122×172：花色計數卡與花牌卡） */
