@@ -528,6 +528,39 @@ body, body *, body *::before, body *::after { font-family: var(--app-font) !impo
   }
 }
 
+/* Keep the live battle record visually identical to the result LOG.  These
+   rules intentionally live last so responsive battle polish cannot flatten
+   the event hierarchy. */
+.battle-act-row .log-panel .log-line,
+.end-log-lines .log-line {
+  padding: 5px 7px 5px 27px !important;
+  color: #dce2f3;
+  background: rgba(25,31,57,.9);
+}
+.battle-act-row .log-panel .log-move,
+.end-log-lines .log-move {
+  margin-top: 8px !important;
+  padding: 7px 8px 7px 30px !important;
+  color: #fff0bb !important;
+  background: linear-gradient(90deg, rgba(104,72,18,.52), rgba(28,34,60,.82)) !important;
+}
+.battle-act-row .log-panel .log-damage,
+.end-log-lines .log-damage { color: #ffaaa5 !important; background: rgba(65,25,35,.86) !important; }
+.battle-act-row .log-panel .log-miss,
+.end-log-lines .log-miss { color: #8fd6ff !important; background: rgba(18,48,72,.86) !important; }
+.battle-act-row .log-panel .log-status,
+.end-log-lines .log-status { color: #c9b5f4 !important; background: rgba(45,32,72,.86) !important; }
+.battle-act-row .log-panel .log-defeat,
+.end-log-lines .log-defeat { color: #ff7777 !important; background: rgba(70,20,28,.9) !important; }
+.battle-act-row .log-panel .log-cards,
+.end-log-lines .log-cards { color: #9bc8eb !important; background: rgba(22,40,65,.86) !important; }
+.battle-act-row .log-panel .log-heal,
+.end-log-lines .log-heal { color: #78e6a5 !important; background: rgba(20,57,43,.86) !important; }
+.battle-act-row .log-panel .log-movement,
+.end-log-lines .log-movement { color: #c8d0e4 !important; }
+.battle-act-row .log-panel .log-pass,
+.end-log-lines .log-pass { color: #747d99 !important; background: rgba(15,19,35,.7) !important; }
+
 @media (max-width: 640px) {
   .lobby-v2 {
     display: block;
