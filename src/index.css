@@ -1509,6 +1509,8 @@ h2 {
   position: absolute; inset: 0; overflow: hidden; border-radius: 10px;
   background: var(--bg2);
 }
+.slot-cards-stack.stack-multi > .unit-card{background:transparent}
+.slot-cards-stack.stack-multi > .unit-card .uc-art{background:rgba(0,0,0,.5)}
 .uc-art-img {
   position: absolute; inset: 0; width: 100%; height: 100%;
   object-fit: contain; object-position: center bottom;
