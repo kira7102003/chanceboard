@@ -10,18 +10,21 @@ import './Explore.css'
 interface Props { onClose: () => void }
 const fmt = (seconds: number) => `${Math.max(0, Math.floor(seconds / 3600))}:${String(Math.max(0, Math.floor(seconds % 3600 / 60))).padStart(2, '0')}:${String(Math.max(0, Math.floor(seconds % 60))).padStart(2, '0')}`
 const MANUAL_MINING_DURATION_MS = 30_000
-const AUTO_MINING_CYCLE_MS = 1_000
-
-function AutoMiningWorker({ charId, name, power, speed }: { charId: string; name: string; power?: number; speed?: number }) {
+function AutoMiningWorker({ charId, name, power, speed, finished }: { charId: string; name: string; power?: number; speed?: number; finished: boolean }) {
   const [face, setFace] = useState<'left' | 'right'>(() => Math.random() < .5 ? 'left' : 'right')
+  const [action,setAction]=useState<'walk'|'mining'>('mining'),[position,setPosition]=useState({x:0,y:0})
   useEffect(() => {
-    const timer = window.setInterval(() => {
-      // 每輪四格、4 FPS 的挖掘演出結束後獨立判定，避免動畫途中突然翻面。
-      if (Math.random() < .45) setFace(current => current === 'left' ? 'right' : 'left')
-    }, AUTO_MINING_CYCLE_MS)
-    return () => window.clearInterval(timer)
-  }, [charId])
-  return <div className="mining-worker auto-mining"><PixelCharacterActor charId={charId} pose="side" action="mining" face={face}/><label>{name}<small>力度 {power?.toFixed(1)} · 速度 +{speed?.toFixed(0)}%</small></label></div>
+    if(finished){setAction('mining');return}
+    const delay=action==='mining'?1200+Math.random()*1400:750+Math.random()*500
+    const timer=window.setTimeout(()=>{
+      if(action==='mining'){
+        const next={x:Math.round(-28+Math.random()*56),y:Math.round(-7+Math.random()*14)}
+        setFace(next.x<position.x?'left':'right');setPosition(next);setAction('walk')
+      }else setAction('mining')
+    },delay)
+    return()=>window.clearTimeout(timer)
+  },[action,charId,finished,position.x])
+  return <div className={`mining-worker auto-mining ${action==='walk'&&!finished?'walking':'digging'} ${finished?'finished':''}`} style={{transform:`translate(${position.x}px,${position.y}px)`}}><PixelCharacterActor charId={charId} pose="side" action={finished?'idle':action} face={face}/><label>{name}<small>力度 {power?.toFixed(1)} · 速度 +{speed?.toFixed(0)}%</small></label></div>
 }
 
 export default function Explore({ onClose }: Props) {
@@ -91,7 +94,7 @@ export default function Explore({ onClose }: Props) {
       const manualLocked=entryMode==='manual'&&!!state.job
       return <div role="button" tabIndex={entryMode==='manual'&&!manualLocked?0:-1} aria-disabled={manualLocked} aria-label={`${manualLocked?'自動挖掘中的': '進入'}${state.name}`} className={`mining-node mining-node-${index+1} mode-${entryMode} ${manualLocked?'manual-locked':''} ${state.percent<40?'cracked':''}`} style={{left:`${state.x}%`,top:`${state.y}%`}} key={state.id} onClick={event=>{if(entryMode==='manual'&&!manualLocked&&!(event.target as HTMLElement).closest('button'))enterManual(index)}} onKeyDown={event=>{if(entryMode==='manual'&&!manualLocked&&event.key==='Enter')enterManual(index)}}>
         <div className="mining-hp"><b>{state.name}</b><span>{Math.ceil(state.hp).toLocaleString()} / {state.maxHp.toLocaleString()}</span><i><em style={{width:`${state.percent}%`}}/></i><small>{entryMode==='manual'?(state.job?(state.finished?'請先領取自動挖掘獎勵':'自動挖掘中，暫停手動進場'):'點擊礦坑進入手動'):'選角後開始自動挖掘'} · 今日 {state.uses}/3</small></div>
-        {state.char&&<AutoMiningWorker charId={state.char.id} name={state.char.name} power={state.stats?.power} speed={state.stats?.speed}/>}
+        {state.char&&<AutoMiningWorker charId={state.char.id} name={state.char.name} power={state.stats?.power} speed={state.stats?.speed} finished={state.finished}/>}
         <div className="mining-node-action">{state.job?(state.finished?<button className="ready" onClick={()=>claimNode(state.id)}>領取</button>:<><span>{fmt((state.job.endsAt-now)/1000)}</span><button onClick={()=>cancelNode(state.id)}>取消</button></>):entryMode==='manual'?<button onClick={()=>enterManual(index)}>進入手動</button>:<button disabled={state.uses>=3} onClick={()=>startNode(state.id)}>開始自動</button>}</div>
       </div>
     })}</section><aside className="mining-side"><div className="mining-mode-switch"><button className={entryMode==='manual'?'active':''} onClick={()=>{setEntryMode('manual');setSelected([]);setMessage('')}}>手動挖礦</button><button className={entryMode==='auto'?'active':''} onClick={()=>{setEntryMode('auto');setSelected([]);setMessage('')}}>自動挖掘</button></div><h2>{entryMode==='manual'?'選擇一位進場角色':'選擇一位派遣角色'}</h2><p>{entryMode==='manual'?'選好角色後，點礦坑進場。':'選好角色後，按礦坑下方「開始自動」。'}</p><div className="mining-roster">{available.map(char=>{const bound=nodeState.find(node=>node.char?.id===char.id);return <button disabled={!!bound} className={selected.includes(char.id)?'selected':''} onClick={()=>setSelected(ids=>ids.includes(char.id)?[]:[char.id])} key={char.id}>{getCharImg(char.id)&&<img src={getCharImg(char.id)!} alt=""/>}<span>{char.name}<small>{bound?`綁定：${bound.name}`:`ATK ${char.atk} · SPD ${char.spd}`}</small></span></button>})}</div>{message&&<output>{message}</output>}</aside></main>
