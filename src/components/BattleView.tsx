@@ -386,7 +386,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
               <div className="ma-zone-skill">
                 <div className="ma-skill-wrap">
                   {moveAnim.img
-                    ? <img src={moveAnim.img} className="ma-skill-img" alt=""
+                    ? <img src={moveAnim.img} className={`ma-skill-img ${targetOnRight !== mirrorSkill ? 'ma-trap-normal' : 'ma-trap-reverse'}`} alt=""
                         style={{
                           filter: `drop-shadow(0 0 18px ${moveAnim.color}cc)`,
                           transform: mirrorSkill ? 'scaleX(-1)' : undefined,
