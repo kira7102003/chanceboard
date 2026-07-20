@@ -28,6 +28,17 @@ function getLogKind(text: string): LogKind {
   return 'system'
 }
 
+function getLogAccent(text: string, line: BattleLogEntry): string {
+  const classes: string[] = []
+  if (/^A\s/.test(text)) classes.push('log-side-a')
+  if (/^B\s/.test(text)) classes.push('log-side-b')
+  if (/爆擊/.test(text)) classes.push('log-critical')
+  const slotClass: Record<string, string> = { '劍': 'sword', '槍': 'gun', '法': 'magic', '願': 'wish' }
+  const slot = line.moveAnim?.moveSlot
+  if (slot && slotClass[slot]) classes.push(`log-move-${slotClass[slot]}`)
+  return classes.join(' ')
+}
+
 const BattleLog = forwardRef<HTMLDivElement, Props>(function BattleLog(
   { entries, className = 'log-panel' }, ref,
 ) {
@@ -36,7 +47,8 @@ const BattleLog = forwardRef<HTMLDivElement, Props>(function BattleLog(
       {entries.map((line, i) => {
         const text = logText(line.html)
         const kind = getLogKind(text)
-        return <div className={`log-line log-${kind}`} key={i}>{text}</div>
+        const accent = getLogAccent(text, line)
+        return <div className={`log-line log-${kind}${accent ? ` ${accent}` : ''}`} key={i}>{text}</div>
       })}
     </div>
   )

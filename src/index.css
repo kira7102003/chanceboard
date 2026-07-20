@@ -561,6 +561,45 @@ body, body *, body *::before, body *::after { font-family: var(--app-font) !impo
 .battle-act-row .log-panel .log-pass,
 .end-log-lines .log-pass { color: #747d99 !important; background: rgba(15,19,35,.7) !important; }
 
+/* RPG-style event rails: colour is readable before the text is read. */
+.battle-act-row .log-panel .log-line,
+.end-log-lines .log-line {
+  border: 1px solid rgba(125,139,180,.16) !important;
+  border-left: 4px solid #65708f !important;
+  border-radius: 5px;
+  box-shadow: inset 10px 0 18px rgba(101,112,143,.07), 0 2px 7px rgba(0,0,0,.2) !important;
+}
+.battle-act-row .log-panel .log-move,
+.end-log-lines .log-move { border-left-color: #e2b74f !important; }
+.battle-act-row .log-panel .log-move-sword,
+.end-log-lines .log-move-sword { border-left-color: #ff5b4f !important; box-shadow: inset 12px 0 20px rgba(255,70,60,.12),0 2px 8px #0005 !important; }
+.battle-act-row .log-panel .log-move-gun,
+.end-log-lines .log-move-gun { border-left-color: #43d98a !important; box-shadow: inset 12px 0 20px rgba(45,215,130,.12),0 2px 8px #0005 !important; }
+.battle-act-row .log-panel .log-move-magic,
+.end-log-lines .log-move-magic { border-left-color: #668cff !important; box-shadow: inset 12px 0 20px rgba(75,115,255,.14),0 2px 8px #0005 !important; }
+.battle-act-row .log-panel .log-move-wish,
+.end-log-lines .log-move-wish { border-left-color: #f0c34e !important; box-shadow: inset 12px 0 20px rgba(235,186,55,.14),0 2px 8px #0005 !important; }
+.battle-act-row .log-panel .log-damage,
+.end-log-lines .log-damage { border-left-color: #f05b60 !important; }
+.battle-act-row .log-panel .log-critical,
+.end-log-lines .log-critical { border-left-color: #ffbf2f !important; color: #ffd88a !important; box-shadow: inset 12px 0 22px rgba(255,178,35,.16),0 0 9px rgba(255,160,30,.1) !important; }
+.battle-act-row .log-panel .log-miss,
+.end-log-lines .log-miss { border-left-color: #55c8ff !important; }
+.battle-act-row .log-panel .log-status,
+.end-log-lines .log-status { border-left-color: #a878eb !important; }
+.battle-act-row .log-panel .log-heal,
+.end-log-lines .log-heal { border-left-color: #49db83 !important; }
+.battle-act-row .log-panel .log-defeat,
+.end-log-lines .log-defeat { border-left-color: #ff3344 !important; }
+.battle-act-row .log-panel .log-cards.log-side-a,
+.end-log-lines .log-cards.log-side-a { border-left-color: #4da9ef !important; background: linear-gradient(90deg,rgba(27,77,120,.62),rgba(22,40,65,.86)) !important; }
+.battle-act-row .log-panel .log-cards.log-side-b,
+.end-log-lines .log-cards.log-side-b { border-left-color: #ed7b45 !important; background: linear-gradient(90deg,rgba(116,55,29,.62),rgba(55,33,36,.86)) !important; }
+.battle-act-row .log-panel .log-movement,
+.end-log-lines .log-movement { border-left-color: #b8c2d9 !important; }
+.battle-act-row .log-panel .log-pass,
+.end-log-lines .log-pass { border-left-color: #414963 !important; }
+
 @media (max-width: 640px) {
   .lobby-v2 {
     display: block;
