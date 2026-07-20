@@ -375,7 +375,6 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                 ? <Portrait img={moveAnim.targetCharImg} name={moveAnim.targetName} flip={mirrorTarget} />
                 : <div className="ma-no-img" style={{ opacity: .15 }}>⚔</div>
             }
-            {moveAnim.missed && <div className="ma-miss-text">MISS</div>}
           </div>
         )
 
@@ -399,6 +398,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
               {presentationStyle === 'trapezoid' && <div className="ma-attribute-title" style={{ '--ma-color': moveAnim.color } as React.CSSProperties}><b>{moveAnim.attributeText}</b>{moveAnim.isGroup&&<i>群</i>}</div>}
               {moveAnim.hasTarget && !moveAnim.selfTargetOnly && TargetZone}
             </div>
+            {moveAnim.missed && <div className="ma-miss-text">MISS</div>}
           </div>
         )
       })()}

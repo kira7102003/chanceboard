@@ -2633,10 +2633,12 @@ h2 {
 }
 .ma-nondamage .ma-zone-target { animation: maTargetHold var(--ma-duration, 2.3s) ease-in-out both; }
 .ma-miss-text {
-  position: absolute;
-  z-index: 5;
+  position: fixed;
+  z-index: 2147483647;
   left: 50%;
   top: 50%;
+  pointer-events: none;
+  isolation: isolate;
   transform: translate(-50%, -50%) rotate(-6deg);
   color: #fff;
   font-family: 'Cinzel', Impact, sans-serif;
