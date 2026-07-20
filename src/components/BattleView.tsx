@@ -583,7 +583,7 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
                             />
                             <div className="act-slotrow">
                               <span className="slotrow-label">移動到：</span>
-                              {([3,2,1] as const).map(s => {
+                              {(au.side === 'A' ? [1,2,3] as const : [3,2,1] as const).map(s => {
                                 const tooFar = Math.abs(s - au.slot) > 1
                                 return (
                                   <button key={s}
