@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import './StoryFlowDesigner.css'
 import './StoryPlaybackV2.css'
-import { getCharImg, getChars, getUrlByKey } from '../utils/charStore'
+import { getCharImg, getChars, getUrlByKey, uploadByKey } from '../utils/charStore'
 import type { BoardCharacter } from '../utils/boardCharacters'
 import { getChapterFlow, type StoryChapter, type StoryFlowNode, type StoryRewards, type StorySegment } from '../utils/storyStore'
 import StoryPlayer from './StoryPlayer'
@@ -184,11 +184,17 @@ function BranchCard({ node, boardCharacters, depth, onChange }: { node: Extract<
     <label className="story-branch-question-label">選擇題目<input className="story-branch-title" value={node.title} onChange={event => onChange({ ...node, title: event.target.value })} /></label>
     <div className="story-branch-routes">{node.branches.map((route, routeIndex) => <div className="story-route-lane" key={route.id}>
       <div className="story-route-head"><i style={{ '--route-index': routeIndex } as React.CSSProperties} /><input value={route.label} onChange={event => onChange({ ...node, branches: node.branches.map(item => item.id === route.id ? { ...item, label: event.target.value } : item) })} /><button disabled={node.branches.length <= 2} onClick={() => onChange({ ...node, branches: node.branches.filter(item => item.id !== route.id) })}>×</button></div>
-      {node.chapterRouteSelect&&<div className="story-route-cover-settings"><input value={route.coverKey??''} placeholder="封面圖片鍵值／網址" onChange={event=>onChange({...node,branches:node.branches.map(item=>item.id===route.id?{...item,coverKey:event.target.value}:item)})}/><input value={route.description??''} placeholder="路線說明" onChange={event=>onChange({...node,branches:node.branches.map(item=>item.id===route.id?{...item,description:event.target.value}:item)})}/><input value={route.progressText??''} placeholder="進度文字，例如 0／7 關" onChange={event=>onChange({...node,branches:node.branches.map(item=>item.id===route.id?{...item,progressText:event.target.value}:item)})}/></div>}
+      {node.chapterRouteSelect&&<div className="story-route-cover-settings"><RouteCoverUpload storageKey={route.coverKey||`cb_story_route_${route.id}`} onChange={coverKey=>onChange({...node,branches:node.branches.map(item=>item.id===route.id?{...item,coverKey}:item)})}/><input value={route.coverKey??''} placeholder="或輸入封面圖片鍵值／網址" onChange={event=>onChange({...node,branches:node.branches.map(item=>item.id===route.id?{...item,coverKey:event.target.value}:item)})}/><input value={route.description??''} placeholder="路線說明" onChange={event=>onChange({...node,branches:node.branches.map(item=>item.id===route.id?{...item,description:event.target.value}:item)})}/><input value={route.progressText??''} placeholder="進度文字，例如 0／7 關" onChange={event=>onChange({...node,branches:node.branches.map(item=>item.id===route.id?{...item,progressText:event.target.value}:item)})}/></div>}
       <FlowLane laneId={route.id} label={`分支：${route.label}`} nodes={route.nodes} depth={depth + 1} boardCharacters={boardCharacters} onChange={routeNodes => onChange({ ...node, branches: node.branches.map(item => item.id === route.id ? { ...item, nodes: routeNodes } : item) })} />
     </div>)}</div>
     <button className="story-add-route" onClick={() => onChange({ ...node, branches: [...node.branches, { id: uid('route'), label: `選項 ${node.branches.length + 1}`, nodes: [] }] })}>＋ 新增選項路線</button>
   </div>
+}
+
+function RouteCoverUpload({storageKey,onChange}:{storageKey:string;onChange:(key:string)=>void}){
+ const[url,setUrl]=useState(()=>getUrlByKey(storageKey)),[busy,setBusy]=useState(false)
+ const upload=(event:React.ChangeEvent<HTMLInputElement>)=>{const file=event.target.files?.[0];if(!file)return;const reader=new FileReader();setBusy(true);reader.onload=async()=>{try{await uploadByKey(storageKey,String(reader.result));onChange(storageKey);setUrl(getUrlByKey(storageKey))}finally{setBusy(false)}};reader.readAsDataURL(file);event.target.value=''}
+ return <div className="story-route-cover-upload">{url?<img src={url} alt="路線選擇 CG"/>:<span>尚未設定路線 CG</span>}<label>{busy?'上傳中…':'上傳選擇 CG'}<input hidden disabled={busy} type="file" accept="image/*" onChange={upload}/></label></div>
 }
 
 function RewardCard({ rewards, onChange }: { rewards: StoryRewards; onChange: (rewards: StoryRewards) => void }) {
