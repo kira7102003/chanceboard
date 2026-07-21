@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import './StoryFlowDesigner.css'
 import './StoryPlaybackV2.css'
@@ -33,6 +33,8 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
   const [rewards, setRewards] = useState<StoryRewards>(chapter.rewards ?? {})
   const [previewWindow, setPreviewWindow] = useState<Window | null>(null)
   const [saved, setSaved] = useState(false)
+  const canvasRef = useRef<HTMLElement>(null)
+  const scrollKey = `cb_story_designer_scroll_v2_${chapter.id}`
   const change = (next: StoryFlowNode[]) => { setFlow(next); setSaved(false) }
   const save = () => { onSave(flow, rewards); setSaved(true) }
   const openPreview = () => {
@@ -57,6 +59,14 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
     previewWindow.addEventListener('beforeunload', close)
     return () => previewWindow.removeEventListener('beforeunload', close)
   }, [previewWindow])
+  useEffect(() => {
+    const canvas=canvasRef.current
+    if(!canvas)return
+    try{const saved=JSON.parse(localStorage.getItem(scrollKey)??'null') as {left:number;top:number}|null;if(saved)requestAnimationFrame(()=>canvas.scrollTo(saved.left,saved.top))}catch{/* ignore invalid saved position */}
+    const remember=()=>localStorage.setItem(scrollKey,JSON.stringify({left:canvas.scrollLeft,top:canvas.scrollTop}))
+    canvas.addEventListener('scroll',remember,{passive:true})
+    return()=>{remember();canvas.removeEventListener('scroll',remember)}
+  },[scrollKey])
 
   return <div className="story-designer">
     <header className="story-designer-head">
@@ -69,13 +79,21 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
       <button className="reward" onClick={() => document.querySelector('.story-reward-node')?.scrollIntoView({ behavior: 'smooth', inline: 'center' })}><i>★</i><span>故事獎勵</span></button>
       {boardCharacters.map((character, index) => { const showIcon = index < 2; const image = showIcon ? getUrlByKey(`cb_board_${character.id}_front`) : null; return <button key={character.id} onClick={() => change([...flow, makeCommon(character)])}><i>{image ? <img src={image} alt="" /> : showIcon ? character.name.slice(0, 1) : null}</i><span>{character.name}</span></button> })}
     </nav>
-    <main className="story-designer-canvas">
-      <RewardCard rewards={rewards} onChange={next => { setRewards(next); setSaved(false) }} />
+    <main className="story-designer-canvas" ref={canvasRef}>
+      <FlowGraphOverview nodes={flow} />
       <FlowLane nodes={flow} onChange={change} boardCharacters={boardCharacters} depth={0} label="章節開始" laneId="root" />
+      <RewardCard rewards={rewards} onChange={next => { setRewards(next); setSaved(false) }} />
       {!flow.length && <div className="story-designer-empty">尚無節點，請從右上角新增第一段對話。</div>}
     </main>
     {previewWindow && !previewWindow.closed && createPortal(<StoryPlayer chapter={chapter} initialNodes={flow} onLeave={() => previewWindow.close()} preview />, previewWindow.document.body)}
   </div>
+}
+
+function FlowGraphOverview({nodes}:{nodes:StoryFlowNode[]}){
+  const label=(node:StoryFlowNode)=>node.type==='branch'?node.title:(node.segment.section||node.segment.text.slice(0,18)||'空白節點')
+  const kind=(node:StoryFlowNode)=>node.type==='branch'?'選擇':node.segment.presentation==='cg'?'CG':node.segment.presentation==='chapter'?'章節':node.segment.presentation==='battle'?'戰鬥':'劇情'
+  const Sequence=({items}:{items:StoryFlowNode[]}):React.ReactNode=><div className="story-graph-sequence">{items.map(node=><div className="story-graph-unit" key={node.id}><article className={`story-graph-node ${node.type}`}><small>{kind(node)}</small><b>{label(node)}</b>{node.type==='branch'&&<em>{node.branches.length} 條路線</em>}</article>{node.type==='branch'&&<div className="story-graph-branches">{node.branches.map(branch=><div className="story-graph-route" key={branch.id}><span>{branch.label}</span><Sequence items={branch.nodes}/></div>)}</div>}</div>)}</div>
+  return <details className="story-graph-overview" open><summary><span>FLOW MAP</span><b>章節流程圖</b><small>開場內容播放完畢後，才會進入選擇節點</small></summary><div className="story-graph-stage"><article className="story-graph-start"><small>START</small><b>章節開始</b></article><Sequence items={nodes}/></div></details>
 }
 
 function FlowLane({ nodes, onChange, boardCharacters, depth, label, laneId }: {
@@ -101,12 +119,13 @@ function FlowLane({ nodes, onChange, boardCharacters, depth, label, laneId }: {
       onChange(next)
     } catch { /* Ignore non-story drags. */ }
   }
-  return <section className={`story-flow-lane${dragging ? ' dragging' : ''}`} style={{ '--lane-depth': depth } as React.CSSProperties}>
+  return <section className={`story-flow-lane${depth===0?' root-lane':''}${dragging ? ' dragging' : ''}`} style={{ '--lane-depth': depth } as React.CSSProperties}>
     <div className="story-flow-lane-label">{label}</div>
     <div className="story-flow-board">
+      {depth===0&&<article className="story-start-node"><i>▶</i><span><small>FLOW START</small><b>故事起始點</b><em>第一個節點類型</em></span><div><button className={nodes[0]?.type==='branch'?'active':''} onClick={()=>{if(nodes[0]?.type!=='branch')onChange([makeBranch(),...nodes])}}>分支</button><button className={nodes[0]?.type==='common'?'active':''} onClick={()=>{if(nodes[0]?.type!=='common')onChange([makeCommon(boardCharacters[0]),...nodes])}}>對話</button></div></article>}
       {nodes.map((node, index) => <div className="story-flow-card-wrap" key={node.id}>
         <div className="story-drop-zone" onDragOver={event => event.preventDefault()} onDrop={event => dropAt(event, index)}><span>放到這裡</span></div>
-        {index > 0 && <span className="story-flow-arrow">→</span>}
+        {(depth===0||index > 0) && <span className="story-flow-arrow">→</span>}
         <article className={`story-designer-card ${node.type}${collapsed.has(node.id)?' collapsed':''}`}>
           <div className="story-card-top" draggable onDragStart={event => { setDragging(true); event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('application/x-story-node', JSON.stringify({ laneId, index })) }} onDragEnd={() => setDragging(false)}><i>{index + 1}</i><b>{node.type === 'common' ? `${node.segment.presentation==='narration'?'旁白':node.segment.presentation==='marquee'?'跑馬燈':node.segment.presentation==='chapter'?'章節':node.segment.presentation==='cg'?'CG':node.segment.presentation==='battle'?'戰鬥':'對話'}節點` : depth === 0 ? '共用選擇' : '選項分支'}</b>{collapsed.has(node.id)&&node.type==='common'&&<em>{node.segment.speaker}</em>}<span><button draggable={false} title={collapsed.has(node.id)?'展開':'收縮'} onMouseDown={event=>event.stopPropagation()} onClick={event=>{event.stopPropagation();toggleCollapsed(node.id)}}>{collapsed.has(node.id)?'▾':'▴'}</button><span className="story-drag-handle" title="拖曳標題列即可移動">☷</span>
             <button title="複製卡片" onClick={() => { const next = [...nodes]; next.splice(index + 1, 0, cloneNode(node)); onChange(next) }}>⧉</button><button disabled={index === 0} onClick={() => move(index, -1)}>←</button><button disabled={index === nodes.length - 1} onClick={() => move(index, 1)}>→</button><button className="delete" onClick={() => onChange(nodes.filter(item => item.id !== node.id))}>×</button>
@@ -137,8 +156,20 @@ function DialogueCard({ segment, boardCharacters, onChange }: { segment: StorySe
 }
 
 function BranchCard({ node, boardCharacters, depth, onChange }: { node: Extract<StoryFlowNode, { type: 'branch' }>; boardCharacters: BoardCharacter[]; depth: number; onChange: (node: Extract<StoryFlowNode, { type: 'branch' }>) => void }) {
+  const characters = getChars()
+  const portraits = node.choicePortraits ?? [
+    ...(node.leftCharacter ? [{ id: uid('choice_portrait'), character: node.leftCharacter, side: 'left' as const, visible: true }] : []),
+    ...(node.rightCharacter ? [{ id: uid('choice_portrait'), character: node.rightCharacter, side: 'right' as const, visible: true }] : []),
+  ]
+  const patchPortrait = (id: string, value: Partial<(typeof portraits)[number]>) => onChange({ ...node, choicePortraits: portraits.map(item => item.id === id ? { ...item, ...value } : item) })
+  const PortraitOptions = () => <><option value="">請選擇角色</option><optgroup label="看板角色">{boardCharacters.map(character => <option key={character.id} value={character.id}>{character.name}</option>)}</optgroup><optgroup label="所有棋子">{characters.map(character => <option key={character.id} value={`piece:${character.id}`}>{character.name}</option>)}</optgroup></>
   return <div className={`story-branch-editor${depth === 0 ? ' root-parallel-routes' : ''}`}>
-    <input className="story-branch-title" value={node.title} onChange={event => onChange({ ...node, title: event.target.value })} />
+    <div className="story-branch-display-settings">
+      <div className="story-choice-settings-title"><b>⚙ 選擇畫面設定</b><small>玩家看到「{node.title}」選項時的畫面</small></div>
+      <div className="story-choice-display-mode"><label><input type="radio" name={`portrait_${node.id}`} checked={!node.showPortraits} onChange={() => onChange({ ...node, showPortraits: false })} /> 不顯示立繪</label><label><input type="radio" name={`portrait_${node.id}`} checked={node.showPortraits ?? false} onChange={() => onChange({ ...node, showPortraits: true })} /> 顯示立繪</label></div>
+      {node.showPortraits && <div className="story-choice-portrait-list">{portraits.map((portrait,index) => <div className="story-choice-portrait-row" key={portrait.id}><i>{index + 1}</i><select value={portrait.character ?? ''} onChange={event => patchPortrait(portrait.id, { character: event.target.value || undefined })}><PortraitOptions /></select><select value={portrait.side} onChange={event => patchPortrait(portrait.id, { side: event.target.value as 'left'|'right' })}><option value="left">左側</option><option value="right">右側</option></select><label><input type="checkbox" checked={portrait.visible} onChange={event => patchPortrait(portrait.id, { visible: event.target.checked })} /> 顯示</label><button onClick={() => onChange({ ...node, choicePortraits: portraits.filter(item => item.id !== portrait.id) })}>×</button></div>)}<button className="story-choice-add-portrait" onClick={() => onChange({ ...node, choicePortraits: [...portraits, { id: uid('choice_portrait'), side: portraits.filter(item=>item.side==='left').length<=portraits.filter(item=>item.side==='right').length?'left':'right', visible: true }] })}>＋ 新增立繪</button></div>}
+    </div>
+    <label className="story-branch-question-label">選擇題目<input className="story-branch-title" value={node.title} onChange={event => onChange({ ...node, title: event.target.value })} /></label>
     <div className="story-branch-routes">{node.branches.map((route, routeIndex) => <div className="story-route-lane" key={route.id}>
       <div className="story-route-head"><i style={{ '--route-index': routeIndex } as React.CSSProperties} /><input value={route.label} onChange={event => onChange({ ...node, branches: node.branches.map(item => item.id === route.id ? { ...item, label: event.target.value } : item) })} /><button disabled={node.branches.length <= 2} onClick={() => onChange({ ...node, branches: node.branches.filter(item => item.id !== route.id) })}>×</button></div>
       <FlowLane laneId={route.id} label={`分支：${route.label}`} nodes={route.nodes} depth={depth + 1} boardCharacters={boardCharacters} onChange={routeNodes => onChange({ ...node, branches: node.branches.map(item => item.id === route.id ? { ...item, nodes: routeNodes } : item) })} />

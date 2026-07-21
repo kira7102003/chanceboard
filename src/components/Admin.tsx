@@ -30,8 +30,8 @@ interface Props { onBack: () => void }
 
 export default function Admin({ onBack }: Props) {
   const [chars,      setChars]      = useState<Character[]>(() => getChars())
-  const [selId,      setSelId]      = useState(chars[0]?.id ?? '')
-  const [tab,        setTab]        = useState<'basic' | 'moves' | 'story'>('basic')
+  const [selId,      setSelId]      = useState(() => window.location.hash.startsWith('#admin/story/') ? '__story__' : localStorage.getItem('cb_admin_section') ?? chars[0]?.id ?? '')
+  const [tab,        setTab]        = useState<'basic' | 'moves' | 'story'>(() => { const saved=localStorage.getItem('cb_admin_tab'); return saved==='moves'||saved==='story'?saved:'basic' })
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const saveStatusTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const importRef = useRef<HTMLInputElement>(null)
@@ -45,6 +45,8 @@ export default function Admin({ onBack }: Props) {
       }
     })
   }, [])
+
+  useEffect(() => { localStorage.setItem('cb_admin_open','1'); localStorage.setItem('cb_admin_section',selId); localStorage.setItem('cb_admin_tab',tab) }, [selId,tab])
 
   const char  = chars.find(c => c.id === selId)
   const moves = defaultMoves.filter(m => m.ownerId === selId)
@@ -1096,7 +1098,7 @@ function MiningSettings({chars}:{chars:Character[]}){
 
 function StorySettings() {
   const [chapters, setChapters] = useState(getStoryChapters)
-  const [designerIndex, setDesignerIndex] = useState<number | null>(null)
+  const [designerIndex, setDesignerIndex] = useState<number | null>(() => { const hashId=window.location.hash.match(/^#admin\/story\/([^/]+)/)?.[1]; const id=hashId??localStorage.getItem('cb_admin_story_chapter'); if(!id)return null; const index=getStoryChapters().findIndex(chapter=>chapter.id===id); return index>=0?index:null })
   const boardCharacters = getBoardCharacters()
   const rewardCharacters = getChars()
   const battleBackgroundNames = getBattleBackgroundNames()
@@ -1108,7 +1110,7 @@ function StorySettings() {
   const updateMapPosition = (index: number, mapX: number, mapY: number) => update(index, { mapX, mapY })
   const updateRoute = (mapRoutePoints: {x:number;y:number}[]) => update(0, { mapRoutePoints })
   if (designerIndex !== null) return <StoryFlowDesigner chapter={chapters[designerIndex]} boardCharacters={boardCharacters}
-    onSave={(flow, rewards) => update(designerIndex, { flow, rewards })} onClose={() => setDesignerIndex(null)} />
+    onSave={(flow, rewards) => update(designerIndex, { flow, rewards })} onClose={() => { localStorage.removeItem('cb_admin_story_chapter'); history.replaceState(null,'','#admin'); setDesignerIndex(null) }} />
   return <div className="adm-basic" style={{ overflowY: 'auto' }}>
     <div className="diag-head"><div><h2>♟ 故事模式設定</h2><p>設定兵、騎士、城堡、主教、皇后、國王六張章節地圖與故事內容。</p></div></div>
     <StoryMapRouteEditor chapters={chapters} onMove={updateMapPosition} onRouteChange={updateRoute}/>
@@ -1134,7 +1136,7 @@ function StorySettings() {
             {([['gems', '鑽石'], ['coins', '金幣'], ['silver', '銀'], ['copper', '銅'], ['iron', '鐵'], ['wood', '木']] as const).map(([key, label]) => <label className="adm-field" key={key}><span>{label}</span><input type="number" min="0" value={chapter.rewards?.[key] ?? 0} onChange={event => update(index, { rewards: { ...chapter.rewards, [key]: Math.max(0, Math.floor(Number(event.target.value) || 0)) } })} /></label>)}
           </div>
           <small style={{ color: '#858daa' }}>每個帳號每章只能領取一次；重複角色會自動轉為 10 個角色碎片。</small>
-          <button className="story-open-designer" onClick={() => setDesignerIndex(index)}><span>◆</span><div><b>開啟獨立故事流程編輯器</b><small>使用節點、連線與分支卡片編排本章故事</small></div><i>進入全畫面 →</i></button>
+          <button className="story-open-designer" onClick={() => { localStorage.setItem('cb_admin_story_chapter',chapter.id); history.replaceState(null,'',`#admin/story/${chapter.id}`); setDesignerIndex(index) }}><span>◆</span><div><b>開啟獨立故事流程編輯器</b><small>使用節點、連線與分支卡片編排本章故事</small></div><i>進入全畫面 →</i></button>
           <div hidden>
           <div className="adm-section-label" style={{ marginTop: 12 }}>故事段落編輯</div>
           {getChapterSegments(chapter).map((segment, segmentIndex, allSegments) => {

@@ -2774,6 +2774,13 @@ h2 {
   flex: 2; display: flex; flex-direction: column; align-items: center; gap: 7px;
   animation: maCharIn 2.4s ease-in-out forwards;
 }
+.ma-auto-stop {
+  position: fixed; z-index: 2147483646; top: max(10px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right));
+  padding: 9px 16px; border: 1px solid rgba(255,216,112,.75); border-radius: 9px;
+  background: rgba(10,12,25,.94); color: #ffe08b; font-weight: 800; letter-spacing: .5px;
+  cursor: pointer; box-shadow: 0 4px 24px rgba(0,0,0,.65), 0 0 14px rgba(220,174,68,.25);
+}
+.ma-auto-stop:hover { background: rgba(70,48,13,.96); }
 .ma-battle-row.ma-from-right { flex-direction: row-reverse; }
 
 /* Target zone — fades in, then shakes when skill arrives */

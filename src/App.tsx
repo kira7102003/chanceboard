@@ -84,7 +84,7 @@ function WaitingRoom({ roomId, mySide }: { roomId: string; mySide: 'A' | 'B' | n
 export default function App() {
   const saved = loadSession()
   const [onlineRoomId, setOnlineRoomId] = useState('')
-  const [showAdmin,    setShowAdmin]    = useState(false)
+  const [showAdmin,    setShowAdmin]    = useState(() => window.location.hash.startsWith('#admin') || localStorage.getItem('cb_admin_open') === '1')
   const [cloudSynced, setCloudSynced] = useState(false)
   const [user,      setUser]      = useState<User | null>(null)
   const [authReady, setAuthReady] = useState(false)
@@ -252,7 +252,7 @@ export default function App() {
     } : undefined}>
       <Suspense fallback={<div className="route-loading">載入畫面中…</div>}>
       {/* 資料編輯器 */}
-      {showAdmin && <Admin onBack={() => setShowAdmin(false)} />}
+      {showAdmin && <Admin onBack={() => { localStorage.removeItem('cb_admin_open'); localStorage.removeItem('cb_admin_story_chapter'); history.replaceState(null,'',window.location.pathname+window.location.search); setShowAdmin(false) }} />}
 
       {/* 大廳 */}
       {!showAdmin && !isActive && (
@@ -263,7 +263,7 @@ export default function App() {
           onAIBattle={handleAIBattleStart}
           savedSession={saved}
           onRejoin={handleRejoin}
-          onAdmin={() => setShowAdmin(true)}
+          onAdmin={() => { localStorage.setItem('cb_admin_open','1'); history.replaceState(null,'','#admin'); setShowAdmin(true) }}
         />
       )}
 
