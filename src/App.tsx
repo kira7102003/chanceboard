@@ -12,7 +12,7 @@ import { supabase }               from './utils/supabase'
 import type { User }              from '@supabase/supabase-js'
 import { initDailyRewards } from './utils/dailyRewards'
 import { getLogisticsBusyCharacterIds } from './utils/logisticsStore'
-import { getBgmConfig, syncBgmConfig, type BgmConfig } from './utils/bgmStore'
+import { getBgmConfig, syncBgmConfig, type BgmChannel, type BgmConfig } from './utils/bgmStore'
 
 const CharSelect = lazy(() => import('./components/CharSelect'))
 const DeckBuild = lazy(() => import('./components/DeckBuild'))
@@ -89,9 +89,9 @@ export default function App() {
   const [user,      setUser]      = useState<User | null>(null)
   const [authReady, setAuthReady] = useState(false)
   const { musicEnabled, soundEnabled, musicVolume, soundVolume } = usePlayerStore()
-  const [bgmConfig,setBgmConfig]=useState(getBgmConfig)
+  const [bgmConfig,setBgmConfig]=useState(()=>getBgmConfig('lobby')),[battleBgmConfig,setBattleBgmConfig]=useState(()=>getBgmConfig('battle'))
 
-  useEffect(()=>{syncBgmConfig().then(setBgmConfig);const update=(event:Event)=>setBgmConfig((event as CustomEvent<BgmConfig>).detail);window.addEventListener('chanceboard:bgm-change',update);return()=>window.removeEventListener('chanceboard:bgm-change',update)},[])
+  useEffect(()=>{syncBgmConfig('lobby').then(setBgmConfig);syncBgmConfig('battle').then(setBattleBgmConfig);const update=(event:Event)=>{const detail=(event as CustomEvent<{channel:BgmChannel;config:BgmConfig}>).detail;(detail.channel==='battle'?setBattleBgmConfig:setBgmConfig)(detail.config)};window.addEventListener('chanceboard:bgm-change',update);return()=>window.removeEventListener('chanceboard:bgm-change',update)},[])
 
   useEffect(() => {
     const applyOne = (audio: HTMLAudioElement) => {
@@ -241,7 +241,7 @@ export default function App() {
 
   return (
     <>
-    <GlobalBgm config={bgmConfig} enabled={musicEnabled} volume={musicVolume}/>
+    <GlobalBgm key={appPhase==='battle'||appPhase==='end'?'battle':'lobby'} config={(appPhase==='battle'||appPhase==='end')&&battleBgmConfig.tracks.length?battleBgmConfig:bgmConfig} enabled={musicEnabled} volume={musicVolume}/>
     <RotatePrompt />
     {cloudSynced && <DailyCheckIn userId={user.id} />}
     <div className="app" style={activeBgUrl ? {

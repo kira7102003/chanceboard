@@ -16,7 +16,7 @@ import StoryFlowDesigner from './StoryFlowDesigner'
 import { getLogisticsJobs, saveLogisticsJobs } from '../utils/logisticsStore'
 import { supabase } from '../utils/supabase'
 import PixelCharacterActor from './PixelCharacterActor'
-import { getBgmConfig, saveBgmConfig, type BgmConfig } from '../utils/bgmStore'
+import { getBgmConfig, saveBgmConfig, type BgmChannel, type BgmConfig } from '../utils/bgmStore'
 import PixelSkeletonEditor from './PixelSkeletonEditor'
 import { getMiningConfig, saveMiningConfig, type MiningConfig } from '../utils/miningStore'
 import { getBattlePresentationStyle, saveBattlePresentationStyle, type BattlePresentationStyle } from '../utils/battlePresentation'
@@ -941,8 +941,12 @@ function BgSettings() {
   return (
     <div className="adm-basic" style={{ overflowY: 'auto' }}>
       <div className="adm-section">
-        <div className="adm-section-label">全域 BGM</div>
-        <BgmLibrary />
+        <div className="adm-section-label">大廳／故事 BGM</div>
+        <BgmLibrary channel="lobby" />
+      </div>
+      <div className="adm-section">
+        <div className="adm-section-label">戰鬥 BGM</div>
+        <BgmLibrary channel="battle" />
       </div>
       <div className="adm-section">
         <div className="adm-section-label">大廳背景（大廳 / 選角 / 組牌畫面）</div>
@@ -1000,15 +1004,15 @@ function BgSettings() {
   )
 }
 
-function BgmLibrary(){
-  const [config,setConfig]=useState<BgmConfig>(getBgmConfig),[busy,setBusy]=useState(false),[error,setError]=useState('')
-  const update=(next:BgmConfig)=>{setConfig(next);saveBgmConfig(next)}
+function BgmLibrary({channel}:{channel:BgmChannel}){
+  const [config,setConfig]=useState<BgmConfig>(()=>getBgmConfig(channel)),[busy,setBusy]=useState(false),[error,setError]=useState('')
+  const update=(next:BgmConfig)=>{setConfig(next);saveBgmConfig(next,channel)}
   const upload=async(event:React.ChangeEvent<HTMLInputElement>)=>{
     const file=event.target.files?.[0];event.target.value='';if(!file)return
     if(file.size>20*1024*1024){setError('音樂檔案不可超過 20 MB');return}
     setBusy(true);setError('')
     try{
-      const id=`bgm_${Date.now()}`,storageKey=`cb_audio_${id}`
+      const id=`bgm_${Date.now()}`,storageKey=`cb_audio_${channel}_${id}`
       const dataUrl=await new Promise<string>((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=()=>reject(reader.error);reader.readAsDataURL(file)})
       await uploadByKey(storageKey,dataUrl)
       const track={id,name:file.name.replace(/\.[^.]+$/,''),storageKey},tracks=[...config.tracks.filter(item=>getUrlByKey(item.storageKey)),track]
