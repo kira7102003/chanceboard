@@ -6,6 +6,7 @@ import { getCharImg, getChars, getUrlByKey } from '../utils/charStore'
 import type { BoardCharacter } from '../utils/boardCharacters'
 import { getChapterFlow, type StoryChapter, type StoryFlowNode, type StoryRewards, type StorySegment } from '../utils/storyStore'
 import StoryPlayer from './StoryPlayer'
+import StoryRoutePicker from './StoryRoutePicker'
 
 interface Props {
   chapter: StoryChapter
@@ -32,6 +33,8 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
   const [flow, setFlow] = useState(() => getChapterFlow(chapter))
   const [rewards, setRewards] = useState<StoryRewards>(chapter.rewards ?? {})
   const [previewWindow, setPreviewWindow] = useState<Window | null>(null)
+  const [previewRoute,setPreviewRoute]=useState<Extract<StoryFlowNode,{type:'branch'}>|null>(null)
+  const [previewNodes,setPreviewNodes]=useState<StoryFlowNode[]|null>(null)
   const [saved, setSaved] = useState(false)
   const canvasRef = useRef<HTMLElement>(null)
   const scrollKey = `cb_story_designer_scroll_v2_${chapter.id}`
@@ -56,7 +59,8 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
       if (copy instanceof HTMLLinkElement) copy.href = source instanceof HTMLLinkElement ? source.href : ''
       popup.document.head.appendChild(copy)
     })
-    setPreviewWindow(popup)
+    const picker=flow.find((node):node is Extract<StoryFlowNode,{type:'branch'}>=>node.type==='branch'&&!!node.chapterRouteSelect)
+    setPreviewRoute(picker??null);setPreviewNodes(flow);setPreviewWindow(popup)
     popup.focus()
   }
   useEffect(() => {
@@ -91,14 +95,14 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
       <RewardCard rewards={rewards} onChange={next => { setRewards(next); setSaved(false) }} />
       {!flow.length && <div className="story-designer-empty">尚無節點，請從右上角新增第一段對話。</div>}
     </main>
-    {previewWindow && !previewWindow.closed && createPortal(<StoryPlayer chapter={chapter} initialNodes={flow} onLeave={() => previewWindow.close()} preview />, previewWindow.document.body)}
+    {previewWindow && !previewWindow.closed && createPortal(previewRoute?<StoryRoutePicker chapter={chapter} node={previewRoute} onBack={()=>previewWindow.close()} onChoose={route=>{setPreviewNodes((previewNodes??flow).flatMap(node=>node.id===previewRoute.id?route.nodes:[node]));setPreviewRoute(null)}}/>:<StoryPlayer chapter={chapter} initialNodes={previewNodes??flow} onLeave={() => previewWindow.close()} preview />, previewWindow.document.body)}
   </div>
 }
 
 function FlowGraphOverview({nodes,onChange,onLocate}:{nodes:StoryFlowNode[];onChange:(nodes:StoryFlowNode[])=>void;onLocate:(id:string)=>void}){
   const label=(node:StoryFlowNode)=>node.type==='branch'?node.title:(node.segment.section||node.segment.text.slice(0,18)||'空白節點')
   const kind=(node:StoryFlowNode)=>node.type==='branch'?'選擇':node.segment.presentation==='cg'?'CG':node.segment.presentation==='chapter'?'章節':node.segment.presentation==='battle'?'戰鬥':'劇情'
-  const Sequence=({items,setItems}:{items:StoryFlowNode[];setItems:(items:StoryFlowNode[])=>void}):React.ReactNode=><div className="story-graph-sequence">{items.map(node=><div className="story-graph-unit" key={node.id}><article className={`story-graph-node ${node.type}`}><small>{kind(node)}</small>{node.type==='branch'?<input aria-label="選擇題目" value={node.title} onChange={event=>setItems(items.map(item=>item.id===node.id&&item.type==='branch'?{...item,title:event.target.value}:item))}/>:<><input aria-label="節點名稱" value={node.segment.section??''} placeholder={label(node)} onChange={event=>setItems(items.map(item=>item.id===node.id&&item.type==='common'?{...item,segment:{...item.segment,section:event.target.value}}:item))}/><textarea aria-label="節點文字" value={node.segment.text} onChange={event=>setItems(items.map(item=>item.id===node.id&&item.type==='common'?{...item,segment:{...item.segment,text:event.target.value}}:item))}/></>}<button onClick={()=>onLocate(node.id)}>定位編輯</button>{node.type==='branch'&&<em>{node.branches.length} 條路線</em>}</article>{node.type==='branch'&&<div className="story-graph-branches">{node.branches.map(branch=><div className="story-graph-route" key={branch.id}><input aria-label="路線名稱" value={branch.label} onChange={event=>setItems(items.map(item=>item.id===node.id&&item.type==='branch'?{...item,branches:item.branches.map(route=>route.id===branch.id?{...route,label:event.target.value}:route)}:item))}/><Sequence items={branch.nodes} setItems={routeNodes=>setItems(items.map(item=>item.id===node.id&&item.type==='branch'?{...item,branches:item.branches.map(route=>route.id===branch.id?{...route,nodes:routeNodes}:route)}:item))}/></div>)}</div>}</div>)}</div>
+  const Sequence=({items,setItems}:{items:StoryFlowNode[];setItems:(items:StoryFlowNode[])=>void}):React.ReactNode=><div className="story-graph-sequence">{items.map(node=><div className="story-graph-unit" key={node.id}><article className={`story-graph-node ${node.type}`}><small>{kind(node)}</small>{node.type==='branch'?<><input aria-label="選擇題目" value={node.title} onChange={event=>setItems(items.map(item=>item.id===node.id&&item.type==='branch'?{...item,title:event.target.value}:item))}/><label className="story-graph-entry"><input type="checkbox" checked={node.chapterRouteSelect??false} onChange={event=>setItems(items.map(item=>item.id===node.id&&item.type==='branch'?{...item,chapterRouteSelect:event.target.checked}:item))}/>章節入口頁</label></>:<><input aria-label="節點名稱" value={node.segment.section??''} placeholder={label(node)} onChange={event=>setItems(items.map(item=>item.id===node.id&&item.type==='common'?{...item,segment:{...item.segment,section:event.target.value}}:item))}/><textarea aria-label="節點文字" value={node.segment.text} onChange={event=>setItems(items.map(item=>item.id===node.id&&item.type==='common'?{...item,segment:{...item.segment,text:event.target.value}}:item))}/></>}<button onClick={()=>onLocate(node.id)}>定位編輯</button>{node.type==='branch'&&<em>{node.branches.length} 條路線</em>}</article>{node.type==='branch'&&<div className="story-graph-branches">{node.branches.map(branch=><div className="story-graph-route" key={branch.id}><input aria-label="路線名稱" value={branch.label} onChange={event=>setItems(items.map(item=>item.id===node.id&&item.type==='branch'?{...item,branches:item.branches.map(route=>route.id===branch.id?{...route,label:event.target.value}:route)}:item))}/><Sequence items={branch.nodes} setItems={routeNodes=>setItems(items.map(item=>item.id===node.id&&item.type==='branch'?{...item,branches:item.branches.map(route=>route.id===branch.id?{...route,nodes:routeNodes}:route)}:item))}/></div>)}</div>}</div>)}</div>
   return <details className="story-graph-overview" open><summary><span>FLOW MAP</span><b>章節流程圖（可直接修改）</b><small>修改後會同步到下方卡片</small></summary><div className="story-graph-stage"><article className="story-graph-start"><small>START</small><b>章節開始</b></article><Sequence items={nodes} setItems={onChange}/></div></details>
 }
 
@@ -172,12 +176,15 @@ function BranchCard({ node, boardCharacters, depth, onChange }: { node: Extract<
   return <div className={`story-branch-editor${depth === 0 ? ' root-parallel-routes' : ''}`}>
     <div className="story-branch-display-settings">
       <div className="story-choice-settings-title"><b>⚙ 選擇畫面設定</b><small>玩家看到「{node.title}」選項時的畫面</small></div>
+      <label className="story-route-entry-toggle"><input type="checkbox" checked={node.chapterRouteSelect??false} onChange={event=>onChange({...node,chapterRouteSelect:event.target.checked})}/> 作為章節進入後的全畫面路線選擇</label>
+      {node.chapterRouteSelect&&<input value={node.routeSelectSubtitle??''} placeholder="路線選擇頁說明文字" onChange={event=>onChange({...node,routeSelectSubtitle:event.target.value})}/>} 
       <div className="story-choice-display-mode"><label><input type="radio" name={`portrait_${node.id}`} checked={!node.showPortraits} onChange={() => onChange({ ...node, showPortraits: false })} /> 不顯示立繪</label><label><input type="radio" name={`portrait_${node.id}`} checked={node.showPortraits ?? false} onChange={() => onChange({ ...node, showPortraits: true })} /> 顯示立繪</label></div>
       {node.showPortraits && <div className="story-choice-portrait-list">{portraits.map((portrait,index) => <div className="story-choice-portrait-row" key={portrait.id}><i>{index + 1}</i><select value={portrait.character ?? ''} onChange={event => patchPortrait(portrait.id, { character: event.target.value || undefined })}><PortraitOptions /></select><select value={portrait.side} onChange={event => patchPortrait(portrait.id, { side: event.target.value as 'left'|'right' })}><option value="left">左側</option><option value="right">右側</option></select><label><input type="checkbox" checked={portrait.visible} onChange={event => patchPortrait(portrait.id, { visible: event.target.checked })} /> 顯示</label><button onClick={() => onChange({ ...node, choicePortraits: portraits.filter(item => item.id !== portrait.id) })}>×</button></div>)}<button className="story-choice-add-portrait" onClick={() => onChange({ ...node, choicePortraits: [...portraits, { id: uid('choice_portrait'), side: portraits.filter(item=>item.side==='left').length<=portraits.filter(item=>item.side==='right').length?'left':'right', visible: true }] })}>＋ 新增立繪</button></div>}
     </div>
     <label className="story-branch-question-label">選擇題目<input className="story-branch-title" value={node.title} onChange={event => onChange({ ...node, title: event.target.value })} /></label>
     <div className="story-branch-routes">{node.branches.map((route, routeIndex) => <div className="story-route-lane" key={route.id}>
       <div className="story-route-head"><i style={{ '--route-index': routeIndex } as React.CSSProperties} /><input value={route.label} onChange={event => onChange({ ...node, branches: node.branches.map(item => item.id === route.id ? { ...item, label: event.target.value } : item) })} /><button disabled={node.branches.length <= 2} onClick={() => onChange({ ...node, branches: node.branches.filter(item => item.id !== route.id) })}>×</button></div>
+      {node.chapterRouteSelect&&<div className="story-route-cover-settings"><input value={route.coverKey??''} placeholder="封面圖片鍵值／網址" onChange={event=>onChange({...node,branches:node.branches.map(item=>item.id===route.id?{...item,coverKey:event.target.value}:item)})}/><input value={route.description??''} placeholder="路線說明" onChange={event=>onChange({...node,branches:node.branches.map(item=>item.id===route.id?{...item,description:event.target.value}:item)})}/><input value={route.progressText??''} placeholder="進度文字，例如 0／7 關" onChange={event=>onChange({...node,branches:node.branches.map(item=>item.id===route.id?{...item,progressText:event.target.value}:item)})}/></div>}
       <FlowLane laneId={route.id} label={`分支：${route.label}`} nodes={route.nodes} depth={depth + 1} boardCharacters={boardCharacters} onChange={routeNodes => onChange({ ...node, branches: node.branches.map(item => item.id === route.id ? { ...item, nodes: routeNodes } : item) })} />
     </div>)}</div>
     <button className="story-add-route" onClick={() => onChange({ ...node, branches: [...node.branches, { id: uid('route'), label: `選項 ${node.branches.length + 1}`, nodes: [] }] })}>＋ 新增選項路線</button>

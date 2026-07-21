@@ -6,7 +6,7 @@ const say = (speaker: string, text: string, side: 'left' | 'right' = 'left', boa
   const segment: StorySegment = { id, speaker, text, side, boardCharacter, pose: 'front', section }
   return { id: `node_${id}`, type: 'common', segment }
 }
-const choice = (title: string, branches: Array<[string, StoryFlowNode[]]>): StoryFlowNode => ({
+const choice = (title: string, branches: Array<[string, StoryFlowNode[]]>): Extract<StoryFlowNode,{type:'branch'}> => ({
   id: `choice_${++serial}`, type: 'branch', title,
   branches: branches.map(([label, nodes], index) => ({ id: `route_${serial}_${index}`, label, nodes })),
 })
@@ -169,5 +169,8 @@ export const PAWN_STORY_FLOW: StoryFlowNode[] = splitDialogueLines([
   scene('第一章　兵（Pawn）', 'chapter', 'CHAPTER 1'),
   scene('棋盤從中央裂開。無數人化作光點從天空墜落，落在棋盤上的身體逐漸成為一枚枚棋子。', 'cg', '開場 CG'),
   scene('每一位來到這裡的人，都懷抱著一個無法放棄的願望。新的棋局，即將開始。', 'narration', '序幕'),
-  choice('選擇執棋方', [['執黑', blackRoute], ['執白', whiteRoute]]),
+  { ...choice('選擇執棋方', [['執黑', blackRoute], ['執白', whiteRoute]]), chapterRouteSelect: true, routeSelectSubtitle: '選擇執黑或執白。兩條路線擁有不同的抉擇、同伴與結局。', branches: [
+    {id:'route_pawn_black',label:'執黑',nodes:blackRoute,coverKey:'cb_story_route_pawn_black',description:'與小黑同行，學會在殘酷棋盤中求生。',progressText:'0／7 關'},
+    {id:'route_pawn_white',label:'執白',nodes:whiteRoute,coverKey:'cb_story_route_pawn_white',description:'與小白同行，守護每一枚棋子的願望。',progressText:'0／7 關'},
+  ] },
 ])

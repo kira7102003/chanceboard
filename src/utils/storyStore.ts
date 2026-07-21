@@ -27,11 +27,11 @@ export interface StorySegment {
 
 export type StoryFlowNode =
   | { id: string; type: 'common'; segment: StorySegment }
-  | { id: string; type: 'branch'; title: string; branches: StoryFlowBranch[]; showPortraits?: boolean; leftCharacter?: string; rightCharacter?: string; choicePortraits?: StoryChoicePortrait[] }
+  | { id: string; type: 'branch'; title: string; branches: StoryFlowBranch[]; showPortraits?: boolean; leftCharacter?: string; rightCharacter?: string; choicePortraits?: StoryChoicePortrait[]; chapterRouteSelect?: boolean; routeSelectSubtitle?: string }
 
 export interface StoryChoicePortrait { id: string; character?: string; side: 'left' | 'right'; visible: boolean }
 
-export interface StoryFlowBranch { id: string; label: string; nodes: StoryFlowNode[] }
+export interface StoryFlowBranch { id: string; label: string; nodes: StoryFlowNode[]; coverKey?: string; description?: string; progressText?: string }
 
 export interface StoryChapter {
   id: StoryChapterId
@@ -69,7 +69,7 @@ export function describeStoryRewards(rewards?: StoryRewards): string {
 
 const KEY = 'cb_story_chapters'
 const PAWN_IMPORT_VERSION_KEY = 'cb_story_pawn_import_version'
-const PAWN_IMPORT_VERSION = '2026-07-22-v4-linear-intro'
+const PAWN_IMPORT_VERSION = '2026-07-22-v5-route-picker'
 
 export const DEFAULT_STORY_CHAPTERS: StoryChapter[] = [
   { id: 'pawn', order: 1, piece: '兵', title: '初心荒野', subtitle: '所有願望，皆從最弱小的一步開始。', unlocked: true, story: `【開場 CG】\n無數人從天空墜落，棋盤從中央裂開。\n\n小黑：「新的棋局開始了。歡迎來到棋盤。」\n\n【第一節　初心荒野】\n打倒荒野魔物，學會棋盤沒有新手保護。\n\n【第二節　另一位玩家】\n親眼看見玩家為了勝利捨棄自己的棋子。\n\n【第三節　命運分歧】\n執黑將遇見圖卡勒絲；執白將遇見守護村莊的梅朵。你的選擇會累積求生意志或守護之心。\n\n【第四節　Boss：無名戰士】\n擊敗已經勝利九十九次、只想回家的無名戰士。\n\n【第一章　完】` },

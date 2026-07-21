@@ -1,0 +1,10 @@
+import {getCharImg,getChars,getUrlByKey} from '../utils/charStore'
+import type {StoryChapter,StoryFlowNode} from '../utils/storyStore'
+import './StoryPlaybackV2.css'
+
+type BranchNode=Extract<StoryFlowNode,{type:'branch'}>
+export default function StoryRoutePicker({chapter,node,onChoose,onBack}:{chapter:StoryChapter;node:BranchNode;onChoose:(route:BranchNode['branches'][number])=>void;onBack:()=>void}){
+ const chars=getChars()
+ const fallback=(index:number)=>{const name=index===0?'小黑':'小白',char=chars.find(item=>item.name===name);return char?getCharImg(char.id):null}
+ return <div className="story-route-picker"><section><header><button onClick={onBack}>‹ 返回</button><div><h1>第{chapter.order===1?'一':chapter.order}章　{chapter.piece}（{chapter.id==='pawn'?'Pawn':chapter.title}）</h1><p>{node.routeSelectSubtitle||`選擇${node.branches.map(route=>route.label).join('或')}，不同路線將通往不同故事。`}</p></div></header><div className="story-route-picker-grid">{node.branches.map((route,index)=>{const image=(route.coverKey&&(getUrlByKey(route.coverKey)||route.coverKey))||fallback(index);return <button className="story-route-cover" key={route.id} onClick={()=>onChoose(route)} style={image?{backgroundImage:`linear-gradient(transparent 45%,#020309f5),url(${image})`}:undefined}><span><b>{route.label}</b><p>{route.description||`${route.label}路線，體驗不同的選擇與結局。`}</p><small>{route.progressText||'尚未開始'}</small></span></button>})}</div><button className="story-route-picker-back" onClick={onBack}>返回大廳</button></section></div>
+}
