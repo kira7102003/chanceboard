@@ -12,6 +12,7 @@ import { supabase }               from './utils/supabase'
 import type { User }              from '@supabase/supabase-js'
 import { initDailyRewards } from './utils/dailyRewards'
 import { getLogisticsBusyCharacterIds } from './utils/logisticsStore'
+import { getBgmConfig, syncBgmConfig, type BgmConfig } from './utils/bgmStore'
 
 const CharSelect = lazy(() => import('./components/CharSelect'))
 const DeckBuild = lazy(() => import('./components/DeckBuild'))
@@ -31,8 +32,13 @@ function RotatePrompt() {
   )
 }
 
-function GlobalBgm({ src, enabled, volume }: { src: string; enabled: boolean; volume: number }) {
+function GlobalBgm({ config, enabled, volume }: { config: BgmConfig; enabled: boolean; volume: number }) {
   const ref=useRef<HTMLAudioElement>(null)
+  const playable=config.tracks.map(track=>({ ...track, url:getUrlByKey(track.storageKey) })).filter((track):track is typeof track & {url:string}=>!!track.url)
+  const initial=config.mode==='random'&&playable.length>1?playable[Math.floor(Math.random()*playable.length)]:playable.find(track=>track.id===config.selectedId)??playable[0]
+  const [trackId,setTrackId]=useState(initial?.id??'')
+  const current=playable.find(track=>track.id===trackId)??initial
+  useEffect(()=>{setTrackId(initial?.id??'')},[config.mode,config.selectedId,config.tracks.length])
   useEffect(()=>{
     const audio=ref.current
     if(audio){audio.muted=!enabled;audio.volume=volume/100}
@@ -41,8 +47,10 @@ function GlobalBgm({ src, enabled, volume }: { src: string; enabled: boolean; vo
     window.addEventListener('pointerdown',play,{once:true})
     window.addEventListener('keydown',play,{once:true})
     return()=>{window.removeEventListener('pointerdown',play);window.removeEventListener('keydown',play)}
-  },[src,enabled,volume])
-  return <audio ref={ref} src={src} data-audio-kind="music" autoPlay loop preload="auto" />
+  },[current?.url,enabled,volume])
+  const next=()=>{if(config.mode!=='random'||playable.length<2)return;const choices=playable.filter(track=>track.id!==trackId);setTrackId(choices[Math.floor(Math.random()*choices.length)].id)}
+  if(!current)return null
+  return <audio ref={ref} src={current.url} data-audio-kind="music" autoPlay loop={config.mode==='selected'} preload="auto" onEnded={next} />
 }
 
 // ── Waiting room (online only) ────────────────────────────────────────────────
@@ -81,7 +89,9 @@ export default function App() {
   const [user,      setUser]      = useState<User | null>(null)
   const [authReady, setAuthReady] = useState(false)
   const { musicEnabled, soundEnabled, musicVolume, soundVolume } = usePlayerStore()
-  const bgmUrl=getUrlByKey('cb_audio_bgm')
+  const [bgmConfig,setBgmConfig]=useState(getBgmConfig)
+
+  useEffect(()=>{syncBgmConfig().then(setBgmConfig);const update=(event:Event)=>setBgmConfig((event as CustomEvent<BgmConfig>).detail);window.addEventListener('chanceboard:bgm-change',update);return()=>window.removeEventListener('chanceboard:bgm-change',update)},[])
 
   useEffect(() => {
     const applyOne = (audio: HTMLAudioElement) => {
@@ -231,7 +241,7 @@ export default function App() {
 
   return (
     <>
-    {bgmUrl&&<GlobalBgm key={bgmUrl} src={bgmUrl} enabled={musicEnabled} volume={musicVolume}/>}
+    <GlobalBgm config={bgmConfig} enabled={musicEnabled} volume={musicVolume}/>
     <RotatePrompt />
     {cloudSynced && <DailyCheckIn userId={user.id} />}
     <div className="app" style={activeBgUrl ? {
