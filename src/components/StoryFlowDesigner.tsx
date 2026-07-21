@@ -36,6 +36,12 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
   const canvasRef = useRef<HTMLElement>(null)
   const scrollKey = `cb_story_designer_scroll_v2_${chapter.id}`
   const change = (next: StoryFlowNode[]) => { setFlow(next); setSaved(false) }
+  const revealNode = (id:string) => requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    const target=canvasRef.current?.querySelector<HTMLElement>(`[data-editor-node-id="${CSS.escape(id)}"]`)
+    target?.scrollIntoView({behavior:'smooth',block:'center',inline:'center'})
+    target?.classList.add('just-added');window.setTimeout(()=>target?.classList.remove('just-added'),1800)
+  }))
+  const append = (node:StoryFlowNode) => { change([...flow,node]); revealNode(node.id) }
   const save = () => { onSave(flow, rewards); setSaved(true) }
   const openPreview = () => {
     if (previewWindow && !previewWindow.closed) { previewWindow.focus(); return }
@@ -72,15 +78,15 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
     <header className="story-designer-head">
       <div><button onClick={onClose}>← 返回章節設定</button><span className="story-designer-dot" /><b>{chapter.piece}　{chapter.title}｜故事流程</b></div>
       <div className="story-designer-legend"><i className="dialogue" />對話<i className="choice" />選項<i className="route" />分支</div>
-      <div className="story-add-toolbar"><button onClick={openPreview}>↗ 開新視窗預覽</button><button onClick={() => change([...flow, makeCommon(boardCharacters[0])])}>＋ 對話</button><button onClick={() => change([...flow, makeBranch()])}>＋ 分支</button><button onClick={() => change([...flow, makePresentation('narration')])}>＋ 旁白</button><button onClick={() => change([...flow, makePresentation('marquee')])}>＋ 跑馬燈</button><button onClick={() => change([...flow, makePresentation('chapter')])}>＋ 章節</button><button onClick={() => change([...flow, makePresentation('cg')])}>＋ CG</button><button onClick={() => change([...flow, makePresentation('battle')])}>＋ 戰鬥</button><button className="primary" onClick={save}>{saved ? '✓ 已儲存' : '儲存'}</button></div>
+      <div className="story-add-toolbar"><button onClick={openPreview}>↗ 開新視窗預覽</button><button onClick={() => append(makeCommon(boardCharacters[0]))}>＋ 對話</button><button onClick={() => append(makeBranch())}>＋ 分支</button><button onClick={() => append(makePresentation('narration'))}>＋ 旁白</button><button onClick={() => append(makePresentation('marquee'))}>＋ 跑馬燈</button><button onClick={() => append(makePresentation('chapter'))}>＋ 章節</button><button onClick={() => append(makePresentation('cg'))}>＋ CG</button><button onClick={() => append(makePresentation('battle'))}>＋ 戰鬥</button><button className="primary" onClick={save}>{saved ? '✓ 已儲存' : '儲存'}</button></div>
     </header>
     <div className="story-designer-sub">以卡片編排章節。實線代表順序，彩色路線代表玩家選項；每條分支都能繼續加入對話或下一層選項。</div>
     <nav className="story-designer-palette">
       <button className="reward" onClick={() => document.querySelector('.story-reward-node')?.scrollIntoView({ behavior: 'smooth', inline: 'center' })}><i>★</i><span>故事獎勵</span></button>
-      {boardCharacters.map((character, index) => { const showIcon = index < 2; const image = showIcon ? getUrlByKey(`cb_board_${character.id}_front`) : null; return <button key={character.id} onClick={() => change([...flow, makeCommon(character)])}><i>{image ? <img src={image} alt="" /> : showIcon ? character.name.slice(0, 1) : null}</i><span>{character.name}</span></button> })}
+      {boardCharacters.map((character, index) => { const showIcon = index < 2; const image = showIcon ? getUrlByKey(`cb_board_${character.id}_front`) : null; return <button key={character.id} onClick={() => append(makeCommon(character))}><i>{image ? <img src={image} alt="" /> : showIcon ? character.name.slice(0, 1) : null}</i><span>{character.name}</span></button> })}
     </nav>
     <main className="story-designer-canvas" ref={canvasRef}>
-      <FlowGraphOverview nodes={flow} />
+      <FlowGraphOverview nodes={flow} onChange={change} onLocate={revealNode} />
       <FlowLane nodes={flow} onChange={change} boardCharacters={boardCharacters} depth={0} label="章節開始" laneId="root" />
       <RewardCard rewards={rewards} onChange={next => { setRewards(next); setSaved(false) }} />
       {!flow.length && <div className="story-designer-empty">尚無節點，請從右上角新增第一段對話。</div>}
@@ -89,11 +95,11 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
   </div>
 }
 
-function FlowGraphOverview({nodes}:{nodes:StoryFlowNode[]}){
+function FlowGraphOverview({nodes,onChange,onLocate}:{nodes:StoryFlowNode[];onChange:(nodes:StoryFlowNode[])=>void;onLocate:(id:string)=>void}){
   const label=(node:StoryFlowNode)=>node.type==='branch'?node.title:(node.segment.section||node.segment.text.slice(0,18)||'空白節點')
   const kind=(node:StoryFlowNode)=>node.type==='branch'?'選擇':node.segment.presentation==='cg'?'CG':node.segment.presentation==='chapter'?'章節':node.segment.presentation==='battle'?'戰鬥':'劇情'
-  const Sequence=({items}:{items:StoryFlowNode[]}):React.ReactNode=><div className="story-graph-sequence">{items.map(node=><div className="story-graph-unit" key={node.id}><article className={`story-graph-node ${node.type}`}><small>{kind(node)}</small><b>{label(node)}</b>{node.type==='branch'&&<em>{node.branches.length} 條路線</em>}</article>{node.type==='branch'&&<div className="story-graph-branches">{node.branches.map(branch=><div className="story-graph-route" key={branch.id}><span>{branch.label}</span><Sequence items={branch.nodes}/></div>)}</div>}</div>)}</div>
-  return <details className="story-graph-overview" open><summary><span>FLOW MAP</span><b>章節流程圖</b><small>開場內容播放完畢後，才會進入選擇節點</small></summary><div className="story-graph-stage"><article className="story-graph-start"><small>START</small><b>章節開始</b></article><Sequence items={nodes}/></div></details>
+  const Sequence=({items,setItems}:{items:StoryFlowNode[];setItems:(items:StoryFlowNode[])=>void}):React.ReactNode=><div className="story-graph-sequence">{items.map(node=><div className="story-graph-unit" key={node.id}><article className={`story-graph-node ${node.type}`}><small>{kind(node)}</small>{node.type==='branch'?<input aria-label="選擇題目" value={node.title} onChange={event=>setItems(items.map(item=>item.id===node.id&&item.type==='branch'?{...item,title:event.target.value}:item))}/>:<><input aria-label="節點名稱" value={node.segment.section??''} placeholder={label(node)} onChange={event=>setItems(items.map(item=>item.id===node.id&&item.type==='common'?{...item,segment:{...item.segment,section:event.target.value}}:item))}/><textarea aria-label="節點文字" value={node.segment.text} onChange={event=>setItems(items.map(item=>item.id===node.id&&item.type==='common'?{...item,segment:{...item.segment,text:event.target.value}}:item))}/></>}<button onClick={()=>onLocate(node.id)}>定位編輯</button>{node.type==='branch'&&<em>{node.branches.length} 條路線</em>}</article>{node.type==='branch'&&<div className="story-graph-branches">{node.branches.map(branch=><div className="story-graph-route" key={branch.id}><input aria-label="路線名稱" value={branch.label} onChange={event=>setItems(items.map(item=>item.id===node.id&&item.type==='branch'?{...item,branches:item.branches.map(route=>route.id===branch.id?{...route,label:event.target.value}:route)}:item))}/><Sequence items={branch.nodes} setItems={routeNodes=>setItems(items.map(item=>item.id===node.id&&item.type==='branch'?{...item,branches:item.branches.map(route=>route.id===branch.id?{...route,nodes:routeNodes}:route)}:item))}/></div>)}</div>}</div>)}</div>
+  return <details className="story-graph-overview" open><summary><span>FLOW MAP</span><b>章節流程圖（可直接修改）</b><small>修改後會同步到下方卡片</small></summary><div className="story-graph-stage"><article className="story-graph-start"><small>START</small><b>章節開始</b></article><Sequence items={nodes} setItems={onChange}/></div></details>
 }
 
 function FlowLane({ nodes, onChange, boardCharacters, depth, label, laneId }: {
@@ -126,7 +132,7 @@ function FlowLane({ nodes, onChange, boardCharacters, depth, label, laneId }: {
       {nodes.map((node, index) => <div className="story-flow-card-wrap" key={node.id}>
         <div className="story-drop-zone" onDragOver={event => event.preventDefault()} onDrop={event => dropAt(event, index)}><span>放到這裡</span></div>
         {(depth===0||index > 0) && <span className="story-flow-arrow">→</span>}
-        <article className={`story-designer-card ${node.type}${collapsed.has(node.id)?' collapsed':''}`}>
+        <article data-editor-node-id={node.id} className={`story-designer-card ${node.type}${collapsed.has(node.id)?' collapsed':''}`}>
           <div className="story-card-top" draggable onDragStart={event => { setDragging(true); event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('application/x-story-node', JSON.stringify({ laneId, index })) }} onDragEnd={() => setDragging(false)}><i>{index + 1}</i><b>{node.type === 'common' ? `${node.segment.presentation==='narration'?'旁白':node.segment.presentation==='marquee'?'跑馬燈':node.segment.presentation==='chapter'?'章節':node.segment.presentation==='cg'?'CG':node.segment.presentation==='battle'?'戰鬥':'對話'}節點` : depth === 0 ? '共用選擇' : '選項分支'}</b>{collapsed.has(node.id)&&node.type==='common'&&<em>{node.segment.speaker}</em>}<span><button draggable={false} title={collapsed.has(node.id)?'展開':'收縮'} onMouseDown={event=>event.stopPropagation()} onClick={event=>{event.stopPropagation();toggleCollapsed(node.id)}}>{collapsed.has(node.id)?'▾':'▴'}</button><span className="story-drag-handle" title="拖曳標題列即可移動">☷</span>
             <button title="複製卡片" onClick={() => { const next = [...nodes]; next.splice(index + 1, 0, cloneNode(node)); onChange(next) }}>⧉</button><button disabled={index === 0} onClick={() => move(index, -1)}>←</button><button disabled={index === nodes.length - 1} onClick={() => move(index, 1)}>→</button><button className="delete" onClick={() => onChange(nodes.filter(item => item.id !== node.id))}>×</button>
           </span></div>
