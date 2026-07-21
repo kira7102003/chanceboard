@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import './Logistics.css'
 import { moves as defaultMoves, cards as allCards } from '../data/db'
-import { getChars, saveChars, resetChars, getCharImg, getUrlByKey, uploadByKey, removeByKey, onCloudSynced, onCloudSave, getMoveOverrides, saveMoveOverride, resetMoveOverride } from '../utils/charStore'
+import { getChars, saveChars, resetChars, getCharImg, getUrlByKey, uploadByKey, uploadBlobByKey, removeByKey, onCloudSynced, onCloudSave, getMoveOverrides, saveMoveOverride, resetMoveOverride } from '../utils/charStore'
 import { removePixelBackground } from '../utils/removePixelBackground'
 import { CARD_ICON } from '../data/cardIcons'
 import type { Character } from '../types/character'
@@ -1009,19 +1009,18 @@ function BgmLibrary({channel}:{channel:BgmChannel}){
   const update=(next:BgmConfig)=>{setConfig(next);saveBgmConfig(next,channel)}
   const upload=async(event:React.ChangeEvent<HTMLInputElement>)=>{
     const file=event.target.files?.[0];event.target.value='';if(!file)return
-    if(file.size>20*1024*1024){setError('音樂檔案不可超過 20 MB');return}
+    if(file.size>50*1024*1024){setError('音樂檔案不可超過 50 MB');return}
     setBusy(true);setError('')
     try{
       const id=`bgm_${Date.now()}`,storageKey=`cb_audio_${channel}_${id}`
-      const dataUrl=await new Promise<string>((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=()=>reject(reader.error);reader.readAsDataURL(file)})
-      await uploadByKey(storageKey,dataUrl)
+      await uploadBlobByKey(storageKey,file)
       const track={id,name:file.name.replace(/\.[^.]+$/,''),storageKey},tracks=[...config.tracks.filter(item=>getUrlByKey(item.storageKey)),track]
       update({...config,tracks,selectedId:config.tracks.some(item=>getUrlByKey(item.storageKey))?config.selectedId:id})
     }catch(reason){setError(reason instanceof Error?reason.message:'BGM 上傳失敗')}
     finally{setBusy(false)}
   }
   const tracks=config.tracks.filter(track=>getUrlByKey(track.storageKey))
-  return <div className="bgm-library-admin"><div className="bgm-library-toolbar"><div className="bgm-play-mode"><button className={config.mode==='selected'?'active':''} onClick={()=>update({...config,mode:'selected'})}>指定播放</button><button className={config.mode==='random'?'active':''} onClick={()=>update({...config,mode:'random'})}>隨機播放</button></div><label className="btn sm primary">{busy?'上傳中…':'＋ 新增音樂'}<input hidden disabled={busy} type="file" accept="audio/mpeg,audio/ogg,audio/wav,audio/mp4,.mp3,.ogg,.wav,.m4a" onChange={upload}/></label></div>{tracks.length?<div className="bgm-track-list">{tracks.map((track,index)=>{const active=config.selectedId===track.id;return <article className={active?'active':''} key={track.id}><div role="button" tabIndex={0} className="bgm-track-select" onClick={()=>update({...config,mode:'selected',selectedId:track.id})} onKeyDown={event=>{if(event.key==='Enter')update({...config,mode:'selected',selectedId:track.id})}}><i>{active&&config.mode==='selected'?'▶':String(index+1).padStart(2,'0')}</i><span><input aria-label="音樂名稱" value={track.name} onClick={event=>event.stopPropagation()} onChange={event=>update({...config,tracks:config.tracks.map(item=>item.id===track.id?{...item,name:event.target.value}:item)})}/><small>{active&&config.mode==='selected'?'目前指定播放':config.mode==='random'?'加入隨機曲庫':'點擊指定播放'}</small></span></div><audio controls preload="metadata" src={getUrlByKey(track.storageKey)!} data-audio-kind="music"/><button className="btn sm danger" disabled={busy} onClick={()=>{removeByKey(track.storageKey);const next=config.tracks.filter(item=>item.id!==track.id),selectedId=active?(next[0]?.id??''):config.selectedId;update({...config,tracks:next,selectedId})}}>移除</button></article>})}</div>:<div className="bgm-library-empty">尚未上傳 BGM，請新增第一首音樂。</div>}{error&&<small className="adm-error">{error}</small>}<p>指定播放會循環同一首；隨機播放會在歌曲結束後抽選下一首，且不會連續重複。支援 MP3、OGG、WAV、M4A，單檔最大 20 MB。</p></div>
+  return <div className="bgm-library-admin"><div className="bgm-library-toolbar"><div className="bgm-play-mode"><button className={config.mode==='selected'?'active':''} onClick={()=>update({...config,mode:'selected'})}>指定播放</button><button className={config.mode==='random'?'active':''} onClick={()=>update({...config,mode:'random'})}>隨機播放</button></div><label className="btn sm primary">{busy?'上傳中…':'＋ 新增音樂'}<input hidden disabled={busy} type="file" accept="audio/mpeg,audio/ogg,audio/wav,audio/mp4,.mp3,.ogg,.wav,.m4a" onChange={upload}/></label></div>{tracks.length?<div className="bgm-track-list">{tracks.map((track,index)=>{const active=config.selectedId===track.id;return <article className={active?'active':''} key={track.id}><div role="button" tabIndex={0} className="bgm-track-select" onClick={()=>update({...config,mode:'selected',selectedId:track.id})} onKeyDown={event=>{if(event.key==='Enter')update({...config,mode:'selected',selectedId:track.id})}}><i>{active&&config.mode==='selected'?'▶':String(index+1).padStart(2,'0')}</i><span><input aria-label="音樂名稱" value={track.name} onClick={event=>event.stopPropagation()} onChange={event=>update({...config,tracks:config.tracks.map(item=>item.id===track.id?{...item,name:event.target.value}:item)})}/><small>{active&&config.mode==='selected'?'目前指定播放':config.mode==='random'?'加入隨機曲庫':'點擊指定播放'}</small></span></div><audio controls preload="metadata" src={getUrlByKey(track.storageKey)!} data-audio-kind="music"/><button className="btn sm danger" disabled={busy} onClick={()=>{removeByKey(track.storageKey);const next=config.tracks.filter(item=>item.id!==track.id),selectedId=active?(next[0]?.id??''):config.selectedId;update({...config,tracks:next,selectedId})}}>移除</button></article>})}</div>:<div className="bgm-library-empty">尚未上傳 BGM，請新增第一首音樂。</div>}{error&&<small className="adm-error">{error}</small>}<p>指定播放會循環同一首；隨機播放會在歌曲結束後抽選下一首，且不會連續重複。支援 MP3、OGG、WAV、M4A，單檔最大 50 MB。</p></div>
 }
 
 function LogisticsSettings() {

@@ -38,7 +38,7 @@ export const handler = async (event) => {
       return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Invalid path' }) }
     }
     const isAudio = path.startsWith('audio/')
-    const maxSize = isAudio ? 20 * 1024 * 1024 : 8 * 1024 * 1024
+    const maxSize = isAudio ? 50 * 1024 * 1024 : 8 * 1024 * 1024
     if (typeof size !== 'number' || size < 1 || size > maxSize) {
       return { statusCode: 413, headers: CORS, body: JSON.stringify({ error: 'File too large' }) }
     }

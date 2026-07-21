@@ -131,6 +131,17 @@ export async function uploadByKey(storageKey: string, dataUrl: string): Promise<
   return versioned
 }
 
+/** Upload large binary assets without converting them to memory-heavy base64. */
+export async function uploadBlobByKey(storageKey: string, blob: Blob): Promise<string> {
+  const url = await uploadBlob(storagePath(storageKey), blob)
+  const versioned = `${url}?t=${Date.now()}`
+  localStorage.setItem(FLAG(storageKey), versioned)
+  localStorage.removeItem(storageKey)
+  _manifestKeys.add(storageKey)
+  pushManifest()
+  return versioned
+}
+
 export function removeByKey(storageKey: string): void {
   const hadFlag = !!localStorage.getItem(FLAG(storageKey))
   localStorage.removeItem(FLAG(storageKey))
