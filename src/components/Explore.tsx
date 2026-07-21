@@ -10,7 +10,7 @@ import './Explore.css'
 interface Props { onClose: () => void }
 const fmt = (seconds: number) => `${Math.max(0, Math.floor(seconds / 3600))}:${String(Math.max(0, Math.floor(seconds % 3600 / 60))).padStart(2, '0')}:${String(Math.max(0, Math.floor(seconds % 60))).padStart(2, '0')}`
 const MANUAL_MINING_DURATION_MS = 30_000
-function AutoMiningWorker({ charId, name, power, speed, finished }: { charId: string; name: string; power?: number; speed?: number; finished: boolean }) {
+function AutoMiningWorker({ charId, name, atk, spd, power, speed, finished }: { charId: string; name: string; atk: number; spd: number; power?: number; speed?: number; finished: boolean }) {
   const [face, setFace] = useState<'left' | 'right'>(() => Math.random() < .5 ? 'left' : 'right')
   const [action,setAction]=useState<'walk'|'mining'>('mining'),[position,setPosition]=useState({x:0,y:0})
   useEffect(() => {
@@ -24,7 +24,10 @@ function AutoMiningWorker({ charId, name, power, speed, finished }: { charId: st
     },delay)
     return()=>window.clearTimeout(timer)
   },[action,charId,finished,position.x])
-  return <div className={`mining-worker auto-mining ${action==='walk'&&!finished?'walking':'digging'} ${finished?'finished':''}`} style={{transform:`translate(${position.x}px,${position.y}px)`}}><PixelCharacterActor charId={charId} pose="side" action={finished?'idle':action} face={face}/><label>{name}<small>力度 {power?.toFixed(1)} · 速度 +{speed?.toFixed(0)}%</small></label></div>
+  return <div className={`mining-worker auto-mining ${action==='walk'&&!finished?'walking':'digging'} ${finished?'finished':''}`} style={{transform:`translate(${position.x}px,${position.y}px)`}}>
+    <div className="mining-worker-hud"><span><b>{name}</b><em>{finished?'可領取':action==='walk'?'移動中':'挖掘中'}</em></span><strong>ATK {atk} <i/> SPD {spd}</strong><small>⛏ 力度 {power?.toFixed(1)} · 掘速 +{speed?.toFixed(0)}%</small></div>
+    <PixelCharacterActor charId={charId} pose="side" action={finished?'idle':action} face={face}/>
+  </div>
 }
 
 export default function Explore({ onClose }: Props) {
@@ -94,9 +97,9 @@ export default function Explore({ onClose }: Props) {
       const manualLocked=entryMode==='manual'&&!!state.job
       return <div role="button" tabIndex={entryMode==='manual'&&!manualLocked?0:-1} aria-disabled={manualLocked} aria-label={`${manualLocked?'自動挖掘中的': '進入'}${state.name}`} className={`mining-node mining-node-${index+1} mode-${entryMode} ${manualLocked?'manual-locked':''} ${state.percent<40?'cracked':''}`} style={{left:`${state.x}%`,top:`${state.y}%`}} key={state.id} onClick={event=>{if(entryMode==='manual'&&!manualLocked&&!(event.target as HTMLElement).closest('button'))enterManual(index)}} onKeyDown={event=>{if(entryMode==='manual'&&!manualLocked&&event.key==='Enter')enterManual(index)}}>
         <div className="mining-hp"><b>{state.name}</b><span>{Math.ceil(state.hp).toLocaleString()} / {state.maxHp.toLocaleString()}</span><i><em style={{width:`${state.percent}%`}}/></i><small>{entryMode==='manual'?(state.job?(state.finished?'請先領取自動挖掘獎勵':'自動挖掘中，暫停手動進場'):'點擊礦坑進入手動'):'選角後開始自動挖掘'} · 今日 {state.uses}/3</small></div>
-        {state.char&&<AutoMiningWorker charId={state.char.id} name={state.char.name} power={state.stats?.power} speed={state.stats?.speed} finished={state.finished}/>}
+        {state.char&&<AutoMiningWorker charId={state.char.id} name={state.char.name} atk={state.char.atk} spd={state.char.spd} power={state.stats?.power} speed={state.stats?.speed} finished={state.finished}/>}
         <div className="mining-node-action">{state.job?(state.finished?<button className="ready" onClick={()=>claimNode(state.id)}>領取</button>:<><span>{fmt((state.job.endsAt-now)/1000)}</span><button onClick={()=>cancelNode(state.id)}>取消</button></>):entryMode==='manual'?<button onClick={()=>enterManual(index)}>進入手動</button>:<button disabled={state.uses>=3} onClick={()=>startNode(state.id)}>開始自動</button>}</div>
       </div>
-    })}</section><aside className="mining-side"><div className="mining-mode-switch"><button className={entryMode==='manual'?'active':''} onClick={()=>{setEntryMode('manual');setSelected([]);setMessage('')}}>手動挖礦</button><button className={entryMode==='auto'?'active':''} onClick={()=>{setEntryMode('auto');setSelected([]);setMessage('')}}>自動挖掘</button></div><h2>{entryMode==='manual'?'選擇一位進場角色':'選擇一位派遣角色'}</h2><p>{entryMode==='manual'?'選好角色後，點礦坑進場。':'選好角色後，按礦坑下方「開始自動」。'}</p><div className="mining-roster">{available.map(char=>{const bound=nodeState.find(node=>node.char?.id===char.id);return <button disabled={!!bound} className={selected.includes(char.id)?'selected':''} onClick={()=>setSelected(ids=>ids.includes(char.id)?[]:[char.id])} key={char.id}>{getCharImg(char.id)&&<img src={getCharImg(char.id)!} alt=""/>}<span>{char.name}<small>{bound?`綁定：${bound.name}`:`ATK ${char.atk} · SPD ${char.spd}`}</small></span></button>})}</div>{message&&<output>{message}</output>}</aside></main>
+    })}</section><aside className="mining-side"><div className="mining-mode-switch"><button className={entryMode==='manual'?'active':''} onClick={()=>{setEntryMode('manual');setSelected([]);setMessage('')}}>手動挖礦</button><button className={entryMode==='auto'?'active':''} onClick={()=>{setEntryMode('auto');setSelected([]);setMessage('')}}>自動挖掘</button></div><div className="mining-assignment-title"><span>{entryMode==='manual'?'進場編成':'派遣編成'}</span><b>{selected.length}/1</b></div><h2>{entryMode==='manual'?'選擇一位進場角色':'選擇一位派遣角色'}</h2><p>{entryMode==='manual'?'選好角色後，點擊要挑戰的礦坑。':'選好角色後，在礦坑下方開始自動挖掘。'}</p><div className="mining-roster">{available.map(char=>{const bound=nodeState.find(node=>node.char?.id===char.id),chosen=selected.includes(char.id);return <button disabled={!!bound} className={`${chosen?'selected':''} ${bound?'bound':''}`} onClick={()=>setSelected(ids=>ids.includes(char.id)?[]:[char.id])} key={char.id}><span className="mining-roster-art">{getCharImg(char.id)&&<img src={getCharImg(char.id)!} alt=""/>}</span><span className="mining-roster-info"><b>{char.name}</b><small>ATK {char.atk}<i/>SPD {char.spd}</small><em>{bound?`派遣中 · ${bound.name}`:chosen?'已選擇，等待進場':'可派遣'}</em></span><strong>{bound?'執行中':chosen?'✓':'選擇'}</strong></button>})}</div>{message&&<output>{message}</output>}</aside></main>
   </div>
 }
