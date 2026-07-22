@@ -6,7 +6,9 @@ export function useStoryEditorController(){
   const[chapters,setChapters]=useState(getStoryChapters)
   useEffect(()=>subscribeStoryChapters(setChapters),[])
   const updateChapter=useCallback((index:number,patch:Partial<StoryChapter>)=>{
-    setChapters(current=>{const next=current.map((chapter,i)=>i===index?{...chapter,...patch}:chapter);saveStoryChapters(next);return next})
+    const current=getStoryChapters(),next=current.map((chapter,i)=>i===index?{...chapter,...patch}:chapter)
+    setChapters(next)
+    saveStoryChapters(next)
   },[])
   return{chapters,updateChapter}
 }
