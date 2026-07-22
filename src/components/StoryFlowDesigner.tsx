@@ -45,10 +45,11 @@ const editFlowLink=(nodes:StoryFlowNode[],sourceId:string,linkId:string,patch:{l
   }
   return node.type==='branch'?{...node,branches:node.branches.map(route=>({...route,nodes:editFlowLink(route.nodes,sourceId,linkId,patch,remove)}))}:node
 })
+const dedupeFlowLinks=(nodes:StoryFlowNode[]):StoryFlowNode[]=>nodes.map(node=>{if(node.type==='branch')return{...node,branches:node.branches.map(route=>({...route,nodes:dedupeFlowLinks(route.nodes)}))};const seen=new Set<string>(),links=(node.nextLinks??[]).filter(link=>!seen.has(link.targetId)&&!!seen.add(link.targetId));return{...node,nextLinks:links,nextNodeId:links[0]?.targetId??node.nextNodeId}})
 const addAutomaticFlowLinks=(nodes:StoryFlowNode[]):StoryFlowNode[]=>nodes.map((node,index)=>node.type==='branch'?{...node,branches:node.branches.map(route=>({...route,nodes:addAutomaticFlowLinks(route.nodes)}))}:node.nextLinkMode==='manual'?node:{...node,nextNodeId:nodes[index+1]?.id,nextLinkMode:'auto'})
 
 export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, onChapterChange, onClose }: Props) {
-  const [flow, setFlow] = useState(() => addAutomaticFlowLinks(getChapterFlow(chapter)))
+  const [flow, setFlow] = useState(() => addAutomaticFlowLinks(dedupeFlowLinks(getChapterFlow(chapter))))
   const [rewards, setRewards] = useState<StoryRewards>(chapter.rewards ?? {})
   const [previewWindow, setPreviewWindow] = useState<Window | null>(null)
   const [previewStartId,setPreviewStartId]=useState<string|undefined>(undefined)
@@ -58,6 +59,7 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
   const scrollKey = `cb_story_designer_scroll_v2_${chapter.id}`
   const previewStartNode=findPreviewNode(flow,previewStartId)
   const change = (next: StoryFlowNode[]) => { const linked=addAutomaticFlowLinks(next);setFlow(linked);onSave(linked,rewards) }
+  useEffect(()=>{const valid=new Set(['__route_picker__','__world_map__','__map_chapter__','__chapter_card__',...flattenFlowNodes(flow).map(node=>node.id)]),seenGraph=new Set<string>(),graph=(chapter.flowGraphLinks??[]).filter(link=>valid.has(link.sourceId)&&valid.has(link.targetId)&&!seenGraph.has(`${link.sourceId}>${link.targetId}`)&&!!seenGraph.add(`${link.sourceId}>${link.targetId}`)),seenCard=new Set<string>(),card=(chapter.chapterCardNextLinks??[]).filter(link=>valid.has(link.targetId)&&!seenCard.has(link.targetId)&&!!seenCard.add(link.targetId));if(graph.length!==(chapter.flowGraphLinks?.length??0)||card.length!==(chapter.chapterCardNextLinks?.length??0))onChapterChange({flowGraphLinks:graph,chapterCardNextLinks:card,chapterCardNextNodeId:card[0]?.targetId})},[chapter.id])
   useEffect(()=>{if(JSON.stringify(flow)!==JSON.stringify(getChapterFlow(chapter)))onSave(flow,rewards)},[])
   const revealNode = (id:string) => {setPreviewStartId(id);requestAnimationFrame(()=>requestAnimationFrame(()=>{
     const target=canvasRef.current?.querySelector<HTMLElement>(`[data-editor-node-id="${CSS.escape(id)}"]`)
