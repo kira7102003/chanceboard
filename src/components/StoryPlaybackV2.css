@@ -18,3 +18,4 @@
 .story-route-cover.empty{display:grid;place-items:center;background:linear-gradient(145deg,#171c2a,#080b14)}.story-route-cover.empty>strong{color:#7d879e;font-size:15px}.story-route-cover.empty:hover>strong{color:#d8bd72}
 .story-route-picker>section{display:flex;flex-direction:column;height:min(94vh,900px);max-height:none;overflow:hidden}.story-route-picker-grid{flex:1;min-height:0}.story-route-cover{min-height:0;height:100%}
 .story-v2-tools{grid-template-columns:minmax(160px,1fr) auto}.story-v2-tools>span{padding-left:8px;color:#eef1f7;font-weight:800}.story-v2-tools .story-v2-leave{margin-left:5px;border-color:#68728c;background:#121725;color:#fff}
+.story-v2-chapter em{margin-top:18px;color:#9ba4b9;font-size:13px;font-style:normal;font-weight:500;letter-spacing:1px}.story-v2-chapter strong{padding-bottom:22px;border-bottom:1px solid #b78e334d}

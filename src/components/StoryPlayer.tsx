@@ -35,7 +35,7 @@ export default function StoryPlayer({chapter,initialNodes,onLeave,onComplete,onB
   {(node?.type==='branch'||!['narration','marquee','chapter','cg','battle'].includes(type))&&<>{boardPortrait('left')}{boardPortrait('right')}</>}
   {node?.type==='branch'?<section className="story-v2-choice"><small>PLAYER CHOICE</small><h2>{node.title}</h2>{node.branches.map(branch=><button key={branch.id} onClick={()=>choose(branch)}>{branch.label}</button>)}</section>:node? <>
    {type==='marquee'&&<button className={`story-v2-marquee dir-${segment?.textDirection??'ltr'}`} onClick={advance}>{marqueeParts.slice(0,shown).map((part,index)=><span key={index}>{part}</span>)}</button>}
-   {type==='chapter'&&<button className="story-v2-chapter" onClick={advance}><small>{segment?.section??`CHAPTER ${chapter.order}`}</small><strong>{text.slice(0,shown)}</strong></button>}
+   {type==='chapter'&&<button className="story-v2-chapter" onClick={advance}><small>{segment?.section??`CHAPTER ${chapter.order}`}</small><strong>{text.slice(0,shown)}</strong><em>{segment?.chapterPrompt??'點擊任意位置開始 ◆'}</em></button>}
    {type==='narration'&&<button className="story-v2-narration" onClick={advance}>{text.slice(0,shown)}</button>}
    {type==='cg'&&<button className="story-v2-cg-caption" onClick={advance}>{text.slice(0,shown)}</button>}
    {type==='battle'&&<section className="story-v2-battle"><small>BATTLE</small><h2>{segment?.section??'即將進入戰鬥'}</h2><p>{text}</p><button onClick={enterBattle}>確認並進入戰鬥</button></section>}

@@ -1122,6 +1122,10 @@ function StorySettings() {
           <div className="adm-field-grid">
             <Field label="章節標題" value={chapter.title} onChange={value => update(index, { title: value })} />
             <Field label="章節副標" value={chapter.subtitle} onChange={value => update(index, { subtitle: value })} />
+            <label className="adm-field"><span>顯示開場章節卡</span><input type="checkbox" checked={chapter.chapterCardEnabled!==false} onChange={event => update(index, { chapterCardEnabled: event.target.checked })} /></label>
+            <Field label="章節卡上方標籤" value={chapter.chapterCardEyebrow??'CHAPTER'} onChange={value => update(index, { chapterCardEyebrow: value })} />
+            <Field label="章節卡大標題" value={chapter.chapterCardTitle??`第${chapter.order}章　${chapter.piece}`} onChange={value => update(index, { chapterCardTitle: value })} />
+            <Field label="章節卡點擊提示" value={chapter.chapterCardPrompt??'點擊任意位置開始 ◆'} onChange={value => update(index, { chapterCardPrompt: value })} />
             <label className="adm-field"><span>開放章節</span><input type="checkbox" checked={chapter.unlocked} onChange={event => update(index, { unlocked: event.target.checked })} /></label>
             <label className="adm-field"><span>故事背景</span><select className="adm-select" value={chapter.backgroundKey ?? ''} onChange={event => update(index, { backgroundKey: event.target.value || undefined })}>
               <option value="">章節專用地圖圖片</option>

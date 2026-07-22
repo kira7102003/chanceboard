@@ -23,6 +23,7 @@ export interface StorySegment {
   portraitActiveScale?: number
   portraitInactiveScale?: number
   portraitInactiveOpacity?: number
+  chapterPrompt?: string
 }
 
 export type StoryFlowNode =
@@ -44,6 +45,10 @@ export interface StoryChapter {
   segments?: StorySegment[]
   flow?: StoryFlowNode[]
   backgroundKey?: string
+  chapterCardEnabled?: boolean
+  chapterCardEyebrow?: string
+  chapterCardTitle?: string
+  chapterCardPrompt?: string
   rewards?: StoryRewards
   mapX?: number
   mapY?: number
