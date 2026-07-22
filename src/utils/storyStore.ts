@@ -52,6 +52,8 @@ export interface StoryChapter {
   chapterCardTitle?: string
   chapterCardPrompt?: string
   chapterCardEffect?: 'fade' | 'writing' | 'reading'
+  chapterCardEditorX?: number
+  chapterCardEditorY?: number
   rewards?: StoryRewards
   mapX?: number
   mapY?: number
