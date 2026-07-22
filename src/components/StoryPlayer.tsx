@@ -4,10 +4,10 @@ import {getCharImg,getChars,getUrlByKey} from '../utils/charStore'
 import {describeStoryRewards,type StoryChapter,type StoryFlowNode} from '../utils/storyStore'
 import './StoryPlaybackV2.css'
 
-interface Props{chapter:StoryChapter;initialNodes:StoryFlowNode[];onLeave:()=>void;onComplete?: (chapter:StoryChapter)=>void;onBattle?:()=>void;preview?:boolean}
+interface Props{chapter:StoryChapter;initialNodes:StoryFlowNode[];onLeave:()=>void;onComplete?: (chapter:StoryChapter)=>void;onBattle?:()=>void;preview?:boolean;entryRoute?:{id:string;total:number}}
 const pieceId=(value?:string)=>value?.startsWith('piece:')?value.slice(6):null
 
-export default function StoryPlayer({chapter,initialNodes,onLeave,onComplete,onBattle,preview=false}:Props){
+export default function StoryPlayer({chapter,initialNodes,onLeave,onComplete,onBattle,preview=false,entryRoute}:Props){
  const routeKey=`${preview?'cb_story_preview_route':'cb_story_route'}_${chapter.id}`
  const[nodes,setNodes]=useState(initialNodes),[cursor,setCursor]=useState(0),[shown,setShown]=useState(0),[auto,setAuto]=useState(false),[speed,setSpeed]=useState<1|2>(1),[historyOpen,setHistoryOpen]=useState(false),[routeOpen,setRouteOpen]=useState(false),[history,setHistory]=useState<{speaker:string;text:string}[]>([]),[route,setRoute]=useState<{branchId:string;title:string;routeId:string;label:string}[]>(()=>{try{return JSON.parse(localStorage.getItem(routeKey)??'[]')}catch{return[]}})
  const node=nodes[cursor],segment=node?.type==='common'?node.segment:undefined,type=segment?.presentation??'dialogue',text=segment?.text??'',marqueeParts=useMemo(()=>text.split(/\n\s*\n/).filter(Boolean),[text])
@@ -18,6 +18,7 @@ export default function StoryPlayer({chapter,initialNodes,onLeave,onComplete,onB
  const avatar=speakerChar?(getCharImg(speakerChar.id)??getUrlByKey(`cb_head_img_${speakerChar.id}`)):getUrlByKey(`cb_board_${segment?.boardCharacter??leftId}_front`)
  const background=getUrlByKey(chapter.backgroundKey||`cb_story_map_${chapter.id}`)??'',cg=segment?.cgKey?(getUrlByKey(segment.cgKey)??segment.cgKey):''
  useEffect(()=>{setShown(0)},[cursor,text])
+ useEffect(()=>{if(preview||!entryRoute)return;const key=`cb_story_route_progress_${chapter.id}_${entryRoute.id}`,done=Math.min(entryRoute.total,cursor);if(done>Number(localStorage.getItem(key)||0))localStorage.setItem(key,String(done))},[chapter.id,cursor,entryRoute,preview])
  useEffect(()=>{if(!text||complete)return;const delay=type==='marquee'?Math.max(650,1500/speed):type==='dialogue'?Math.max(320,720/speed):Math.max(12,32/speed);const timer=window.setInterval(()=>setShown(value=>Math.min(revealMaximum,value+1)),delay);return()=>clearInterval(timer)},[text,type,revealMaximum,complete,speed])
  useEffect(()=>{if(!auto||!node||node.type==='branch'||type==='battle'||!complete)return;const timer=window.setTimeout(()=>advance(),Math.max(380,1100/speed));return()=>clearTimeout(timer)})
  const addHistory=()=>{if(text&&!history.some((item,index)=>index===history.length-1&&item.text===text))setHistory(items=>[...items,{speaker:type==='narration'?'旁白':speaker,text}])}
