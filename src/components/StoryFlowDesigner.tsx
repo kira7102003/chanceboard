@@ -4,8 +4,8 @@ import './StoryFlowDesigner.css'
 import './StoryPlaybackV2.css'
 import { getCharImg, getChars, getUrlByKey, uploadByKey } from '../utils/charStore'
 import type { BoardCharacter } from '../utils/boardCharacters'
-import { getChapterFlow, getStoryChapters, type StoryChapter, type StoryFlowNode, type StoryRewards, type StorySegment } from '../utils/storyStore'
-import StoryMode from './StoryMode'
+import { getChapterFlow, type StoryChapter, type StoryFlowNode, type StoryRewards, type StorySegment } from '../utils/storyStore'
+import StoryPlayer from './StoryPlayer'
 
 interface Props {
   chapter: StoryChapter
@@ -31,22 +31,24 @@ const cloneNode = (node: StoryFlowNode): StoryFlowNode => node.type === 'common'
   ? { ...node, id: uid('node'), segment: { ...node.segment, id: uid('segment') } }
   : { ...node, id: uid('branch'), branches: node.branches.map(branch => ({ ...branch, id: uid('route'), nodes: branch.nodes.map(cloneNode) })) }
 const pieceIdFromRef = (value?: string) => value?.startsWith('piece:') ? value.slice(6) : null
+const previewFromNode=(nodes:StoryFlowNode[],id?:string):StoryFlowNode[]|null=>{if(!id)return nodes;const index=nodes.findIndex(node=>node.id===id);if(index>=0)return nodes.slice(index);for(const node of nodes)if(node.type==='branch')for(const route of node.branches){const found=previewFromNode(route.nodes,id);if(found)return found}return null}
 
 export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, onClose }: Props) {
   const [flow, setFlow] = useState(() => getChapterFlow(chapter))
   const [rewards, setRewards] = useState<StoryRewards>(chapter.rewards ?? {})
   const [previewWindow, setPreviewWindow] = useState<Window | null>(null)
   const [saved, setSaved] = useState(false)
+  const [previewStartId,setPreviewStartId]=useState<string|undefined>(()=>flow[0]?.id)
   const [mapOpen,setMapOpen]=useState(true)
   const [detailsVisible,setDetailsVisible]=useState(true)
   const canvasRef = useRef<HTMLElement>(null)
   const scrollKey = `cb_story_designer_scroll_v2_${chapter.id}`
   const change = (next: StoryFlowNode[]) => { setFlow(next); onSave(next, rewards); setSaved(false) }
-  const revealNode = (id:string) => requestAnimationFrame(()=>requestAnimationFrame(()=>{
+  const revealNode = (id:string) => {setPreviewStartId(id);requestAnimationFrame(()=>requestAnimationFrame(()=>{
     const target=canvasRef.current?.querySelector<HTMLElement>(`[data-editor-node-id="${CSS.escape(id)}"]`)
     target?.scrollIntoView({behavior:'smooth',block:'center',inline:'center'})
     target?.classList.add('just-added');window.setTimeout(()=>target?.classList.remove('just-added'),1800)
-  }))
+  }))}
   const append = (node:StoryFlowNode) => { change([...flow,node]); revealNode(node.id) }
   const returnToMap=()=>{const canvas=canvasRef.current,map=canvas?.querySelector<HTMLElement>('.story-graph-overview');if(canvas&&map){setMapOpen(true);requestAnimationFrame(()=>{canvas.scrollTo({top:Math.max(0,map.offsetTop-12),left:0,behavior:'smooth'})})}}
   const save = () => { onSave(flow, rewards); setSaved(true) }
@@ -92,13 +94,13 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
       <button className="reward" onClick={() => document.querySelector('.story-reward-node')?.scrollIntoView({ behavior: 'smooth', inline: 'center' })}><i>★</i><span>故事獎勵</span></button>
       {boardCharacters.map((character, index) => { const showIcon = index < 2; const image = showIcon ? getUrlByKey(`cb_board_${character.id}_front`) : null; return <button key={character.id} onClick={() => append(makeCommon(character))}><i>{image ? <img src={image} alt="" /> : showIcon ? character.name.slice(0, 1) : null}</i><span>{character.name}</span></button> })}
     </nav>
-    <main className="story-designer-canvas" ref={canvasRef}>
+    <main className="story-designer-canvas" ref={canvasRef} onClick={event=>{const card=(event.target as HTMLElement).closest<HTMLElement>('[data-editor-node-id]');if(!card)return;setPreviewStartId(card.dataset.editorNodeId);canvasRef.current?.querySelectorAll('.preview-selected').forEach(item=>item.classList.remove('preview-selected'));card.classList.add('preview-selected')}}>
       <FlowGraphOverview nodes={flow} onChange={change} onLocate={revealNode} open={mapOpen} onOpenChange={setMapOpen}/>
       {detailsVisible&&<><FlowLane nodes={flow} onChange={change} boardCharacters={boardCharacters} depth={0} label="章節開始" laneId="root" /><RewardCard rewards={rewards} onChange={next => { setRewards(next); setSaved(false) }} /></>}
       {!flow.length && <div className="story-designer-empty">尚無節點，請從右上角新增第一段對話。</div>}
     </main>
     <aside className="story-designer-anchor-tools"><button onClick={returnToMap}>↑ 回流程圖</button><button onClick={()=>setMapOpen(value=>!value)}>{mapOpen?'收縮 MAP':'展開 MAP'}</button><button onClick={()=>setDetailsVisible(value=>!value)}>{detailsVisible?'隱藏細節':'顯示細節'}</button></aside>
-    {previewWindow && !previewWindow.closed && createPortal(<StoryMode onClose={()=>previewWindow.close()} preview previewChapters={getStoryChapters().map(item=>item.id===chapter.id?{...chapter,flow,rewards}:item)}/>, previewWindow.document.body)}
+    {previewWindow && !previewWindow.closed && createPortal(<StoryPlayer key={previewStartId??'start'} chapter={{...chapter,rewards}} initialNodes={previewFromNode(flow,previewStartId)??flow} onLeave={()=>previewWindow.close()} preview />, previewWindow.document.body)}
   </div>
 }
 
