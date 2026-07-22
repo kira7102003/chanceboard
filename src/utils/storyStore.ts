@@ -36,6 +36,7 @@ export interface StoryChoicePortrait { id: string; character?: string; side: 'le
 
 export interface StoryFlowBranch { id: string; label: string; nodes: StoryFlowNode[]; coverKey?: string; description?: string; progressText?: string }
 export interface StoryNodeLink { id:string; targetId:string; label:string }
+export interface StoryGraphLink extends StoryNodeLink { sourceId:string }
 
 export interface StoryChapter {
   id: StoryChapterId
@@ -58,6 +59,7 @@ export interface StoryChapter {
   chapterCardNextNodeId?: string
   chapterCardNextLinks?: StoryNodeLink[]
   flowNodePositions?: Record<string,{x:number;y:number}>
+  flowGraphLinks?: StoryGraphLink[]
   rewards?: StoryRewards
   mapX?: number
   mapY?: number
