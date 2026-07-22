@@ -24,6 +24,10 @@ const makePresentation = (presentation: NonNullable<StorySegment['presentation']
 const makeBranch = (): StoryFlowNode => ({ id: uid('branch'), type: 'branch', title: '新選項', branches: [
   { id: uid('route'), label: '選項 A', nodes: [] }, { id: uid('route'), label: '選項 B', nodes: [] },
 ] })
+const makeRouteSelect = (): StoryFlowNode => ({ id: uid('route_select'), type: 'branch', title: '選擇路線', chapterRouteSelect: true, routeSelectSubtitle: '選擇一條路線開始故事。', branches: [
+  { id: uid('route'), label: '路線 A', nodes: [], description: '第一條故事路線', progressText: '尚未開始' },
+  { id: uid('route'), label: '路線 B', nodes: [], description: '第二條故事路線', progressText: '尚未開始' },
+] })
 const cloneNode = (node: StoryFlowNode): StoryFlowNode => node.type === 'common'
   ? { ...node, id: uid('node'), segment: { ...node.segment, id: uid('segment') } }
   : { ...node, id: uid('branch'), branches: node.branches.map(branch => ({ ...branch, id: uid('route'), nodes: branch.nodes.map(cloneNode) })) }
@@ -82,7 +86,7 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
     <header className="story-designer-head">
       <div><button onClick={onClose}>← 返回章節設定</button><span className="story-designer-dot" /><b>{chapter.piece}　{chapter.title}｜故事流程</b></div>
       <div className="story-designer-legend"><i className="dialogue" />對話<i className="choice" />選項<i className="route" />分支</div>
-      <div className="story-add-toolbar"><button onClick={openPreview}>↗ 開新視窗預覽</button><button onClick={() => append(makeCommon(boardCharacters[0]))}>＋ 對話</button><button onClick={() => append(makeBranch())}>＋ 分支</button><button onClick={() => append(makePresentation('narration'))}>＋ 旁白</button><button onClick={() => append(makePresentation('marquee'))}>＋ 跑馬燈</button><button onClick={() => append(makePresentation('chapter'))}>＋ 章節</button><button onClick={() => append(makePresentation('cg'))}>＋ CG</button><button onClick={() => append(makePresentation('battle'))}>＋ 戰鬥</button><button className="primary" onClick={save}>{saved ? '✓ 已儲存' : '儲存'}</button></div>
+      <div className="story-add-toolbar"><button onClick={openPreview}>↗ 開新視窗預覽</button><button className="route-entry" onClick={() => append(makeRouteSelect())}>＋ 路線入口</button><button onClick={() => append(makeCommon(boardCharacters[0]))}>＋ 對話</button><button onClick={() => append(makeBranch())}>＋ 分支</button><button onClick={() => append(makePresentation('narration'))}>＋ 旁白</button><button onClick={() => append(makePresentation('marquee'))}>＋ 跑馬燈</button><button onClick={() => append(makePresentation('chapter'))}>＋ 章節</button><button onClick={() => append(makePresentation('cg'))}>＋ CG</button><button onClick={() => append(makePresentation('battle'))}>＋ 戰鬥</button><button className="primary" onClick={save}>{saved ? '✓ 已儲存' : '儲存'}</button></div>
     </header>
     <div className="story-designer-sub">以卡片編排章節。實線代表順序，彩色路線代表玩家選項；每條分支都能繼續加入對話或下一層選項。</div>
     <nav className="story-designer-palette">
@@ -90,6 +94,7 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
       {boardCharacters.map((character, index) => { const showIcon = index < 2; const image = showIcon ? getUrlByKey(`cb_board_${character.id}_front`) : null; return <button key={character.id} onClick={() => append(makeCommon(character))}><i>{image ? <img src={image} alt="" /> : showIcon ? character.name.slice(0, 1) : null}</i><span>{character.name}</span></button> })}
     </nav>
     <main className="story-designer-canvas" ref={canvasRef}>
+      <ChapterRouteSettings nodes={flow} onChange={change}/>
       <FlowGraphOverview nodes={flow} onChange={change} onLocate={revealNode} />
       <FlowLane nodes={flow} onChange={change} boardCharacters={boardCharacters} depth={0} label="章節開始" laneId="root" />
       <RewardCard rewards={rewards} onChange={next => { setRewards(next); setSaved(false) }} />
@@ -97,6 +102,15 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
     </main>
     {previewWindow && !previewWindow.closed && createPortal(previewRoute?<StoryRoutePicker chapter={chapter} node={previewRoute} onBack={()=>previewWindow.close()} onChoose={route=>{setPreviewNodes((previewNodes??flow).flatMap(node=>node.id===previewRoute.id?route.nodes:[node]));setPreviewRoute(null)}}/>:<StoryPlayer chapter={chapter} initialNodes={previewNodes??flow} onLeave={() => previewWindow.close()} preview />, previewWindow.document.body)}
   </div>
+}
+
+function ChapterRouteSettings({nodes,onChange}:{nodes:StoryFlowNode[];onChange:(nodes:StoryFlowNode[])=>void}){
+ const index=nodes.findIndex(node=>node.type==='branch'&&node.chapterRouteSelect)
+ if(index<0)return <section className="story-route-mode-empty"><b>章節入口畫面</b><p>目前沒有設定。按上方「＋ 路線入口」即可建立雙圖片路線選擇模式。</p></section>
+ const node=nodes[index] as Extract<StoryFlowNode,{type:'branch'}>
+ const patch=(value:Partial<typeof node>)=>onChange(nodes.map((item,i)=>i===index?{...node,...value}:item))
+ const patchRoute=(id:string,value:Partial<(typeof node.branches)[number]>)=>patch({branches:node.branches.map(route=>route.id===id?{...route,...value}:route)})
+ return <section className="story-route-mode-settings"><header><div><small>CHAPTER ENTRY MODE</small><b>章節入口・雙圖片路線選擇</b></div><label>畫面標題<input value={node.title} onChange={event=>patch({title:event.target.value})}/></label><label>說明<input value={node.routeSelectSubtitle??''} onChange={event=>patch({routeSelectSubtitle:event.target.value})}/></label></header><div>{node.branches.map(route=><article key={route.id}><RouteCoverUpload storageKey={route.coverKey||`cb_story_route_${route.id}`} onChange={coverKey=>patchRoute(route.id,{coverKey})}/><label>路線名稱<input value={route.label} onChange={event=>patchRoute(route.id,{label:event.target.value})}/></label><label>路線說明<input value={route.description??''} onChange={event=>patchRoute(route.id,{description:event.target.value})}/></label><label>進度文字<input value={route.progressText??''} onChange={event=>patchRoute(route.id,{progressText:event.target.value})}/></label></article>)}</div></section>
 }
 
 function FlowGraphOverview({nodes,onChange,onLocate}:{nodes:StoryFlowNode[];onChange:(nodes:StoryFlowNode[])=>void;onLocate:(id:string)=>void}){
