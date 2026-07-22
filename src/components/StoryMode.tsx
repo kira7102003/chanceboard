@@ -24,6 +24,7 @@ export default function StoryMode({onClose,onComplete,onBattle,preview=false,pre
  const[entryRoute,setEntryRoute]=useState<{id:string;total:number}|undefined>()
  const[selectedId,setSelectedId]=useState(()=>chapters.findLast(item=>item.unlocked)?.id??chapters[0]?.id)
  const player=usePlayerStore()
+ useEffect(()=>{if(!resume&&!routeChoice&&!chapter&&entryPicker)setShowEntryPicker(true)},[chapter,entryPicker,resume,routeChoice])
  useEffect(()=>{if(!newUnlock)return;localStorage.setItem('cb_story_seen_unlock',newUnlock);const timer=window.setTimeout(()=>setNewUnlock(null),4200);return()=>window.clearTimeout(timer)},[newUnlock])
  const leaveChapter=()=>{setChapter(null);setNodes([])}
  const completeChapter=(cleared:StoryChapter)=>{if(preview){leaveChapter();return}const next=unlockNextStoryChapter(cleared.id);setChapters(next);const following=next[cleared.order];if(following?.unlocked){setSelectedId(following.id);setNewUnlock(following.id)}onComplete?.(cleared)}
