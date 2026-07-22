@@ -1122,6 +1122,12 @@ function StorySettings() {
           <div className="adm-field-grid">
             <Field label="章節標題" value={chapter.title} onChange={value => update(index, { title: value })} />
             <Field label="章節副標" value={chapter.subtitle} onChange={value => update(index, { subtitle: value })} />
+            <Field label="地圖節點章節標籤" value={chapter.mapNodeLabel??`第 ${chapter.order} 章`} onChange={value => update(index, { mapNodeLabel: value })} />
+            <Field label="地圖節點短標題" value={chapter.mapNodeTitle??chapter.title} onChange={value => update(index, { mapNodeTitle: value })} />
+            <Field label="地圖節點棋子符號" value={chapter.mapNodeSymbol??chapter.piece} onChange={value => update(index, { mapNodeSymbol: value })} />
+            <label className="adm-field"><span>地圖位置 X%</span><input type="number" min="0" max="100" value={chapter.mapX??[9.5,28.5,45.5,62.5,80.5,93][index]} onChange={event=>update(index,{mapX:Math.max(0,Math.min(100,Number(event.target.value)))})}/></label>
+            <label className="adm-field"><span>地圖位置 Y%</span><input type="number" min="0" max="100" value={chapter.mapY??[68,41,64,33,57,23][index]} onChange={event=>update(index,{mapY:Math.max(0,Math.min(100,Number(event.target.value)))})}/></label>
+            <label className="adm-field"><span>地圖節點尺寸 %</span><input type="number" min="60" max="180" value={chapter.mapNodeScale??100} onChange={event=>update(index,{mapNodeScale:Math.max(60,Math.min(180,Number(event.target.value)))})}/></label>
             <label className="adm-field"><span>顯示開場章節卡</span><input type="checkbox" checked={chapter.chapterCardEnabled!==false} onChange={event => update(index, { chapterCardEnabled: event.target.checked })} /></label>
             <Field label="章節卡上方標籤" value={chapter.chapterCardEyebrow??'CHAPTER'} onChange={value => update(index, { chapterCardEyebrow: value })} />
             <Field label="章節卡大標題" value={chapter.chapterCardTitle??`第${chapter.order}章　${chapter.piece}`} onChange={value => update(index, { chapterCardTitle: value })} />
