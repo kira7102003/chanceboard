@@ -4,8 +4,9 @@ import './StoryFlowDesigner.css'
 import './StoryPlaybackV2.css'
 import { getCharImg, getChars, getUrlByKey, uploadByKey } from '../utils/charStore'
 import type { BoardCharacter } from '../utils/boardCharacters'
-import { getChapterFlow, type StoryChapter, type StoryFlowNode, type StoryRewards, type StorySegment } from '../utils/storyStore'
+import { getChapterFlow, getStoryChapters, type StoryChapter, type StoryFlowNode, type StoryRewards, type StorySegment } from '../utils/storyStore'
 import StoryPlayer from './StoryPlayer'
+import StoryMode from './StoryMode'
 
 interface Props {
   chapter: StoryChapter
@@ -32,6 +33,7 @@ const cloneNode = (node: StoryFlowNode): StoryFlowNode => node.type === 'common'
   : { ...node, id: uid('branch'), branches: node.branches.map(branch => ({ ...branch, id: uid('route'), nodes: branch.nodes.map(cloneNode) })) }
 const pieceIdFromRef = (value?: string) => value?.startsWith('piece:') ? value.slice(6) : null
 const previewFromNode=(nodes:StoryFlowNode[],id?:string):StoryFlowNode[]|null=>{if(!id)return nodes;const index=nodes.findIndex(node=>node.id===id);if(index>=0)return nodes.slice(index);for(const node of nodes)if(node.type==='branch')for(const route of node.branches){const found=previewFromNode(route.nodes,id);if(found)return found}return null}
+const findPreviewNode=(nodes:StoryFlowNode[],id?:string):StoryFlowNode|undefined=>{for(const node of nodes){if(node.id===id)return node;if(node.type==='branch')for(const route of node.branches){const found=findPreviewNode(route.nodes,id);if(found)return found}}}
 
 export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, onClose }: Props) {
   const [flow, setFlow] = useState(() => getChapterFlow(chapter))
@@ -43,6 +45,7 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
   const [detailsVisible,setDetailsVisible]=useState(true)
   const canvasRef = useRef<HTMLElement>(null)
   const scrollKey = `cb_story_designer_scroll_v2_${chapter.id}`
+  const previewStartNode=findPreviewNode(flow,previewStartId)
   const change = (next: StoryFlowNode[]) => { setFlow(next); onSave(next, rewards); setSaved(false) }
   const revealNode = (id:string) => {setPreviewStartId(id);requestAnimationFrame(()=>requestAnimationFrame(()=>{
     const target=canvasRef.current?.querySelector<HTMLElement>(`[data-editor-node-id="${CSS.escape(id)}"]`)
@@ -100,7 +103,7 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
       {!flow.length && <div className="story-designer-empty">尚無節點，請從右上角新增第一段對話。</div>}
     </main>
     <aside className="story-designer-anchor-tools"><button onClick={returnToMap}>↑ 回流程圖</button><button onClick={()=>setMapOpen(value=>!value)}>{mapOpen?'收縮 MAP':'展開 MAP'}</button><button onClick={()=>setDetailsVisible(value=>!value)}>{detailsVisible?'隱藏細節':'顯示細節'}</button></aside>
-    {previewWindow && !previewWindow.closed && createPortal(<StoryPlayer key={previewStartId??'start'} chapter={{...chapter,rewards}} initialNodes={previewFromNode(flow,previewStartId)??flow} onLeave={()=>previewWindow.close()} preview />, previewWindow.document.body)}
+    {previewWindow && !previewWindow.closed && createPortal(previewStartNode?.type==='branch'&&previewStartNode.chapterRouteSelect?<StoryMode onClose={()=>previewWindow.close()} preview previewChapters={getStoryChapters().map(item=>item.id===chapter.id?{...chapter,flow,rewards}:item)}/>:<StoryPlayer key={previewStartId??'start'} chapter={{...chapter,rewards}} initialNodes={previewFromNode(flow,previewStartId)??flow} onLeave={()=>previewWindow.close()} preview />, previewWindow.document.body)}
   </div>
 }
 
