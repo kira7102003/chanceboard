@@ -6,6 +6,8 @@ import { useGameStore }           from './store/gameStore'
 import { usePlayerStore }         from './store/playerStore'
 import { useRoom, loadSession, clearSession } from './hooks/useRoom'
 import { initFromCloud, getBgUrl, getAvailableBattleBgUrls, getUrlByKey, warmImageCache } from './utils/charStore'
+import { initializeStoryRepository } from './story/storyRepository'
+import { DEFAULT_STORY_CHAPTERS } from './utils/storyStore'
 import { useSolo }                from './hooks/useSolo'
 import { useAIBattle }           from './hooks/useAIBattle'
 import { supabase }               from './utils/supabase'
@@ -127,6 +129,7 @@ export default function App() {
       warmImageCache()
       setCloudSynced(true)
     })
+    initializeStoryRepository(DEFAULT_STORY_CHAPTERS).catch(error=>console.warn('[story] initialization failed',error))
     initDailyRewards().catch(error => console.warn('[dailyRewards] initialization failed', error))
   }, [])
 

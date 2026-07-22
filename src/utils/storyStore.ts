@@ -1,4 +1,5 @@
 import { PAWN_STORY_FLOW } from './pawnStory'
+import { readStoryChapters, replaceStoryChapters } from '../story/storyRepository'
 
 export type StoryChapterId = 'pawn' | 'knight' | 'rook' | 'bishop' | 'queen' | 'king'
 
@@ -76,8 +77,6 @@ export function describeStoryRewards(rewards?: StoryRewards): string {
     .filter(Boolean).join('　')
 }
 
-const KEY = 'cb_story_chapters'
-
 export const DEFAULT_STORY_CHAPTERS: StoryChapter[] = [
   { id: 'pawn', order: 1, piece: '兵', title: '初心荒野', subtitle: '所有願望，皆從最弱小的一步開始。', unlocked: true, story: `【開場 CG】\n無數人從天空墜落，棋盤從中央裂開。\n\n小黑：「新的棋局開始了。歡迎來到棋盤。」\n\n【第一節　初心荒野】\n打倒荒野魔物，學會棋盤沒有新手保護。\n\n【第二節　另一位玩家】\n親眼看見玩家為了勝利捨棄自己的棋子。\n\n【第三節　命運分歧】\n執黑將遇見圖卡勒絲；執白將遇見守護村莊的梅朵。你的選擇會累積求生意志或守護之心。\n\n【第四節　Boss：無名戰士】\n擊敗已經勝利九十九次、只想回家的無名戰士。\n\n【第一章　完】` },
   { id: 'knight', order: 2, piece: '騎士', title: '逆行之徑', subtitle: '騎士從不沿著直線抵達命運。', unlocked: false, story: '' },
@@ -88,14 +87,9 @@ export const DEFAULT_STORY_CHAPTERS: StoryChapter[] = [
 ]
 
 export function getStoryChapters(): StoryChapter[] {
-  try {
-    const saved = JSON.parse(localStorage.getItem(KEY) ?? 'null') as StoryChapter[] | null
-    if (!saved) return DEFAULT_STORY_CHAPTERS.map(chapter => chapter.id === 'pawn' ? { ...chapter, flow: PAWN_STORY_FLOW } : chapter)
-    return DEFAULT_STORY_CHAPTERS.map(base => {
-      const merged = { ...base, ...saved.find(chapter => chapter.id === base.id) }
-      return merged.id === 'pawn' && !merged.flow?.length ? { ...merged, flow: PAWN_STORY_FLOW } : merged
-    })
-  } catch { return DEFAULT_STORY_CHAPTERS }
+  const cloud=readStoryChapters()
+  if(!cloud.length)return DEFAULT_STORY_CHAPTERS.map(chapter=>chapter.id==='pawn'?{...chapter,flow:PAWN_STORY_FLOW}:chapter)
+  return cloud
 }
 
 export function getChapterSegments(chapter: StoryChapter): StorySegment[] {
@@ -124,7 +118,7 @@ export function flattenStoryFlow(nodes: StoryFlowNode[]): StorySegment[] {
 }
 
 export function saveStoryChapters(chapters: StoryChapter[]): void {
-  localStorage.setItem(KEY, JSON.stringify(chapters))
+  replaceStoryChapters(chapters)
 }
 
 /** Mark the cleared chapter and open the next chapter in map order. */

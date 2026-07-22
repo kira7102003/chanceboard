@@ -10,7 +10,8 @@ import { DEFAULT_DAILY_REWARD, getDailyRewards, localDateKey, saveDailyRewardSet
 import type { DailyReward } from '../utils/dailyRewards'
 import { runAllMoveTests, runWinRateLadder } from '../engine/diagnostics'
 import type { MoveTestReport, LadderReport } from '../engine/diagnostics'
-import { getChapterFlow, getChapterSegments, getStoryChapters, saveStoryChapters, type StoryChapter, type StoryFlowNode, type StorySegment } from '../utils/storyStore'
+import { getChapterFlow, getChapterSegments, getStoryChapters, type StoryChapter, type StoryFlowNode, type StorySegment } from '../utils/storyStore'
+import { useStoryEditorController } from '../story/useStoryEditorController'
 import { getBattleBackgroundNames, getBoardCharacters, saveBoardCharacters } from '../utils/boardCharacters'
 import StoryFlowDesigner from './StoryFlowDesigner'
 import { getLogisticsJobs, saveLogisticsJobs } from '../utils/logisticsStore'
@@ -1097,15 +1098,13 @@ function MiningSettings({chars}:{chars:Character[]}){
 }
 
 function StorySettings() {
-  const [chapters, setChapters] = useState(getStoryChapters)
+  const {chapters,updateChapter}=useStoryEditorController()
   const [designerIndex, setDesignerIndex] = useState<number | null>(() => { const hashId=window.location.hash.match(/^#admin\/story\/([^/]+)/)?.[1]; const id=hashId??localStorage.getItem('cb_admin_story_chapter'); if(!id)return null; const index=getStoryChapters().findIndex(chapter=>chapter.id===id); return index>=0?index:null })
   const boardCharacters = getBoardCharacters()
   const rewardCharacters = getChars()
   const battleBackgroundNames = getBattleBackgroundNames()
   const update = (index: number, patch: Partial<(typeof chapters)[number]>) => {
-    const next = chapters.map((chapter, i) => i === index ? { ...chapter, ...patch } : chapter)
-    setChapters(next)
-    saveStoryChapters(next)
+    updateChapter(index,patch)
   }
   const updateMapPosition = (index: number, mapX: number, mapY: number) => update(index, { mapX, mapY })
   const updateRoute = (mapRoutePoints: {x:number;y:number}[]) => update(0, { mapRoutePoints })

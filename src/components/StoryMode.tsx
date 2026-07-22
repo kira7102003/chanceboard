@@ -1,16 +1,17 @@
 import {useEffect,useMemo,useState} from 'react'
 import './StoryMode.css'
-import {getChapterFlow,getStoryChapters,unlockNextStoryChapter,type StoryChapter,type StoryFlowNode} from '../utils/storyStore'
+import {getChapterFlow,unlockNextStoryChapter,type StoryChapter,type StoryFlowNode} from '../utils/storyStore'
 import {getUrlByKey} from '../utils/charStore'
 import StoryPlayer from './StoryPlayer'
 import StoryRoutePicker from './StoryRoutePicker'
 import PixelCharacterActor from './PixelCharacterActor'
 import {usePlayerStore} from '../store/playerStore'
+import {useStoryPlaybackController} from '../story/useStoryPlaybackController'
 
 interface Props{onClose:()=>void;onComplete?:(chapter:StoryChapter)=>void;onBattle?:()=>void;preview?:boolean;previewChapters?:StoryChapter[]}
 
 export default function StoryMode({onClose,onComplete,onBattle,preview=false,previewChapters}:Props){
- const[chapters,setChapters]=useState(()=>previewChapters??getStoryChapters())
+ const{chapters,setChapters}=useStoryPlaybackController(previewChapters)
  const[zoom,setZoom]=useState(()=>Math.max(1,Math.min(2.4,Number(localStorage.getItem('cb_story_map_zoom'))||1.2)))
  const[newUnlock,setNewUnlock]=useState<string|null>(()=>{const latest=chapters.findLast(item=>item.unlocked)?.id??null,seen=localStorage.getItem('cb_story_seen_unlock');return latest&&latest!==seen?latest:null})
  const resume=useMemo(()=>{try{const raw=localStorage.getItem('cb_story_resume');if(!raw)return null;localStorage.removeItem('cb_story_resume');return JSON.parse(raw) as {chapterId:string;cursor:number;nodes:StoryFlowNode[]}}catch{return null}},[])
