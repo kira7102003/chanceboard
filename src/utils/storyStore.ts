@@ -57,6 +57,7 @@ export interface StoryChapter {
   chapterCardEditorY?: number
   chapterCardNextNodeId?: string
   chapterCardNextLinks?: StoryNodeLink[]
+  flowNodePositions?: Record<string,{x:number;y:number}>
   rewards?: StoryRewards
   mapX?: number
   mapY?: number
