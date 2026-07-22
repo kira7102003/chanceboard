@@ -29,12 +29,13 @@ export interface StorySegment {
 }
 
 export type StoryFlowNode =
-  | { id: string; type: 'common'; segment: StorySegment; nextNodeId?: string; nextLinkMode?: 'auto' | 'manual' }
+  | { id: string; type: 'common'; segment: StorySegment; nextNodeId?: string; nextLinkMode?: 'auto' | 'manual'; nextLinks?: StoryNodeLink[] }
   | { id: string; type: 'branch'; title: string; branches: StoryFlowBranch[]; showPortraits?: boolean; leftCharacter?: string; rightCharacter?: string; choicePortraits?: StoryChoicePortrait[]; chapterRouteSelect?: boolean; routeSelectSubtitle?: string }
 
 export interface StoryChoicePortrait { id: string; character?: string; side: 'left' | 'right'; visible: boolean }
 
 export interface StoryFlowBranch { id: string; label: string; nodes: StoryFlowNode[]; coverKey?: string; description?: string; progressText?: string }
+export interface StoryNodeLink { id:string; targetId:string; label:string }
 
 export interface StoryChapter {
   id: StoryChapterId
@@ -55,6 +56,7 @@ export interface StoryChapter {
   chapterCardEditorX?: number
   chapterCardEditorY?: number
   chapterCardNextNodeId?: string
+  chapterCardNextLinks?: StoryNodeLink[]
   rewards?: StoryRewards
   mapX?: number
   mapY?: number
@@ -117,11 +119,11 @@ export function getChapterFlow(chapter: StoryChapter): StoryFlowNode[] {
 
 export function applyStoryFlowLinks(nodes:StoryFlowNode[]):StoryFlowNode[]{
   const prepared=nodes.map(node=>node.type==='branch'?{...node,branches:node.branches.map(route=>({...route,nodes:applyStoryFlowLinks(route.nodes)}))}:node)
-  const byId=new Map(prepared.map(node=>[node.id,node])),incoming=new Set(prepared.flatMap(node=>node.type==='common'&&node.nextNodeId?[node.nextNodeId]:[]))
+  const byId=new Map(prepared.map(node=>[node.id,node])),incoming=new Set(prepared.flatMap(node=>node.type==='common'?(node.nextLinks?.map(link=>link.targetId)??(node.nextNodeId?[node.nextNodeId]:[])):[]))
   const start=prepared.find(node=>!incoming.has(node.id))??prepared[0]
   if(!start)return[]
   const ordered:StoryFlowNode[]=[],seen=new Set<string>();let current:StoryFlowNode|undefined=start
-  while(current&&!seen.has(current.id)){seen.add(current.id);ordered.push(current);current=current.type==='common'&&current.nextNodeId?byId.get(current.nextNodeId):prepared[prepared.indexOf(current)+1]}
+  while(current&&!seen.has(current.id)){seen.add(current.id);ordered.push(current);const target:string|undefined=current.type==='common'?(current.nextLinks?.length===1?current.nextLinks[0].targetId:current.nextNodeId):undefined;current=target?byId.get(target):prepared[prepared.indexOf(current)+1]}
   return[...ordered,...prepared.filter(node=>!seen.has(node.id))]
 }
 
