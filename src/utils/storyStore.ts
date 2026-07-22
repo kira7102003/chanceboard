@@ -80,6 +80,13 @@ export const DEFAULT_STORY_CHAPTERS: StoryChapter[] = [
   { id: 'king', order: 6, piece: '國王', title: '最後棋局', subtitle: '王倒下時，所有願望都將迎來答案。', unlocked: false, story: '' },
 ]
 
+function preserveFlowMedia(fresh:StoryFlowNode[],previous?:StoryFlowNode[]):StoryFlowNode[]{
+  if(!previous?.length)return fresh
+  return fresh.map(node=>{const old=previous.find(item=>item.id===node.id);if(node.type!=='branch'||old?.type!=='branch')return node
+    return {...node,routeSelectSubtitle:old.routeSelectSubtitle??node.routeSelectSubtitle,branches:node.branches.map(route=>{const oldRoute=old.branches.find(item=>item.id===route.id);return oldRoute?{...route,coverKey:oldRoute.coverKey??route.coverKey,description:oldRoute.description??route.description,nodes:preserveFlowMedia(route.nodes,oldRoute.nodes)}:route})}
+  })
+}
+
 export function getStoryChapters(): StoryChapter[] {
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) ?? 'null') as StoryChapter[] | null
@@ -88,7 +95,7 @@ export function getStoryChapters(): StoryChapter[] {
     if (!saved) return DEFAULT_STORY_CHAPTERS.map(chapter => chapter.id === 'pawn' ? { ...chapter, flow: PAWN_STORY_FLOW } : chapter)
     return DEFAULT_STORY_CHAPTERS.map(base => {
       const merged = { ...base, ...saved.find(chapter => chapter.id === base.id) }
-      return merged.id === 'pawn' && (needsPawnImport || !merged.flow?.length) ? { ...merged, flow: PAWN_STORY_FLOW } : merged
+      return merged.id === 'pawn' && (needsPawnImport || !merged.flow?.length) ? { ...merged, flow: preserveFlowMedia(PAWN_STORY_FLOW,merged.flow) } : merged
     })
   } catch { return DEFAULT_STORY_CHAPTERS }
 }

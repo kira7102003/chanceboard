@@ -44,7 +44,7 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
   const [detailsVisible,setDetailsVisible]=useState(true)
   const canvasRef = useRef<HTMLElement>(null)
   const scrollKey = `cb_story_designer_scroll_v2_${chapter.id}`
-  const change = (next: StoryFlowNode[]) => { setFlow(next); setSaved(false) }
+  const change = (next: StoryFlowNode[]) => { setFlow(next); onSave(next, rewards); setSaved(false) }
   const revealNode = (id:string) => requestAnimationFrame(()=>requestAnimationFrame(()=>{
     const target=canvasRef.current?.querySelector<HTMLElement>(`[data-editor-node-id="${CSS.escape(id)}"]`)
     target?.scrollIntoView({behavior:'smooth',block:'center',inline:'center'})
@@ -218,8 +218,9 @@ function BranchCard({ node, boardCharacters, depth, onChange }: { node: Extract<
 }
 
 function RouteCoverUpload({storageKey,onChange}:{storageKey:string;onChange:(key:string)=>void}){
- const[url,setUrl]=useState(()=>getUrlByKey(storageKey)),[busy,setBusy]=useState(false)
- const upload=(event:React.ChangeEvent<HTMLInputElement>)=>{const file=event.target.files?.[0];if(!file)return;const reader=new FileReader();setBusy(true);reader.onload=async()=>{try{await uploadByKey(storageKey,String(reader.result));onChange(storageKey);setUrl(getUrlByKey(storageKey))}finally{setBusy(false)}};reader.readAsDataURL(file);event.target.value=''}
+ const uploadKey=/^https?:/.test(storageKey)?decodeURIComponent(storageKey.split('/').pop()?.split('?')[0].replace(/\.webp$/,'')||`cb_story_route_${Date.now()}`):storageKey
+ const[url,setUrl]=useState(()=>/^https?:/.test(storageKey)?storageKey:getUrlByKey(storageKey)),[busy,setBusy]=useState(false)
+ const upload=(event:React.ChangeEvent<HTMLInputElement>)=>{const file=event.target.files?.[0];if(!file)return;const reader=new FileReader();setBusy(true);reader.onload=async()=>{try{const cloudUrl=await uploadByKey(uploadKey,String(reader.result));onChange(cloudUrl);setUrl(cloudUrl)}finally{setBusy(false)}};reader.readAsDataURL(file);event.target.value=''}
  return <div className="story-route-cover-upload">{url?<img src={url} alt="路線選擇 CG"/>:<span>尚未設定路線 CG</span>}<label>{busy?'上傳中…':'上傳選擇 CG'}<input hidden disabled={busy} type="file" accept="image/*" onChange={upload}/></label></div>
 }
 
