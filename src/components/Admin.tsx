@@ -1110,7 +1110,7 @@ function StorySettings() {
   const updateMapPosition = (index: number, mapX: number, mapY: number) => update(index, { mapX, mapY })
   const updateRoute = (mapRoutePoints: {x:number;y:number}[]) => update(0, { mapRoutePoints })
   if (designerIndex !== null) return <StoryFlowDesigner chapter={chapters[designerIndex]} boardCharacters={boardCharacters}
-    onSave={(flow, rewards) => update(designerIndex, { flow, rewards })} onClose={() => { localStorage.removeItem('cb_admin_story_chapter'); history.replaceState(null,'','#admin'); setDesignerIndex(null) }} />
+    onSave={(flow, rewards) => update(designerIndex, { flow, rewards })} onChapterChange={patch=>update(designerIndex,patch)} onClose={() => { localStorage.removeItem('cb_admin_story_chapter'); history.replaceState(null,'','#admin'); setDesignerIndex(null) }} />
   return <div className="adm-basic" style={{ overflowY: 'auto' }}>
     <div className="diag-head"><div><h2>♟ 故事模式設定</h2><p>設定兵、騎士、城堡、主教、皇后、國王六張章節地圖與故事內容。</p></div></div>
     <StoryMapRouteEditor chapters={chapters} onMove={updateMapPosition} onRouteChange={updateRoute}/>
@@ -1119,7 +1119,7 @@ function StorySettings() {
       <div className="adm-basic-cols">
         <div><ImageCrop storageKey={`cb_story_map_${chapter.id}`} cropW={1536} cropH={1024} /></div>
         <div className="adm-basic-data">
-          <div className="adm-field-grid">
+          <div className="adm-field-grid" hidden>
             <Field label="章節標題" value={chapter.title} onChange={value => update(index, { title: value })} />
             <Field label="章節副標" value={chapter.subtitle} onChange={value => update(index, { subtitle: value })} />
             <Field label="地圖節點章節標籤" value={chapter.mapNodeLabel??`第 ${chapter.order} 章`} onChange={value => update(index, { mapNodeLabel: value })} />
@@ -1138,14 +1138,14 @@ function StorySettings() {
               {battleBackgroundNames.map((name, bgIndex) => <option value={`cb_bg_battle_${bgIndex + 1}`} key={bgIndex}>{name}</option>)}
             </select></label>
           </div>
-          <div className="adm-section-label" style={{ marginTop: 14 }}>章節首次完成獎勵</div>
-          <div className="adm-field-grid story-reward-grid">
+          <div className="adm-section-label" style={{ marginTop: 14 }} hidden>章節首次完成獎勵</div>
+          <div className="adm-field-grid story-reward-grid" hidden>
             <label className="adm-field"><span>獎勵角色</span><select className="adm-select" value={chapter.rewards?.characterId ?? ''} onChange={event => update(index, { rewards: { ...chapter.rewards, characterId: event.target.value || undefined } })}>
               <option value="">不贈送角色</option>{rewardCharacters.map(character => <option key={character.id} value={character.id}>{character.name}</option>)}
             </select></label>
             {([['gems', '鑽石'], ['coins', '金幣'], ['silver', '銀'], ['copper', '銅'], ['iron', '鐵'], ['wood', '木']] as const).map(([key, label]) => <label className="adm-field" key={key}><span>{label}</span><input type="number" min="0" value={chapter.rewards?.[key] ?? 0} onChange={event => update(index, { rewards: { ...chapter.rewards, [key]: Math.max(0, Math.floor(Number(event.target.value) || 0)) } })} /></label>)}
           </div>
-          <small style={{ color: '#858daa' }}>每個帳號每章只能領取一次；重複角色會自動轉為 10 個角色碎片。</small>
+          <small style={{ color: '#858daa' }} hidden>每個帳號每章只能領取一次；重複角色會自動轉為 10 個角色碎片。</small>
           <button className="story-open-designer" onClick={() => { localStorage.setItem('cb_admin_story_chapter',chapter.id); history.replaceState(null,'',`#admin/story/${chapter.id}`); setDesignerIndex(index) }}><span>◆</span><div><b>開啟獨立故事流程編輯器</b><small>使用節點、連線與分支卡片編排本章故事</small></div><i>進入全畫面 →</i></button>
           <div hidden>
           <div className="adm-section-label" style={{ marginTop: 12 }}>故事段落編輯</div>

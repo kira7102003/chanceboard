@@ -1,9 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import './StoryFlowDesigner.css'
+import './StoryChapterSettings.css'
 import './StoryPlaybackV2.css'
-import { getCharImg, getChars, getUrlByKey, uploadByKey } from '../utils/charStore'
-import type { BoardCharacter } from '../utils/boardCharacters'
+import { getCharImg, getChars, getUrlByKey, uploadByKey, removeByKey } from '../utils/charStore'
+import { getBattleBackgroundNames, type BoardCharacter } from '../utils/boardCharacters'
 import { getChapterFlow, getStoryChapters, type StoryChapter, type StoryFlowNode, type StoryRewards, type StorySegment } from '../utils/storyStore'
 import StoryPlayer from './StoryPlayer'
 import StoryMode from './StoryMode'
@@ -12,6 +13,7 @@ interface Props {
   chapter: StoryChapter
   boardCharacters: BoardCharacter[]
   onSave: (flow: StoryFlowNode[], rewards: StoryRewards) => void
+  onChapterChange: (patch: Partial<StoryChapter>) => void
   onClose: () => void
 }
 
@@ -35,7 +37,7 @@ const pieceIdFromRef = (value?: string) => value?.startsWith('piece:') ? value.s
 const previewFromNode=(nodes:StoryFlowNode[],id?:string):StoryFlowNode[]|null=>{if(!id)return nodes;const index=nodes.findIndex(node=>node.id===id);if(index>=0)return nodes.slice(index);for(const node of nodes)if(node.type==='branch')for(const route of node.branches){const found=previewFromNode(route.nodes,id);if(found)return found}return null}
 const findPreviewNode=(nodes:StoryFlowNode[],id?:string):StoryFlowNode|undefined=>{for(const node of nodes){if(node.id===id)return node;if(node.type==='branch')for(const route of node.branches){const found=findPreviewNode(route.nodes,id);if(found)return found}}}
 
-export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, onClose }: Props) {
+export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, onChapterChange, onClose }: Props) {
   const [flow, setFlow] = useState(() => getChapterFlow(chapter))
   const [rewards, setRewards] = useState<StoryRewards>(chapter.rewards ?? {})
   const [previewWindow, setPreviewWindow] = useState<Window | null>(null)
@@ -100,12 +102,28 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
     </nav>
     <main className="story-designer-canvas" ref={canvasRef} onClick={event=>{const card=(event.target as HTMLElement).closest<HTMLElement>('[data-editor-node-id]');if(!card)return;setPreviewStartId(card.dataset.editorNodeId);canvasRef.current?.querySelectorAll('.preview-selected').forEach(item=>item.classList.remove('preview-selected'));card.classList.add('preview-selected')}}>
       <FlowGraphOverview nodes={flow} onChange={change} onLocate={revealNode} open={mapOpen} onOpenChange={setMapOpen}/>
-      {detailsVisible&&<><FlowLane nodes={flow} onChange={change} boardCharacters={boardCharacters} depth={0} label="章節開始" laneId="root" /><RewardCard rewards={rewards} onChange={next => { setRewards(next); setSaved(false) }} /></>}
+      {detailsVisible&&<><ChapterSettingsCard chapter={chapter} rewards={rewards} onChapterChange={onChapterChange} onRewardsChange={next=>{setRewards(next);onSave(flow,next);setSaved(false)}}/><RewardCard rewards={rewards} onChange={next=>{setRewards(next);onSave(flow,next);setSaved(false)}}/><FlowLane nodes={flow} onChange={change} boardCharacters={boardCharacters} depth={0} label="章節流程" laneId="root" /></>}
       {!flow.length && <div className="story-designer-empty">尚無節點，請從右上角新增第一段對話。</div>}
     </main>
     <aside className="story-designer-anchor-tools"><button onClick={returnToMap}>↑ 回流程圖</button><button onClick={()=>setMapOpen(value=>!value)}>{mapOpen?'收縮 MAP':'展開 MAP'}</button><button onClick={()=>setDetailsVisible(value=>!value)}>{detailsVisible?'隱藏細節':'顯示細節'}</button></aside>
     {previewWindow && !previewWindow.closed && createPortal((!previewStartId||previewStartNode?.type==='branch'&&previewStartNode.chapterRouteSelect)?<StoryMode onClose={()=>previewWindow.close()} preview previewChapters={getStoryChapters().map(item=>item.id===chapter.id?{...chapter,flow,rewards}:item)}/>:<StoryPlayer key={previewStartId} chapter={{...chapter,rewards}} initialNodes={previewFromNode(flow,previewStartId)??flow} onLeave={()=>previewWindow.close()} preview />, previewWindow.document.body)}
   </div>
+}
+
+function ChapterSettingsCard({chapter,rewards,onChapterChange,onRewardsChange}:{chapter:StoryChapter;rewards:StoryRewards;onChapterChange:(patch:Partial<StoryChapter>)=>void;onRewardsChange:(rewards:StoryRewards)=>void}){
+  const characters=getChars(),backgrounds=getBattleBackgroundNames()
+  const mapNumber=(key:'mapX'|'mapY'|'mapNodeScale',value:number)=>onChapterChange({[key]:value})
+  return <section className="story-chapter-settings story-reward-node">
+    <div className="story-flow-lane-label">章節、地圖與開場設定</div>
+    <div className="story-chapter-settings-grid">
+      <label><span>章節標題</span><input value={chapter.title} onChange={e=>onChapterChange({title:e.target.value})}/></label><label><span>章節副標</span><input value={chapter.subtitle} onChange={e=>onChapterChange({subtitle:e.target.value})}/></label>
+      <label><span>地圖節點章節標籤</span><input value={chapter.mapNodeLabel??`第 ${chapter.order} 章`} onChange={e=>onChapterChange({mapNodeLabel:e.target.value})}/></label><label><span>地圖節點短標題</span><input value={chapter.mapNodeTitle??chapter.title} onChange={e=>onChapterChange({mapNodeTitle:e.target.value})}/></label><label><span>地圖節點棋子符號</span><input value={chapter.mapNodeSymbol??chapter.piece} onChange={e=>onChapterChange({mapNodeSymbol:e.target.value})}/></label>
+      <label><span>地圖位置 X%</span><input type="number" min="0" max="100" value={chapter.mapX??10} onChange={e=>mapNumber('mapX',Math.max(0,Math.min(100,+e.target.value)))}/></label><label><span>地圖位置 Y%</span><input type="number" min="0" max="100" value={chapter.mapY??68} onChange={e=>mapNumber('mapY',Math.max(0,Math.min(100,+e.target.value)))}/></label><label><span>地圖節點尺寸 %</span><input type="number" min="60" max="180" value={chapter.mapNodeScale??100} onChange={e=>mapNumber('mapNodeScale',Math.max(60,Math.min(180,+e.target.value)))}/></label>
+      <label className="check"><input type="checkbox" checked={chapter.chapterCardEnabled!==false} onChange={e=>onChapterChange({chapterCardEnabled:e.target.checked})}/><span>顯示開場章節卡</span></label><label><span>章節卡上方標籤</span><input value={chapter.chapterCardEyebrow??'CHAPTER'} onChange={e=>onChapterChange({chapterCardEyebrow:e.target.value})}/></label><label><span>章節卡大標題</span><input value={chapter.chapterCardTitle??`第${chapter.order}章　${chapter.piece}`} onChange={e=>onChapterChange({chapterCardTitle:e.target.value})}/></label><label><span>章節卡點擊提示</span><input value={chapter.chapterCardPrompt??'點擊任意位置開始 ◆'} onChange={e=>onChapterChange({chapterCardPrompt:e.target.value})}/></label>
+      <label className="check"><input type="checkbox" checked={chapter.unlocked} onChange={e=>onChapterChange({unlocked:e.target.checked})}/><span>開放章節</span></label><label><span>故事背景</span><select value={chapter.backgroundKey??''} onChange={e=>onChapterChange({backgroundKey:e.target.value||undefined})}><option value="">章節預設背景</option>{backgrounds.map((name,index)=><option value={`cb_bg_battle_${index+1}`} key={index}>{name}</option>)}</select></label>
+    </div>
+    <div className="story-chapter-rewards"><b>章節首次完成獎勵</b><label><span>獎勵角色</span><select value={rewards.characterId??''} onChange={e=>onRewardsChange({...rewards,characterId:e.target.value||undefined})}><option value="">不贈送角色</option>{characters.map(character=><option value={character.id} key={character.id}>{character.name}</option>)}</select></label>{([['gems','鑽石'],['coins','金幣'],['silver','銀'],['copper','銅'],['iron','鐵'],['wood','木']] as const).map(([key,label])=><label key={key}><span>{label}</span><input type="number" min="0" value={rewards[key]??0} onChange={e=>onRewardsChange({...rewards,[key]:Math.max(0,Math.floor(+e.target.value||0))})}/></label>)}</div>
+  </section>
 }
 
 function FlowGraphOverview({nodes,onChange,onLocate,open,onOpenChange}:{nodes:StoryFlowNode[];onChange:(nodes:StoryFlowNode[])=>void;onLocate:(id:string)=>void;open:boolean;onOpenChange:(open:boolean)=>void}){
@@ -180,7 +198,7 @@ function DialogueCard({ segment, boardCharacters, onChange }: { segment: StorySe
     <div className="story-node-speaker">{image ? <img src={image} alt="" /> : <span>{segment.speaker.slice(0, 1)}</span>}<input value={segment.speaker} onChange={event => patch({ speaker: event.target.value })} /></div>
     <input className="story-node-section" value={segment.section ?? ''} placeholder="段落名稱" onChange={event => patch({ section: event.target.value })} />
     <textarea value={segment.text} onChange={event => patch({ text: event.target.value })} />
-    <div className="story-node-presentation"><select value={segment.presentation ?? 'dialogue'} onChange={event => patch({ presentation: event.target.value as StorySegment['presentation'] })}><option value="dialogue">角色對話</option><option value="narration">第三人稱旁白</option><option value="marquee">開場跑馬燈</option><option value="chapter">大章節字卡</option><option value="cg">CG 全圖</option><option value="battle">進入戰鬥提示</option></select>{segment.presentation==='marquee'&&<select value={segment.textDirection??'ltr'} onChange={event=>patch({textDirection:event.target.value as StorySegment['textDirection']})}><option value="ltr">左至右</option><option value="ttb">上至下</option><option value="btt">下至上</option><option value="rtl">右至左</option></select>}{segment.presentation==='cg'&&<><input value={segment.cgKey??''} placeholder="CG 圖片鍵值／網址" onChange={event=>patch({cgKey:event.target.value})}/><label>起點 X {segment.cgPositionX??50}%<input type="range" min="0" max="100" value={segment.cgPositionX??50} onChange={event=>patch({cgPositionX:Number(event.target.value)})}/></label><label>起點 Y {segment.cgPositionY??50}%<input type="range" min="0" max="100" value={segment.cgPositionY??50} onChange={event=>patch({cgPositionY:Number(event.target.value)})}/></label><label>終點 X {segment.cgEndPositionX??segment.cgPositionX??50}%<input type="range" min="0" max="100" value={segment.cgEndPositionX??segment.cgPositionX??50} onChange={event=>patch({cgEndPositionX:Number(event.target.value)})}/></label><label>終點 Y {segment.cgEndPositionY??segment.cgPositionY??50}%<input type="range" min="0" max="100" value={segment.cgEndPositionY??segment.cgPositionY??50} onChange={event=>patch({cgEndPositionY:Number(event.target.value)})}/></label><label>運鏡秒數 {segment.cgDuration??6}s<input type="range" min="2" max="20" value={segment.cgDuration??6} onChange={event=>patch({cgDuration:Number(event.target.value)})}/></label></>}{(segment.presentation??'dialogue')==='dialogue'&&<><label>講話立繪 {segment.portraitActiveScale??100}%<input type="range" min="90" max="130" value={segment.portraitActiveScale??100} onChange={event=>patch({portraitActiveScale:Number(event.target.value)})}/></label><label>待機立繪 {segment.portraitInactiveScale??88}%<input type="range" min="70" max="100" value={segment.portraitInactiveScale??88} onChange={event=>patch({portraitInactiveScale:Number(event.target.value)})}/></label><label>待機亮度 {segment.portraitInactiveOpacity??45}%<input type="range" min="20" max="90" value={segment.portraitInactiveOpacity??45} onChange={event=>patch({portraitInactiveOpacity:Number(event.target.value)})}/></label></>}</div>
+    <div className="story-node-presentation"><select value={segment.presentation ?? 'dialogue'} onChange={event => patch({ presentation: event.target.value as StorySegment['presentation'] })}><option value="dialogue">角色對話</option><option value="narration">第三人稱旁白</option><option value="marquee">開場跑馬燈</option><option value="chapter">大章節字卡</option><option value="cg">CG 全圖</option><option value="battle">進入戰鬥提示</option></select>{segment.presentation==='marquee'&&<select value={segment.textDirection??'ltr'} onChange={event=>patch({textDirection:event.target.value as StorySegment['textDirection']})}><option value="ltr">左至右</option><option value="ttb">上至下</option><option value="btt">下至上</option><option value="rtl">右至左</option></select>}{segment.presentation==='cg'&&<><CgUpload segment={segment} onChange={onChange}/><input value={segment.cgKey??''} placeholder="或手動輸入 CG 圖片鍵值／網址" onChange={event=>patch({cgKey:event.target.value || undefined})}/><label>起點 X {segment.cgPositionX??50}%<input type="range" min="0" max="100" value={segment.cgPositionX??50} onChange={event=>patch({cgPositionX:Number(event.target.value)})}/></label><label>起點 Y {segment.cgPositionY??50}%<input type="range" min="0" max="100" value={segment.cgPositionY??50} onChange={event=>patch({cgPositionY:Number(event.target.value)})}/></label><label>終點 X {segment.cgEndPositionX??segment.cgPositionX??50}%<input type="range" min="0" max="100" value={segment.cgEndPositionX??segment.cgPositionX??50} onChange={event=>patch({cgEndPositionX:Number(event.target.value)})}/></label><label>終點 Y {segment.cgEndPositionY??segment.cgPositionY??50}%<input type="range" min="0" max="100" value={segment.cgEndPositionY??segment.cgPositionY??50} onChange={event=>patch({cgEndPositionY:Number(event.target.value)})}/></label><label>運鏡秒數 {segment.cgDuration??6}s<input type="range" min="2" max="20" value={segment.cgDuration??6} onChange={event=>patch({cgDuration:Number(event.target.value)})}/></label></>}{(segment.presentation??'dialogue')==='dialogue'&&<><label>講話立繪 {segment.portraitActiveScale??100}%<input type="range" min="90" max="130" value={segment.portraitActiveScale??100} onChange={event=>patch({portraitActiveScale:Number(event.target.value)})}/></label><label>待機立繪 {segment.portraitInactiveScale??88}%<input type="range" min="70" max="100" value={segment.portraitInactiveScale??88} onChange={event=>patch({portraitInactiveScale:Number(event.target.value)})}/></label><label>待機亮度 {segment.portraitInactiveOpacity??45}%<input type="range" min="20" max="90" value={segment.portraitInactiveOpacity??45} onChange={event=>patch({portraitInactiveOpacity:Number(event.target.value)})}/></label></>}</div>
     <div className="story-node-controls"><select value={segment.boardCharacter ?? ''} onChange={event => { const value = event.target.value; const pieceId = pieceIdFromRef(value); const character = pieceId ? characters.find(item => item.id === pieceId) : boardCharacters.find(item => item.id === value); patch({ boardCharacter: value || undefined, speaker: character?.name ?? segment.speaker, pose: 'front' }) }}><option value="">無大頭貼</option><optgroup label="看板角色">{boardCharacters.map(character => <option key={character.id} value={character.id}>{character.name}</option>)}</optgroup><optgroup label="所有棋子">{characters.map(character => <option key={character.id} value={`piece:${character.id}`}>{character.name}</option>)}</optgroup></select>
       <select value={segment.side} onChange={event => patch({ side: event.target.value as 'left' | 'right' })}><option value="left">左側發言</option><option value="right">右側發言</option></select>
       <select value={segment.pose ?? 'front'} onChange={event => patch({ pose: event.target.value as 'front' | 'side' })}><option value="front">正面</option><option value="side">側面</option></select></div>
@@ -212,6 +230,39 @@ function BranchCard({ node, boardCharacters, depth, onChange }: { node: Extract<
       </>}
     </div>)}</div>
     <button className="story-add-route" onClick={() => onChange({ ...node, branches: [...node.branches, { id: uid('route'), label: `選項 ${node.branches.length + 1}`, nodes: [] }] })}>＋ 新增選項路線</button>
+  </div>
+}
+
+function CgUpload({ segment, onChange }: { segment: StorySegment; onChange: (segment: StorySegment) => void }) {
+  const storageKey = segment.cgKey && !/^https?:/.test(segment.cgKey) ? segment.cgKey : `cb_story_cg_${segment.id}`
+  const [url, setUrl] = useState(() => /^https?:/.test(segment.cgKey ?? '') ? segment.cgKey ?? '' : getUrlByKey(storageKey) ?? '')
+  const [busy, setBusy] = useState(false)
+  const upload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    setBusy(true)
+    reader.onload = async () => {
+      try {
+        const cloudUrl = await uploadByKey(storageKey, String(reader.result))
+        onChange({ ...segment, cgKey: storageKey })
+        setUrl(cloudUrl)
+      } finally {
+        setBusy(false)
+        event.target.value = ''
+      }
+    }
+    reader.readAsDataURL(file)
+  }
+  const clear = () => {
+    removeByKey(storageKey)
+    onChange({ ...segment, cgKey: undefined })
+    setUrl('')
+  }
+  return <div className="story-route-cover-upload" style={{ marginBottom: 8 }}>
+    {url ? <img src={url} alt="CG 預覽" /> : <span>尚未設定 CG</span>}
+    <label>{busy ? '上傳中…' : '上傳 CG'}<input hidden disabled={busy} type="file" accept="image/*" onChange={upload} /></label>
+    {url && <button className="btn sm danger" type="button" onClick={clear}>移除</button>}
   </div>
 }
 

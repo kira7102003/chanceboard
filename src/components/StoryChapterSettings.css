@@ -1,0 +1,10 @@
+.story-chapter-settings{margin:0 18px 22px;padding:16px;border:2px solid #7057ee;border-radius:16px;background:#f8f7ff;min-width:920px}
+.story-chapter-settings>.story-flow-lane-label{margin:-16px -16px 16px;padding:11px 16px;border-radius:14px 14px 0 0;background:#7057ee;color:#fff;font-weight:800}
+.story-chapter-settings-grid{display:grid;grid-template-columns:repeat(4,minmax(180px,1fr));gap:10px}
+.story-chapter-settings label{display:flex;flex-direction:column;gap:5px;color:#4e5872;font-size:12px}
+.story-chapter-settings input,.story-chapter-settings select{min-height:38px;padding:7px 10px;border:1px solid #cfd5e6;border-radius:8px;background:#fff;color:#1c2742}
+.story-chapter-settings label.check{flex-direction:row;align-items:center;padding:8px 10px;border:1px solid #d8d1ff;border-radius:8px;background:#fff}
+.story-chapter-settings label.check input{min-height:0}
+.story-chapter-rewards{display:grid;grid-template-columns:180px repeat(7,minmax(110px,1fr));align-items:end;gap:9px;margin-top:15px;padding-top:14px;border-top:1px solid #dcd7f7}
+.story-chapter-rewards>b{align-self:center;color:#453b84}
+@media(max-width:1100px){.story-chapter-settings-grid{grid-template-columns:repeat(2,minmax(180px,1fr))}.story-chapter-rewards{grid-template-columns:repeat(3,minmax(150px,1fr))}}
