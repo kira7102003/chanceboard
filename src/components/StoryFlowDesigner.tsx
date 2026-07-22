@@ -187,6 +187,8 @@ function DialogueCard({ segment, boardCharacters, onChange }: { segment: StorySe
 
 function BranchCard({ node, boardCharacters, depth, onChange }: { node: Extract<StoryFlowNode, { type: 'branch' }>; boardCharacters: BoardCharacter[]; depth: number; onChange: (node: Extract<StoryFlowNode, { type: 'branch' }>) => void }) {
   const characters = getChars()
+  const [collapsedRoutes,setCollapsedRoutes]=useState<Set<string>>(()=>new Set())
+  const toggleRoute=(id:string)=>setCollapsedRoutes(current=>{const next=new Set(current);if(next.has(id))next.delete(id);else next.add(id);return next})
   const portraits = node.choicePortraits ?? [
     ...(node.leftCharacter ? [{ id: uid('choice_portrait'), character: node.leftCharacter, side: 'left' as const, visible: true }] : []),
     ...(node.rightCharacter ? [{ id: uid('choice_portrait'), character: node.rightCharacter, side: 'right' as const, visible: true }] : []),
@@ -201,9 +203,11 @@ function BranchCard({ node, boardCharacters, depth, onChange }: { node: Extract<
     </div>
     <label className="story-branch-question-label">選擇題目<input className="story-branch-title" value={node.title} onChange={event => onChange({ ...node, title: event.target.value })} /></label>
     <div className="story-branch-routes">{node.branches.map((route, routeIndex) => <div className="story-route-lane" key={route.id}>
-      <div className="story-route-head"><i style={{ '--route-index': routeIndex } as React.CSSProperties} /><input value={route.label} onChange={event => onChange({ ...node, branches: node.branches.map(item => item.id === route.id ? { ...item, label: event.target.value } : item) })} /><button disabled={node.branches.length <= 2} onClick={() => onChange({ ...node, branches: node.branches.filter(item => item.id !== route.id) })}>×</button></div>
+      <div className="story-route-head"><button className="story-route-collapse" title={collapsedRoutes.has(route.id)?'展開分支':'收縮分支'} onClick={()=>toggleRoute(route.id)}>{collapsedRoutes.has(route.id)?'▸':'▾'}</button><i style={{ '--route-index': routeIndex } as React.CSSProperties} /><input value={route.label} onChange={event => onChange({ ...node, branches: node.branches.map(item => item.id === route.id ? { ...item, label: event.target.value } : item) })} /><button disabled={node.branches.length <= 2} onClick={() => onChange({ ...node, branches: node.branches.filter(item => item.id !== route.id) })}>×</button></div>
+      {!collapsedRoutes.has(route.id)&&<>
       {node.chapterRouteSelect&&<div className="story-route-cover-settings"><RouteCoverUpload storageKey={route.coverKey||`cb_story_route_${route.id}`} onChange={coverKey=>onChange({...node,branches:node.branches.map(item=>item.id===route.id?{...item,coverKey}:item)})}/><input value={route.coverKey??''} placeholder="或輸入封面圖片鍵值／網址" onChange={event=>onChange({...node,branches:node.branches.map(item=>item.id===route.id?{...item,coverKey:event.target.value}:item)})}/><input value={route.description??''} placeholder="路線說明" onChange={event=>onChange({...node,branches:node.branches.map(item=>item.id===route.id?{...item,description:event.target.value}:item)})}/><input value={route.progressText??''} placeholder="進度文字，例如 0／7 關" onChange={event=>onChange({...node,branches:node.branches.map(item=>item.id===route.id?{...item,progressText:event.target.value}:item)})}/></div>}
       <FlowLane laneId={route.id} label={`分支：${route.label}`} nodes={route.nodes} depth={depth + 1} boardCharacters={boardCharacters} onChange={routeNodes => onChange({ ...node, branches: node.branches.map(item => item.id === route.id ? { ...item, nodes: routeNodes } : item) })} />
+      </>}
     </div>)}</div>
     <button className="story-add-route" onClick={() => onChange({ ...node, branches: [...node.branches, { id: uid('route'), label: `選項 ${node.branches.length + 1}`, nodes: [] }] })}>＋ 新增選項路線</button>
   </div>
