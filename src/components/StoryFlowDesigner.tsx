@@ -4,9 +4,8 @@ import './StoryFlowDesigner.css'
 import './StoryPlaybackV2.css'
 import { getCharImg, getChars, getUrlByKey, uploadByKey } from '../utils/charStore'
 import type { BoardCharacter } from '../utils/boardCharacters'
-import { getChapterFlow, type StoryChapter, type StoryFlowNode, type StoryRewards, type StorySegment } from '../utils/storyStore'
-import StoryPlayer from './StoryPlayer'
-import StoryRoutePicker from './StoryRoutePicker'
+import { getChapterFlow, getStoryChapters, type StoryChapter, type StoryFlowNode, type StoryRewards, type StorySegment } from '../utils/storyStore'
+import StoryMode from './StoryMode'
 
 interface Props {
   chapter: StoryChapter
@@ -37,8 +36,6 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
   const [flow, setFlow] = useState(() => getChapterFlow(chapter))
   const [rewards, setRewards] = useState<StoryRewards>(chapter.rewards ?? {})
   const [previewWindow, setPreviewWindow] = useState<Window | null>(null)
-  const [previewRoute,setPreviewRoute]=useState<Extract<StoryFlowNode,{type:'branch'}>|null>(null)
-  const [previewNodes,setPreviewNodes]=useState<StoryFlowNode[]|null>(null)
   const [saved, setSaved] = useState(false)
   const [mapOpen,setMapOpen]=useState(true)
   const [detailsVisible,setDetailsVisible]=useState(true)
@@ -66,8 +63,7 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
       if (copy instanceof HTMLLinkElement) copy.href = source instanceof HTMLLinkElement ? source.href : ''
       popup.document.head.appendChild(copy)
     })
-    const picker=flow.find((node):node is Extract<StoryFlowNode,{type:'branch'}>=>node.type==='branch'&&!!node.chapterRouteSelect)
-    setPreviewRoute(picker??null);setPreviewNodes(flow);setPreviewWindow(popup)
+    setPreviewWindow(popup)
     popup.focus()
   }
   useEffect(() => {
@@ -102,7 +98,7 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
       {!flow.length && <div className="story-designer-empty">尚無節點，請從右上角新增第一段對話。</div>}
     </main>
     <aside className="story-designer-anchor-tools"><button onClick={returnToMap}>↑ 回流程圖</button><button onClick={()=>setMapOpen(value=>!value)}>{mapOpen?'收縮 MAP':'展開 MAP'}</button><button onClick={()=>setDetailsVisible(value=>!value)}>{detailsVisible?'隱藏細節':'顯示細節'}</button></aside>
-    {previewWindow && !previewWindow.closed && createPortal(previewRoute?<StoryRoutePicker chapter={chapter} node={previewRoute} onBack={()=>previewWindow.close()} onChoose={route=>{setPreviewNodes((previewNodes??flow).flatMap(node=>node.id===previewRoute.id?route.nodes:[node]));setPreviewRoute(null)}}/>:<StoryPlayer chapter={chapter} initialNodes={previewNodes??flow} onLeave={() => previewWindow.close()} preview />, previewWindow.document.body)}
+    {previewWindow && !previewWindow.closed && createPortal(<StoryMode onClose={()=>previewWindow.close()} preview previewChapters={getStoryChapters().map(item=>item.id===chapter.id?{...chapter,flow,rewards}:item)}/>, previewWindow.document.body)}
   </div>
 }
 

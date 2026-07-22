@@ -7,10 +7,10 @@ import StoryRoutePicker from './StoryRoutePicker'
 import PixelCharacterActor from './PixelCharacterActor'
 import {usePlayerStore} from '../store/playerStore'
 
-interface Props{onClose:()=>void;onComplete?:(chapter:StoryChapter)=>void;onBattle?:()=>void}
+interface Props{onClose:()=>void;onComplete?:(chapter:StoryChapter)=>void;onBattle?:()=>void;preview?:boolean;previewChapters?:StoryChapter[]}
 
-export default function StoryMode({onClose,onComplete,onBattle}:Props){
- const[chapters,setChapters]=useState(getStoryChapters)
+export default function StoryMode({onClose,onComplete,onBattle,preview=false,previewChapters}:Props){
+ const[chapters,setChapters]=useState(()=>previewChapters??getStoryChapters())
  const[zoom,setZoom]=useState(()=>Math.max(1,Math.min(2.4,Number(localStorage.getItem('cb_story_map_zoom'))||1.2)))
  const[newUnlock,setNewUnlock]=useState<string|null>(()=>{const latest=chapters.findLast(item=>item.unlocked)?.id??null,seen=localStorage.getItem('cb_story_seen_unlock');return latest&&latest!==seen?latest:null})
  const resume=useMemo(()=>{try{const raw=localStorage.getItem('cb_story_resume');if(!raw)return null;localStorage.removeItem('cb_story_resume');return JSON.parse(raw) as {chapterId:string;cursor:number;nodes:StoryFlowNode[]}}catch{return null}},[])
@@ -25,9 +25,9 @@ export default function StoryMode({onClose,onComplete,onBattle}:Props){
  const player=usePlayerStore()
  useEffect(()=>{if(!newUnlock)return;localStorage.setItem('cb_story_seen_unlock',newUnlock);const timer=window.setTimeout(()=>setNewUnlock(null),4200);return()=>window.clearTimeout(timer)},[newUnlock])
  const leaveChapter=()=>{setChapter(null);setNodes([])}
- const completeChapter=(cleared:StoryChapter)=>{const next=unlockNextStoryChapter(cleared.id);setChapters(next);const following=next[cleared.order];if(following?.unlocked){setSelectedId(following.id);setNewUnlock(following.id)}onComplete?.(cleared)}
+ const completeChapter=(cleared:StoryChapter)=>{if(preview){leaveChapter();return}const next=unlockNextStoryChapter(cleared.id);setChapters(next);const following=next[cleared.order];if(following?.unlocked){setSelectedId(following.id);setNewUnlock(following.id)}onComplete?.(cleared)}
  if(showEntryPicker&&entryPicker)return <StoryRoutePicker chapter={entryChapter} node={entryPicker} onBack={onClose} onChoose={route=>{setRouteChoice({id:route.id,label:route.label});setMapReadyAt(Date.now()+700);setShowEntryPicker(false)}}/>
- if(chapter)return <StoryPlayer chapter={chapter} initialNodes={nodes} entryRoute={entryRoute} onLeave={leaveChapter} onComplete={completeChapter} onBattle={onBattle}/>
+ if(chapter)return <StoryPlayer chapter={chapter} initialNodes={nodes} entryRoute={entryRoute} onLeave={leaveChapter} onComplete={completeChapter} onBattle={onBattle} preview={preview}/>
  const selected=chapters.find(item=>item.id===selectedId)??chapters[0]
  const mapPoints=chapters.map((item,index)=>({x:item.mapX??[9.5,28.5,45.5,62.5,80.5,93][index],y:item.mapY??[68,41,64,33,57,23][index]})),routePoints=chapters[0]?.mapRoutePoints?.length?chapters[0].mapRoutePoints:mapPoints,selectedIndex=Math.max(0,chapters.findIndex(item=>item.id===selectedId)),actorId=player.desktopCharIds?.[0]??player.ownedCharIds[0]
  const setMapZoom=(value:number)=>{const next=Math.max(1,Math.min(2.4,value));setZoom(next);localStorage.setItem('cb_story_map_zoom',String(next))}
