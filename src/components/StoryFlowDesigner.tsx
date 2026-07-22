@@ -36,10 +36,11 @@ const cloneNode = (node: StoryFlowNode): StoryFlowNode => node.type === 'common'
 const pieceIdFromRef = (value?: string) => value?.startsWith('piece:') ? value.slice(6) : null
 const previewFromNode=(nodes:StoryFlowNode[],id?:string):StoryFlowNode[]|null=>{if(!id)return nodes;const index=nodes.findIndex(node=>node.id===id);if(index>=0)return nodes.slice(index);for(const node of nodes)if(node.type==='branch')for(const route of node.branches){const found=previewFromNode(route.nodes,id);if(found)return found}return null}
 const findPreviewNode=(nodes:StoryFlowNode[],id?:string):StoryFlowNode|undefined=>{for(const node of nodes){if(node.id===id)return node;if(node.type==='branch')for(const route of node.branches){const found=findPreviewNode(route.nodes,id);if(found)return found}}}
-const reconnectFlowNodes=(nodes:StoryFlowNode[],sourceId:string,targetId:string):StoryFlowNode[]=>nodes.map(node=>node.id===sourceId&&node.type==='common'?{...node,nextNodeId:targetId}:node.type==='branch'?{...node,branches:node.branches.map(route=>({...route,nodes:reconnectFlowNodes(route.nodes,sourceId,targetId)}))}:node)
+const reconnectFlowNodes=(nodes:StoryFlowNode[],sourceId:string,targetId:string):StoryFlowNode[]=>nodes.map(node=>node.id===sourceId&&node.type==='common'?{...node,nextNodeId:targetId,nextLinkMode:'manual'}:node.type==='branch'?{...node,branches:node.branches.map(route=>({...route,nodes:reconnectFlowNodes(route.nodes,sourceId,targetId)}))}:node)
+const addAutomaticFlowLinks=(nodes:StoryFlowNode[]):StoryFlowNode[]=>nodes.map((node,index)=>node.type==='branch'?{...node,branches:node.branches.map(route=>({...route,nodes:addAutomaticFlowLinks(route.nodes)}))}:node.nextLinkMode==='manual'?node:{...node,nextNodeId:nodes[index+1]?.id,nextLinkMode:'auto'})
 
 export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, onChapterChange, onClose }: Props) {
-  const [flow, setFlow] = useState(() => getChapterFlow(chapter))
+  const [flow, setFlow] = useState(() => addAutomaticFlowLinks(getChapterFlow(chapter)))
   const [rewards, setRewards] = useState<StoryRewards>(chapter.rewards ?? {})
   const [previewWindow, setPreviewWindow] = useState<Window | null>(null)
   const [saved, setSaved] = useState(false)
@@ -49,7 +50,8 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
   const canvasRef = useRef<HTMLElement>(null)
   const scrollKey = `cb_story_designer_scroll_v2_${chapter.id}`
   const previewStartNode=findPreviewNode(flow,previewStartId)
-  const change = (next: StoryFlowNode[]) => { setFlow(next); onSave(next, rewards); setSaved(false) }
+  const change = (next: StoryFlowNode[]) => { const linked=addAutomaticFlowLinks(next);setFlow(linked);onSave(linked,rewards);setSaved(false) }
+  useEffect(()=>{if(JSON.stringify(flow)!==JSON.stringify(getChapterFlow(chapter)))onSave(flow,rewards)},[])
   const revealNode = (id:string) => {setPreviewStartId(id);requestAnimationFrame(()=>requestAnimationFrame(()=>{
     const target=canvasRef.current?.querySelector<HTMLElement>(`[data-editor-node-id="${CSS.escape(id)}"]`)
     target?.scrollIntoView({behavior:'smooth',block:'center',inline:'center'})
@@ -144,7 +146,7 @@ function FlowGraphOverview({chapter,nodes,onChange,onChapterChange,onLocate,open
   useLayoutEffect(()=>{
     const stage=stageRef.current;if(!stage)return
     const edges:{from:string;to:string;color:string;label?:string}[]=[]
-    const walk=(items:StoryFlowNode[])=>{items.forEach((node,index)=>{if(node.type==='common'&&node.nextNodeId)edges.push({from:node.id,to:node.nextNodeId,color:'#f3c84d',label:'自訂'});else if(index<items.length-1)edges.push({from:node.id,to:items[index+1].id,color:'#58c8ff'});if(node.type==='branch')node.branches.forEach((route,routeIndex)=>{if(route.nodes[0])edges.push({from:node.id,to:route.nodes[0].id,color:['#65e49a','#6da8ff','#ba83ff','#ff7f9d'][routeIndex%4],label:route.label});walk(route.nodes)})})}
+    const walk=(items:StoryFlowNode[])=>{items.forEach((node,index)=>{if(node.type==='common'&&node.nextNodeId)edges.push({from:node.id,to:node.nextNodeId,color:node.nextLinkMode==='manual'?'#f3c84d':'#58c8ff',label:node.nextLinkMode==='manual'?'自訂':'自動'});else if(index<items.length-1)edges.push({from:node.id,to:items[index+1].id,color:'#58c8ff',label:'自動'});if(node.type==='branch')node.branches.forEach((route,routeIndex)=>{if(route.nodes[0])edges.push({from:node.id,to:route.nodes[0].id,color:['#65e49a','#6da8ff','#ba83ff','#ff7f9d'][routeIndex%4],label:route.label});walk(route.nodes)})})}
     edges.push({from:'__start__',to:'__chapter_card__',color:'#ffd45e'});if(nodes[0])edges.push({from:'__chapter_card__',to:nodes[0].id,color:'#ffd45e'});walk(nodes)
     const draw=()=>{const base=stage.getBoundingClientRect();setLinks(edges.map(edge=>{const fromElement=stage.querySelector<HTMLElement>(`[data-graph-node-id="${CSS.escape(edge.from)}"]`),toElement=stage.querySelector<HTMLElement>(`[data-graph-node-id="${CSS.escape(edge.to)}"]`);if(!fromElement?.offsetParent||!toElement?.offsetParent)return{...edge,path:undefined};const from=fromElement.getBoundingClientRect(),to=toElement.getBoundingClientRect(),x1=from.right-base.left+stage.scrollLeft,y1=from.top+from.height/2-base.top+stage.scrollTop,x2=to.left-base.left+stage.scrollLeft,y2=to.top+to.height/2-base.top+stage.scrollTop,curve=Math.max(45,Math.abs(x2-x1)*.42);return{...edge,path:`M ${x1} ${y1} C ${x1+curve} ${y1}, ${x2-curve} ${y2}, ${x2} ${y2}`}}))}
     const frame=requestAnimationFrame(draw),observer=new ResizeObserver(draw);observer.observe(stage);return()=>{cancelAnimationFrame(frame);observer.disconnect()}

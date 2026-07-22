@@ -29,7 +29,7 @@ export interface StorySegment {
 }
 
 export type StoryFlowNode =
-  | { id: string; type: 'common'; segment: StorySegment; nextNodeId?: string }
+  | { id: string; type: 'common'; segment: StorySegment; nextNodeId?: string; nextLinkMode?: 'auto' | 'manual' }
   | { id: string; type: 'branch'; title: string; branches: StoryFlowBranch[]; showPortraits?: boolean; leftCharacter?: string; rightCharacter?: string; choicePortraits?: StoryChoicePortrait[]; chapterRouteSelect?: boolean; routeSelectSubtitle?: string }
 
 export interface StoryChoicePortrait { id: string; character?: string; side: 'left' | 'right'; visible: boolean }
