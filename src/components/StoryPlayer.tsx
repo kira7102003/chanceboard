@@ -11,14 +11,14 @@ const pieceId=(value?:string)=>value?.startsWith('piece:')?value.slice(6):null
 export default function StoryPlayer({chapter,initialNodes,onLeave,onComplete,onBattle,preview=false,entryRoute}:Props){
  const routeKey=`${preview?'cb_story_preview_route':'cb_story_route'}_${chapter.id}`
  const[nodes,setNodes]=useState(initialNodes),[cursor,setCursor]=useState(0),[shown,setShown]=useState(0),[auto,setAuto]=useState(false),[speed,setSpeed]=useState<1|2>(1),[historyOpen,setHistoryOpen]=useState(false),[routeOpen,setRouteOpen]=useState(false),[history,setHistory]=useState<{speaker:string;text:string}[]>([]),[route,setRoute]=useState<{branchId:string;title:string;routeId:string;label:string}[]>(()=>{try{return JSON.parse(localStorage.getItem(routeKey)??'[]')}catch{return[]}})
- const node=nodes[cursor],segment=node?.type==='common'?node.segment:undefined,type=segment?.presentation??'dialogue',text=segment?.text??'',marqueeParts=useMemo(()=>text.split(/\n\s*\n/).filter(Boolean),[text])
+ const node=nodes[cursor],segment=node?.type==='common'?node.segment:undefined,type=segment?.presentation??'dialogue',text=segment?.text??'',chapterEffect=segment?.chapterEffect??chapter.chapterCardEffect??'writing',marqueeParts=useMemo(()=>text.split(/\n\s*\n/).filter(Boolean),[text])
  const dialogueParts=useMemo(()=>text.split(/\n+/).flatMap(line=>line.match(/.{1,30}/g)??[]).filter(Boolean),[text])
  const revealMaximum=type==='marquee'?marqueeParts.length:type==='dialogue'?dialogueParts.length:text.length,complete=shown>=revealMaximum
  const boards=useMemo(getBoardCharacters,[]),chars=useMemo(getChars,[]),leftId=boards[0]?.id??'black',rightId=boards[1]?.id??leftId
  const selectedId=pieceId(segment?.boardCharacter),speaker=segment?.speaker||chapter.title,speakerChar=chars.find(char=>char.id===selectedId||char.name===speaker),activeSide=segment?.side??'left'
  const avatar=speakerChar?(getCharImg(speakerChar.id)??getUrlByKey(`cb_head_img_${speakerChar.id}`)):getUrlByKey(`cb_board_${segment?.boardCharacter??leftId}_front`)
  const background=getUrlByKey(chapter.backgroundKey||`cb_story_map_${chapter.id}`)??'',cg=segment?.cgKey?(getUrlByKey(segment.cgKey)??segment.cgKey):''
- useEffect(()=>{setShown(0)},[cursor,text])
+ useEffect(()=>{setShown(type==='chapter'&&chapterEffect!=='writing'?text.length:0)},[cursor,text,type,chapterEffect])
  useEffect(()=>{if(preview||!entryRoute)return;const key=`cb_story_route_progress_${chapter.id}_${entryRoute.id}`,done=Math.min(entryRoute.total,cursor);if(done>Number(localStorage.getItem(key)||0))localStorage.setItem(key,String(done))},[chapter.id,cursor,entryRoute,preview])
  useEffect(()=>{if(!text||complete)return;const delay=type==='marquee'?Math.max(650,1500/speed):type==='dialogue'?Math.max(320,720/speed):Math.max(12,32/speed);const timer=window.setInterval(()=>setShown(value=>Math.min(revealMaximum,value+1)),delay);return()=>clearInterval(timer)},[text,type,revealMaximum,complete,speed])
  useEffect(()=>{if(!auto||!node||node.type==='branch'||type==='battle'||!complete)return;const timer=window.setTimeout(()=>advance(),Math.max(380,1100/speed));return()=>clearTimeout(timer)})
@@ -37,7 +37,7 @@ export default function StoryPlayer({chapter,initialNodes,onLeave,onComplete,onB
   {(node?.type==='branch'||!['narration','marquee','chapter','cg','battle'].includes(type))&&<>{boardPortrait('left')}{boardPortrait('right')}</>}
   {node?.type==='branch'?<section className="story-v2-choice"><small>PLAYER CHOICE</small><h2>{node.title}</h2>{node.branches.map(branch=><button key={branch.id} onClick={()=>choose(branch)}>{branch.label}</button>)}</section>:node? <>
    {type==='marquee'&&<button className={`story-v2-marquee dir-${segment?.textDirection??'ltr'}`} onClick={advance}>{marqueeParts.slice(0,shown).map((part,index)=><span key={index}>{part}</span>)}</button>}
-   {type==='chapter'&&<button className="story-v2-chapter" onClick={advance}><small>{segment?.section??`CHAPTER ${chapter.order}`}</small><strong>{text.slice(0,shown)}</strong><em>{segment?.chapterPrompt??'點擊任意位置開始 ◆'}</em></button>}
+   {type==='chapter'&&<button className={`story-v2-chapter effect-${chapterEffect}`} onClick={advance}><small>{segment?.section??`CHAPTER ${chapter.order}`}</small><strong>{text.slice(0,shown)}</strong><em>{segment?.chapterPrompt??'點擊任意位置開始 ◆'}</em></button>}
    {type==='narration'&&<button className="story-v2-narration" onClick={advance}>{text.slice(0,shown)}</button>}
    {type==='cg'&&<button className="story-v2-cg-caption" onClick={advance}>{text.slice(0,shown)}</button>}
    {type==='battle'&&<section className="story-v2-battle"><small>BATTLE</small><h2>{segment?.section??'即將進入戰鬥'}</h2><p>{text}</p><button onClick={enterBattle}>確認並進入戰鬥</button></section>}

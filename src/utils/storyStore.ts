@@ -25,6 +25,7 @@ export interface StorySegment {
   portraitInactiveScale?: number
   portraitInactiveOpacity?: number
   chapterPrompt?: string
+  chapterEffect?: 'fade' | 'writing' | 'reading'
 }
 
 export type StoryFlowNode =
@@ -50,6 +51,7 @@ export interface StoryChapter {
   chapterCardEyebrow?: string
   chapterCardTitle?: string
   chapterCardPrompt?: string
+  chapterCardEffect?: 'fade' | 'writing' | 'reading'
   rewards?: StoryRewards
   mapX?: number
   mapY?: number
