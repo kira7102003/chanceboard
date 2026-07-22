@@ -29,7 +29,7 @@ export interface StorySegment {
 }
 
 export type StoryFlowNode =
-  | { id: string; type: 'common'; segment: StorySegment }
+  | { id: string; type: 'common'; segment: StorySegment; nextNodeId?: string }
   | { id: string; type: 'branch'; title: string; branches: StoryFlowBranch[]; showPortraits?: boolean; leftCharacter?: string; rightCharacter?: string; choicePortraits?: StoryChoicePortrait[]; chapterRouteSelect?: boolean; routeSelectSubtitle?: string }
 
 export interface StoryChoicePortrait { id: string; character?: string; side: 'left' | 'right'; visible: boolean }
@@ -112,6 +112,15 @@ export function getChapterSegments(chapter: StoryChapter): StorySegment[] {
 export function getChapterFlow(chapter: StoryChapter): StoryFlowNode[] {
   if (chapter.flow?.length) return chapter.flow
   return getChapterSegments({ ...chapter, flow: undefined }).map(segment => ({ id: `node_${segment.id}`, type: 'common', segment }))
+}
+
+export function applyStoryFlowLinks(nodes:StoryFlowNode[]):StoryFlowNode[]{
+  const byId=new Map(nodes.map(node=>[node.id,node])),incoming=new Set(nodes.flatMap(node=>node.type==='common'&&node.nextNodeId?[node.nextNodeId]:[]))
+  const start=nodes.find(node=>!incoming.has(node.id))??nodes[0]
+  if(!start)return[]
+  const ordered:StoryFlowNode[]=[],seen=new Set<string>();let current:StoryFlowNode|undefined=start
+  while(current&&!seen.has(current.id)){seen.add(current.id);ordered.push(current);current=current.type==='common'&&current.nextNodeId?byId.get(current.nextNodeId):nodes[nodes.indexOf(current)+1]}
+  return[...ordered,...nodes.filter(node=>!seen.has(node.id))]
 }
 
 /** Runtime fallback follows the first branch; the editor retains every route. */
