@@ -54,6 +54,7 @@ export interface StoryChapter {
   chapterCardEffect?: 'fade' | 'writing' | 'reading'
   chapterCardEditorX?: number
   chapterCardEditorY?: number
+  chapterCardNextNodeId?: string
   rewards?: StoryRewards
   mapX?: number
   mapY?: number
@@ -115,12 +116,13 @@ export function getChapterFlow(chapter: StoryChapter): StoryFlowNode[] {
 }
 
 export function applyStoryFlowLinks(nodes:StoryFlowNode[]):StoryFlowNode[]{
-  const byId=new Map(nodes.map(node=>[node.id,node])),incoming=new Set(nodes.flatMap(node=>node.type==='common'&&node.nextNodeId?[node.nextNodeId]:[]))
-  const start=nodes.find(node=>!incoming.has(node.id))??nodes[0]
+  const prepared=nodes.map(node=>node.type==='branch'?{...node,branches:node.branches.map(route=>({...route,nodes:applyStoryFlowLinks(route.nodes)}))}:node)
+  const byId=new Map(prepared.map(node=>[node.id,node])),incoming=new Set(prepared.flatMap(node=>node.type==='common'&&node.nextNodeId?[node.nextNodeId]:[]))
+  const start=prepared.find(node=>!incoming.has(node.id))??prepared[0]
   if(!start)return[]
   const ordered:StoryFlowNode[]=[],seen=new Set<string>();let current:StoryFlowNode|undefined=start
-  while(current&&!seen.has(current.id)){seen.add(current.id);ordered.push(current);current=current.type==='common'&&current.nextNodeId?byId.get(current.nextNodeId):nodes[nodes.indexOf(current)+1]}
-  return[...ordered,...nodes.filter(node=>!seen.has(node.id))]
+  while(current&&!seen.has(current.id)){seen.add(current.id);ordered.push(current);current=current.type==='common'&&current.nextNodeId?byId.get(current.nextNodeId):prepared[prepared.indexOf(current)+1]}
+  return[...ordered,...prepared.filter(node=>!seen.has(node.id))]
 }
 
 /** Runtime fallback follows the first branch; the editor retains every route. */
