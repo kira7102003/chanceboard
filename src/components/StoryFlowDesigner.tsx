@@ -51,14 +51,13 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
   const [flow, setFlow] = useState(() => addAutomaticFlowLinks(getChapterFlow(chapter)))
   const [rewards, setRewards] = useState<StoryRewards>(chapter.rewards ?? {})
   const [previewWindow, setPreviewWindow] = useState<Window | null>(null)
-  const [saved, setSaved] = useState(false)
   const [previewStartId,setPreviewStartId]=useState<string|undefined>(undefined)
   const [mapOpen,setMapOpen]=useState(true)
   const [detailsVisible,setDetailsVisible]=useState(true)
   const canvasRef = useRef<HTMLElement>(null)
   const scrollKey = `cb_story_designer_scroll_v2_${chapter.id}`
   const previewStartNode=findPreviewNode(flow,previewStartId)
-  const change = (next: StoryFlowNode[]) => { const linked=addAutomaticFlowLinks(next);setFlow(linked);onSave(linked,rewards);setSaved(false) }
+  const change = (next: StoryFlowNode[]) => { const linked=addAutomaticFlowLinks(next);setFlow(linked);onSave(linked,rewards) }
   useEffect(()=>{if(JSON.stringify(flow)!==JSON.stringify(getChapterFlow(chapter)))onSave(flow,rewards)},[])
   const revealNode = (id:string) => {setPreviewStartId(id);requestAnimationFrame(()=>requestAnimationFrame(()=>{
     const target=canvasRef.current?.querySelector<HTMLElement>(`[data-editor-node-id="${CSS.escape(id)}"]`)
@@ -67,7 +66,6 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
   }))}
   const append = (node:StoryFlowNode) => { change([...flow,node]); revealNode(node.id) }
   const returnToMap=()=>{const canvas=canvasRef.current,map=canvas?.querySelector<HTMLElement>('.story-graph-overview');if(canvas&&map){setMapOpen(true);requestAnimationFrame(()=>{canvas.scrollTo({top:Math.max(0,map.offsetTop-12),left:0,behavior:'smooth'})})}}
-  const save = () => { onSave(flow, rewards); setSaved(true) }
   const openPreview = (startId = previewStartId) => {
     setPreviewStartId(startId)
     if (previewWindow && !previewWindow.closed) { previewWindow.focus(); return }
@@ -104,7 +102,7 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
     <header className="story-designer-head">
       <div><button onClick={onClose}>← 返回章節設定</button><span className="story-designer-dot" /><b>{chapter.piece}　{chapter.title}｜故事流程</b></div>
       <div className="story-designer-legend"><i className="dialogue" />對話<i className="choice" />選項<i className="route" />分支</div>
-      <div className="story-add-toolbar"><button className="route-entry" onClick={() => openPreview(undefined)}>↗ 完整流程預覽</button><button onClick={() => openPreview()} disabled={!previewStartId}>↗ 選取節點預覽</button><button className="route-entry" onClick={() => append(makeRouteSelect())}>＋ 路線入口</button><button onClick={() => append(makeCommon(boardCharacters[0]))}>＋ 對話</button><button onClick={() => append(makeBranch())}>＋ 分支</button><button onClick={() => append(makePresentation('narration'))}>＋ 旁白</button><button onClick={() => append(makePresentation('marquee'))}>＋ 跑馬燈</button><button onClick={() => append(makePresentation('chapter'))}>＋ 章節</button><button onClick={() => append(makePresentation('cg'))}>＋ CG</button><button onClick={() => append(makePresentation('battle'))}>＋ 戰鬥</button><button className="primary" onClick={save}>{saved ? '✓ 已儲存' : '儲存'}</button></div>
+      <div className="story-add-toolbar"><button className="route-entry" onClick={() => openPreview(undefined)}>↗ 完整流程預覽</button><button onClick={() => openPreview()} disabled={!previewStartId}>↗ 選取節點預覽</button><button className="route-entry" onClick={() => append(makeRouteSelect())}>＋ 路線入口</button><button onClick={() => append(makeCommon(boardCharacters[0]))}>＋ 對話</button><button onClick={() => append(makeBranch())}>＋ 分支</button><button onClick={() => append(makePresentation('narration'))}>＋ 旁白</button><button onClick={() => append(makePresentation('marquee'))}>＋ 跑馬燈</button><button onClick={() => append(makePresentation('chapter'))}>＋ 章節</button><button onClick={() => append(makePresentation('cg'))}>＋ CG</button><button onClick={() => append(makePresentation('battle'))}>＋ 戰鬥</button><button className="primary" disabled>☁ 編輯即自動儲存</button></div>
     </header>
     <div className="story-designer-sub">以卡片編排章節。實線代表順序，彩色路線代表玩家選項；每條分支都能繼續加入對話或下一層選項。</div>
     <nav className="story-designer-palette">
@@ -113,7 +111,7 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
     </nav>
     <main className="story-designer-canvas" ref={canvasRef} onClick={event=>{const card=(event.target as HTMLElement).closest<HTMLElement>('[data-editor-node-id]');if(!card)return;setPreviewStartId(card.dataset.editorNodeId);canvasRef.current?.querySelectorAll('.preview-selected').forEach(item=>item.classList.remove('preview-selected'));card.classList.add('preview-selected')}}>
       <FlowGraphOverview chapter={chapter} nodes={flow} onChange={change} onChapterChange={onChapterChange} onLocate={revealNode} open={mapOpen} onOpenChange={setMapOpen}/>
-      {detailsVisible&&<><ChapterSettingsCard chapter={chapter} rewards={rewards} onChapterChange={onChapterChange} onRewardsChange={next=>{setRewards(next);onSave(flow,next);setSaved(false)}}/><RewardCard rewards={rewards} onChange={next=>{setRewards(next);onSave(flow,next);setSaved(false)}}/><FlowLane nodes={applyStoryFlowLinks(flow)} onChange={change} boardCharacters={boardCharacters} depth={0} label="章節流程（與上方連線同步）" laneId="root" /></>}
+      {detailsVisible&&<><ChapterSettingsCard chapter={chapter} rewards={rewards} onChapterChange={onChapterChange} onRewardsChange={next=>{setRewards(next);onSave(flow,next)}}/><RewardCard rewards={rewards} onChange={next=>{setRewards(next);onSave(flow,next)}}/><FlowLane nodes={applyStoryFlowLinks(flow)} onChange={change} boardCharacters={boardCharacters} depth={0} label="章節流程（與上方連線同步）" laneId="root" /></>}
       {!flow.length && <div className="story-designer-empty">尚無節點，請從右上角新增第一段對話。</div>}
     </main>
     <aside className="story-designer-anchor-tools"><button onClick={returnToMap}>↑ 回流程圖</button><button onClick={()=>setMapOpen(value=>!value)}>{mapOpen?'收縮 MAP':'展開 MAP'}</button><button onClick={()=>setDetailsVisible(value=>!value)}>{detailsVisible?'隱藏細節':'顯示細節'}</button></aside>
