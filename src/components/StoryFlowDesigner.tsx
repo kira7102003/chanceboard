@@ -40,7 +40,7 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
   const [rewards, setRewards] = useState<StoryRewards>(chapter.rewards ?? {})
   const [previewWindow, setPreviewWindow] = useState<Window | null>(null)
   const [saved, setSaved] = useState(false)
-  const [previewStartId,setPreviewStartId]=useState<string|undefined>(()=>flow[0]?.id)
+  const [previewStartId,setPreviewStartId]=useState<string|undefined>(undefined)
   const [mapOpen,setMapOpen]=useState(true)
   const [detailsVisible,setDetailsVisible]=useState(true)
   const canvasRef = useRef<HTMLElement>(null)
@@ -55,7 +55,8 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
   const append = (node:StoryFlowNode) => { change([...flow,node]); revealNode(node.id) }
   const returnToMap=()=>{const canvas=canvasRef.current,map=canvas?.querySelector<HTMLElement>('.story-graph-overview');if(canvas&&map){setMapOpen(true);requestAnimationFrame(()=>{canvas.scrollTo({top:Math.max(0,map.offsetTop-12),left:0,behavior:'smooth'})})}}
   const save = () => { onSave(flow, rewards); setSaved(true) }
-  const openPreview = () => {
+  const openPreview = (startId = previewStartId) => {
+    setPreviewStartId(startId)
     if (previewWindow && !previewWindow.closed) { previewWindow.focus(); return }
     const popup = window.open('', 'chanceboard-story-preview', 'popup=yes,width=1440,height=900,resizable=yes,scrollbars=no')
     if (!popup) { window.alert('瀏覽器已阻擋預覽視窗，請允許此網站開啟彈出式視窗。'); return }
@@ -90,7 +91,7 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
     <header className="story-designer-head">
       <div><button onClick={onClose}>← 返回章節設定</button><span className="story-designer-dot" /><b>{chapter.piece}　{chapter.title}｜故事流程</b></div>
       <div className="story-designer-legend"><i className="dialogue" />對話<i className="choice" />選項<i className="route" />分支</div>
-      <div className="story-add-toolbar"><button onClick={openPreview}>↗ 開新視窗預覽</button><button className="route-entry" onClick={() => append(makeRouteSelect())}>＋ 路線入口</button><button onClick={() => append(makeCommon(boardCharacters[0]))}>＋ 對話</button><button onClick={() => append(makeBranch())}>＋ 分支</button><button onClick={() => append(makePresentation('narration'))}>＋ 旁白</button><button onClick={() => append(makePresentation('marquee'))}>＋ 跑馬燈</button><button onClick={() => append(makePresentation('chapter'))}>＋ 章節</button><button onClick={() => append(makePresentation('cg'))}>＋ CG</button><button onClick={() => append(makePresentation('battle'))}>＋ 戰鬥</button><button className="primary" onClick={save}>{saved ? '✓ 已儲存' : '儲存'}</button></div>
+      <div className="story-add-toolbar"><button className="route-entry" onClick={() => openPreview(undefined)}>↗ 完整流程預覽</button><button onClick={() => openPreview()} disabled={!previewStartId}>↗ 選取節點預覽</button><button className="route-entry" onClick={() => append(makeRouteSelect())}>＋ 路線入口</button><button onClick={() => append(makeCommon(boardCharacters[0]))}>＋ 對話</button><button onClick={() => append(makeBranch())}>＋ 分支</button><button onClick={() => append(makePresentation('narration'))}>＋ 旁白</button><button onClick={() => append(makePresentation('marquee'))}>＋ 跑馬燈</button><button onClick={() => append(makePresentation('chapter'))}>＋ 章節</button><button onClick={() => append(makePresentation('cg'))}>＋ CG</button><button onClick={() => append(makePresentation('battle'))}>＋ 戰鬥</button><button className="primary" onClick={save}>{saved ? '✓ 已儲存' : '儲存'}</button></div>
     </header>
     <div className="story-designer-sub">以卡片編排章節。實線代表順序，彩色路線代表玩家選項；每條分支都能繼續加入對話或下一層選項。</div>
     <nav className="story-designer-palette">
@@ -103,7 +104,7 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
       {!flow.length && <div className="story-designer-empty">尚無節點，請從右上角新增第一段對話。</div>}
     </main>
     <aside className="story-designer-anchor-tools"><button onClick={returnToMap}>↑ 回流程圖</button><button onClick={()=>setMapOpen(value=>!value)}>{mapOpen?'收縮 MAP':'展開 MAP'}</button><button onClick={()=>setDetailsVisible(value=>!value)}>{detailsVisible?'隱藏細節':'顯示細節'}</button></aside>
-    {previewWindow && !previewWindow.closed && createPortal(previewStartNode?.type==='branch'&&previewStartNode.chapterRouteSelect?<StoryMode onClose={()=>previewWindow.close()} preview previewChapters={getStoryChapters().map(item=>item.id===chapter.id?{...chapter,flow,rewards}:item)}/>:<StoryPlayer key={previewStartId??'start'} chapter={{...chapter,rewards}} initialNodes={previewFromNode(flow,previewStartId)??flow} onLeave={()=>previewWindow.close()} preview />, previewWindow.document.body)}
+    {previewWindow && !previewWindow.closed && createPortal((!previewStartId||previewStartNode?.type==='branch'&&previewStartNode.chapterRouteSelect)?<StoryMode onClose={()=>previewWindow.close()} preview previewChapters={getStoryChapters().map(item=>item.id===chapter.id?{...chapter,flow,rewards}:item)}/>:<StoryPlayer key={previewStartId} chapter={{...chapter,rewards}} initialNodes={previewFromNode(flow,previewStartId)??flow} onLeave={()=>previewWindow.close()} preview />, previewWindow.document.body)}
   </div>
 }
 
