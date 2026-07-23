@@ -21,6 +21,8 @@ import { getBgmConfig, saveBgmConfig, type BgmChannel, type BgmConfig } from '..
 import PixelSkeletonEditor from './PixelSkeletonEditor'
 import { getMiningConfig, saveMiningConfig, type MiningConfig } from '../utils/miningStore'
 import { getBattlePresentationStyle, saveBattlePresentationStyle, type BattlePresentationStyle } from '../utils/battlePresentation'
+import { getMonsterDatabase, loadMonstersFromCloud, saveMonsterDatabase } from '../utils/monsterStore'
+import type { Monster, MonsterMove } from '../types/monster'
 
 const EL_COLOR: Record<string, string>   = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee' }
 const SLOT_COLOR: Record<string, string> = { '劍': '#e87733', '槍': '#22cc77', '法': '#9955ee', '願': '#ddaa22', '被': '#666688' }
@@ -153,6 +155,9 @@ export default function Admin({ onBack }: Props) {
           <div className={`adm-list-item ${selId === '__battlefx__' ? 'active' : ''}`} onClick={() => { setSelId('__battlefx__'); setTab('basic') }}>
             <div className="adm-list-tool-icon">⚔</div><div className="adm-list-text"><div className="adm-list-name" style={{ color: '#c8a15a' }}>戰鬥特效設定</div><div className="adm-list-sub">原版／梯形對決演出</div></div>
           </div>
+          <div className={`adm-list-item ${selId === '__monsters__' ? 'active' : ''}`} onClick={() => { setSelId('__monsters__'); setTab('basic') }}>
+            <div className="adm-list-tool-icon">👹</div><div className="adm-list-text"><div className="adm-list-name" style={{ color: '#c8a15a' }}>怪物資料</div><div className="adm-list-sub">能力 · 招式 · 圖片</div></div>
+          </div>
           {/* Card images entry */}
           <div
             className={`adm-list-item ${selId === '__cards__' ? 'active' : ''}`}
@@ -240,6 +245,8 @@ export default function Admin({ onBack }: Props) {
             <div className="adm-panel"><MiningSettings chars={chars} /></div>
           ) : selId === '__battlefx__' ? (
             <div className="adm-panel"><BattlePresentationSettings /></div>
+          ) : selId === '__monsters__' ? (
+            <div className="adm-panel"><MonsterSettings /></div>
           ) : selId === '__cards__' ? (
             <div className="adm-panel"><CardImgSettings /></div>
           ) : selId === '__daily__' ? (
@@ -267,6 +274,60 @@ export default function Admin({ onBack }: Props) {
       </div>
     </div>
   )
+}
+
+function MonsterSettings() {
+  const [database, setDatabase] = useState(() => getMonsterDatabase())
+  const [selectedId, setSelectedId] = useState(() => getMonsterDatabase().monsters[0]?.id ?? '')
+  const [openMoveId, setOpenMoveId] = useState<string | null>(null)
+  useEffect(() => { loadMonstersFromCloud().then(value => { setDatabase({ ...value }); setSelectedId(current => value.monsters.some(monster => monster.id === current) ? current : value.monsters[0]?.id ?? '') }) }, [])
+  const persist = (next: typeof database) => { setDatabase(next); saveMonsterDatabase(next) }
+  const monster = database.monsters.find(item => item.id === selectedId)
+  const moves = database.moves.filter(item => item.ownerId === selectedId)
+  const updateMonster = (patch: Partial<Monster>) => persist({ ...database, monsters: database.monsters.map(item => item.id === selectedId ? { ...item, ...patch } : item) })
+  const updateMove = (id: string, patch: Partial<MonsterMove>) => persist({ ...database, moves: database.moves.map(item => item.id === id ? { ...item, ...patch } : item) })
+  const addMonster = () => {
+    const index = Math.max(0, ...database.monsters.map(item => Number(item.id.replace(/^m/, '')) || 0)) + 1
+    const id = `m${String(index).padStart(3, '0')}`
+    const next = { ...database, monsters: [...database.monsters, { id, name: '新怪物', title: '未命名怪物', element: '劍', hp: 100, atk: 10, def: 10, spd: 10, assetDir: 'monster', description: '' }] }
+    persist(next); setSelectedId(id)
+  }
+  const addMove = () => {
+    if (!monster) return
+    const slot = (['劍','槍','法','願','被'] as const).find(value => !moves.some(item => item.slot === value)) ?? '劍'
+    const id = `${monster.id}-${slot}-${Date.now()}`
+    persist({ ...database, moves: [...database.moves, { id, ownerId: monster.id, name: '新招式', slot, condition: slot === '被' ? null : 1, rangeType: null, scope: null, powerRatio: null, hitRate: null, critRate: null, cooldown: null, description: '', effectTrigger: null, effectOps: [], effectChance: 1 }] })
+    setOpenMoveId(id)
+  }
+  if (!monster) return <div className="adm-empty"><button className="btn primary" onClick={addMonster}>＋ 新增第一隻怪物</button></div>
+  const numberField = (label: string, key: 'hp'|'atk'|'def'|'spd'|'battleArtScale') => <label className="adm-field"><span>{label}</span><input type="number" step={key === 'battleArtScale' ? .1 : 1} value={monster[key] ?? 1} onChange={event => updateMonster({ [key]: Number(event.target.value) })} /></label>
+  return <div className="adm-basic monster-admin">
+    <div className="diag-head"><div><h2>👹 怪物資料庫</h2><p>怪物基本數值、戰鬥圖片與專用招式都會儲存至雲端 monsters.json。</p></div><button className="btn primary" onClick={addMonster}>＋ 新增怪物</button></div>
+    <div className="monster-admin-tabs">{database.monsters.map(item => <button key={item.id} className={item.id === selectedId ? 'active' : ''} onClick={() => setSelectedId(item.id)}><b>{item.name}</b><small>{item.id} · {item.title}</small></button>)}</div>
+    <section className="adm-section"><div className="adm-section-label">基本資料</div><div className="adm-basic-cols">
+      <label className="adm-field"><span>怪物 ID</span><input value={monster.id} disabled /></label>
+      <label className="adm-field"><span>名稱</span><input value={monster.name} onChange={event => updateMonster({ name: event.target.value })} /></label>
+      <label className="adm-field"><span>稱號</span><input value={monster.title} onChange={event => updateMonster({ title: event.target.value })} /></label>
+      <label className="adm-field"><span>屬性</span><select value={monster.element} onChange={event => updateMonster({ element: event.target.value })}><option>劍</option><option>槍</option><option>法</option><option>願</option></select></label>
+      {numberField('HP', 'hp')}{numberField('ATK', 'atk')}{numberField('DEF', 'def')}{numberField('SPD', 'spd')}{numberField('戰鬥立繪縮放', 'battleArtScale')}
+    </div><label className="adm-field"><span>怪物說明</span><textarea value={monster.description} onChange={event => updateMonster({ description: event.target.value })} /></label></section>
+    <section className="adm-section"><div className="adm-section-label">怪物圖片</div><ImageCrop storageKey={`cb_monster_img_${monster.id}`} cropW={900} cropH={1200} /></section>
+    <section className="adm-section"><div className="adm-section-label">怪物招式（{moves.length}）</div><button className="btn sm" onClick={addMove}>＋ 新增招式</button>
+      <div className="monster-move-list">{moves.map(item => <article key={item.id} className="monster-move-card" style={{ borderLeftColor: SLOT_COLOR[item.slot] }}>
+        <button className="monster-move-summary" onClick={() => setOpenMoveId(openMoveId === item.id ? null : item.id)}><span style={{ color: SLOT_COLOR[item.slot] }}>{item.slot}</span><b>{item.name}</b><small>{item.description || '尚未填寫說明'}</small><i>{openMoveId === item.id ? '收起' : '編輯'}</i></button>
+        {openMoveId === item.id && <div className="monster-move-editor"><div className="adm-basic-cols">
+          <label className="adm-field"><span>招式名稱</span><input value={item.name} onChange={event => updateMove(item.id, { name: event.target.value })} /></label>
+          <label className="adm-field"><span>槽位</span><select value={item.slot} onChange={event => updateMove(item.id, { slot: event.target.value as MonsterMove['slot'] })}>{['劍','槍','法','願','被'].map(value => <option key={value}>{value}</option>)}</select></label>
+          <label className="adm-field"><span>費用</span><input type="number" value={item.condition ?? ''} onChange={event => updateMove(item.id, { condition: event.target.value === '' ? null : Number(event.target.value) })} /></label>
+          <label className="adm-field"><span>威力倍率</span><input type="number" step=".1" value={item.powerRatio ?? ''} onChange={event => updateMove(item.id, { powerRatio: event.target.value === '' ? null : Number(event.target.value) })} /></label>
+          <label className="adm-field"><span>命中率 %</span><input type="number" value={item.hitRate == null ? '' : item.hitRate * 100} onChange={event => updateMove(item.id, { hitRate: event.target.value === '' ? null : Number(event.target.value) / 100 })} /></label>
+          <label className="adm-field"><span>爆擊率 %</span><input type="number" value={item.critRate == null ? '' : item.critRate * 100} onChange={event => updateMove(item.id, { critRate: event.target.value === '' ? null : Number(event.target.value) / 100 })} /></label>
+          <label className="adm-field"><span>冷卻回合</span><input type="number" value={item.cooldown ?? ''} onChange={event => updateMove(item.id, { cooldown: event.target.value === '' ? null : Number(event.target.value) })} /></label>
+          <label className="adm-field"><span>觸發時機</span><input value={item.effectTrigger ?? ''} onChange={event => updateMove(item.id, { effectTrigger: event.target.value || null })} /></label>
+        </div><label className="adm-field"><span>招式說明</span><textarea value={item.description} onChange={event => updateMove(item.id, { description: event.target.value })} /></label><div className="adm-section-label">招式圖片</div><ImageCrop storageKey={`cb_move_img_${item.id}`} cropW={1200} cropH={700} /><button className="btn sm danger" onClick={() => { persist({ ...database, moves: database.moves.filter(moveItem => moveItem.id !== item.id) }); setOpenMoveId(null) }}>刪除招式</button></div>}
+      </article>)}</div>
+    </section>
+  </div>
 }
 
 function BattlePresentationSettings() {
