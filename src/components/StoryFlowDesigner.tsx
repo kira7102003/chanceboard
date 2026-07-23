@@ -59,6 +59,17 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
   const scrollKey = `cb_story_designer_scroll_v2_${chapter.id}`
   const previewStartNode=findPreviewNode(flow,previewStartId)
   const change = (next: StoryFlowNode[]) => { const linked=addAutomaticFlowLinks(next);setFlow(linked);onSave(linked,rewards) }
+  // FLOW MAP and the detail editor are two views of the same chapter model.
+  // Reconcile cloud/parent updates back into the local editor immediately, while
+  // avoiding a state replacement when the current edit already matches.
+  useEffect(()=>{
+    const incoming=addAutomaticFlowLinks(dedupeFlowLinks(getChapterFlow(chapter)))
+    setFlow(current=>JSON.stringify(current)===JSON.stringify(incoming)?current:incoming)
+  },[chapter.id,chapter.flow])
+  useEffect(()=>{
+    const incoming=chapter.rewards??{}
+    setRewards(current=>JSON.stringify(current)===JSON.stringify(incoming)?current:incoming)
+  },[chapter.id,chapter.rewards])
   useEffect(()=>{const valid=new Set(['__route_picker__','__world_map__','__map_chapter__','__chapter_card__',...flattenFlowNodes(flow).map(node=>node.id)]),seenGraph=new Set<string>(),graph=(chapter.flowGraphLinks??[]).filter(link=>valid.has(link.sourceId)&&valid.has(link.targetId)&&!seenGraph.has(`${link.sourceId}>${link.targetId}`)&&!!seenGraph.add(`${link.sourceId}>${link.targetId}`)),seenCard=new Set<string>(),card=(chapter.chapterCardNextLinks??[]).filter(link=>valid.has(link.targetId)&&!seenCard.has(link.targetId)&&!!seenCard.add(link.targetId));if(graph.length!==(chapter.flowGraphLinks?.length??0)||card.length!==(chapter.chapterCardNextLinks?.length??0))onChapterChange({flowGraphLinks:graph,chapterCardNextLinks:card,chapterCardNextNodeId:card[0]?.targetId})},[chapter.id])
   useEffect(()=>{if(JSON.stringify(flow)!==JSON.stringify(getChapterFlow(chapter)))onSave(flow,rewards)},[])
   const revealNode = (id:string) => {setPreviewStartId(id);requestAnimationFrame(()=>requestAnimationFrame(()=>{
