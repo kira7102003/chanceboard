@@ -108,12 +108,12 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
     </header>
     <div className="story-designer-sub"><b>劇情工作區</b><span>拖曳卡片調整位置</span><span>黃點接到藍點建立流程</span><span>點「修改細節」前往下方編輯</span><span>☁ 所有變更自動儲存</span></div>
     <nav className="story-designer-palette">
-      <button className="reward" onClick={() => document.querySelector('.story-reward-node')?.scrollIntoView({ behavior: 'smooth', inline: 'center' })}><i>★</i><span>故事獎勵</span></button>
+      <button className="reward" onClick={() => document.querySelector('#story-chapter-opening-settings .story-chapter-rewards')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}><i>★</i><span>故事獎勵</span></button>
       {boardCharacters.map((character, index) => { const showIcon = index < 2; const image = showIcon ? getUrlByKey(`cb_board_${character.id}_front`) : null; return <button key={character.id} onClick={() => append(makeCommon(character))}><i>{image ? <img src={image} alt="" /> : showIcon ? character.name.slice(0, 1) : null}</i><span>{character.name}</span></button> })}
     </nav>
     <main className="story-designer-canvas" ref={canvasRef} onClick={event=>{const card=(event.target as HTMLElement).closest<HTMLElement>('[data-editor-node-id]');if(!card)return;setPreviewStartId(card.dataset.editorNodeId);canvasRef.current?.querySelectorAll('.preview-selected').forEach(item=>item.classList.remove('preview-selected'));card.classList.add('preview-selected')}}>
       <FlowGraphOverview chapter={chapter} nodes={flow} onChange={change} onChapterChange={onChapterChange} onLocate={revealNode} open={mapOpen} onOpenChange={setMapOpen}/>
-      {detailsVisible&&<><ChapterSettingsCard chapter={chapter} rewards={rewards} onChapterChange={onChapterChange} onRewardsChange={next=>{setRewards(next);onSave(flow,next)}}/><RewardCard rewards={rewards} onChange={next=>{setRewards(next);onSave(flow,next)}}/><FlowLane nodes={applyStoryFlowLinks(flow)} onChange={change} boardCharacters={boardCharacters} depth={0} label="章節流程（與上方連線同步）" laneId="root" /></>}
+      {detailsVisible&&<><ChapterSettingsCard chapter={chapter} rewards={rewards} onChapterChange={onChapterChange} onRewardsChange={next=>{setRewards(next);onSave(flow,next)}}/><FlowLane nodes={applyStoryFlowLinks(flow)} onChange={change} boardCharacters={boardCharacters} depth={0} label="章節流程（與上方連線同步）" laneId="root" /></>}
       {!flow.length && <div className="story-designer-empty">尚無節點，請從右上角新增第一段對話。</div>}
     </main>
     <aside className="story-designer-anchor-tools"><button onClick={returnToMap}>↑ 回流程圖</button><button onClick={()=>setMapOpen(value=>!value)}>{mapOpen?'收縮 MAP':'展開 MAP'}</button><button onClick={()=>setDetailsVisible(value=>!value)}>{detailsVisible?'隱藏細節':'顯示細節'}</button></aside>
@@ -312,3 +312,4 @@ function RewardCard({ rewards, onChange }: { rewards: StoryRewards; onChange: (r
     </article>
   </section>
 }
+void RewardCard
