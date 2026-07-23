@@ -32,7 +32,7 @@
 .story-graph-node.link-source-selected{outline:4px solid #ffd34f!important;outline-offset:5px;box-shadow:0 0 30px #ffd34faa!important}.story-graph-node.link-source-selected::after{animation:story-link-port-pulse .75s ease-in-out infinite alternate}@keyframes story-link-port-pulse{to{transform:translateY(-50%) scale(1.35);box-shadow:0 0 0 5px #6e5109,0 0 25px #ffe36d}}
 .story-graph-overview>.story-flow-link-manager{display:none!important}
 /* 2026 narrative-studio workspace */
-.story-graph-svg{pointer-events:auto}.story-graph-svg path[id]{pointer-events:stroke;cursor:pointer;transition:stroke-width .15s,filter .15s}.story-graph-svg path[id]:hover{stroke-width:10;filter:drop-shadow(0 0 9px currentColor)}
+.story-graph-svg{pointer-events:none}.story-graph-svg path[id]{pointer-events:stroke;cursor:pointer;transition:stroke-width .15s,filter .15s}.story-graph-svg path[id]:hover{stroke-width:10;filter:drop-shadow(0 0 9px currentColor)}
 .story-graph-node-head .story-graph-copy{color:#8ee7ff!important;border-color:#397b99!important}.story-graph-node-head .story-graph-copy:hover{background:#174b63!important;color:#fff!important}
 .story-node-flow-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0;padding:8px;border:1px solid #c8d5ed;border-radius:8px;background:#eef4ff}.story-node-flow-meta label{display:flex;align-items:center;gap:7px;color:#33415f;font-size:11px}.story-node-flow-meta select{min-width:0;flex:1;padding:6px;border:1px solid #c4cee1;border-radius:6px;background:#fff}.story-node-flow-meta .check input{width:auto}@media(max-width:760px){.story-node-flow-meta{grid-template-columns:1fr}}
 .story-designer{--studio-bg:#080d19;--studio-panel:#111827;--studio-text:#e9eef9;--studio-accent:#8b7cff;background:#eef2f8}
