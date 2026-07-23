@@ -88,6 +88,13 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
     target?.classList.add('just-added');window.setTimeout(()=>target?.classList.remove('just-added'),1800)
   }))}
   const append = (node:StoryFlowNode) => { const inserted=previewStartId?insertFlowNodeAfter(flow,previewStartId,node):{nodes:flow,inserted:false};change(inserted.inserted?inserted.nodes:[...flow,node]);revealNode(node.id) }
+  const duplicateChapterCard = () => {
+    const node = makePresentation('chapter')
+    if (node.type !== 'common') return
+    const copy: StoryFlowNode = { ...node, segment: { ...node.segment, speaker: '系統', section: chapter.chapterCardEyebrow ?? 'CHAPTER', text: chapter.chapterCardTitle ?? `第${chapter.order}章　${chapter.piece}` } }
+    change([...flow, copy])
+    revealNode(copy.id)
+  }
   const returnToMap=()=>{const canvas=canvasRef.current,map=canvas?.querySelector<HTMLElement>('.story-graph-overview');if(canvas&&map){setMapOpen(true);requestAnimationFrame(()=>{canvas.scrollTo({top:Math.max(0,map.offsetTop-12),left:0,behavior:'smooth'})})}}
   const openPreview = (startId = previewStartId) => {
     setPreviewStartId(startId)
@@ -134,7 +141,7 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
     </nav>
     <main className="story-designer-canvas" ref={canvasRef} onClick={event=>{const card=(event.target as HTMLElement).closest<HTMLElement>('[data-editor-node-id]');if(!card)return;setPreviewStartId(card.dataset.editorNodeId);canvasRef.current?.querySelectorAll('.preview-selected').forEach(item=>item.classList.remove('preview-selected'));card.classList.add('preview-selected')}}>
       <FlowGraphOverview chapter={chapter} nodes={flow} selectedNodeId={previewStartId} onChange={change} onChapterChange={onChapterChange} onLocate={revealNode} open={mapOpen} onOpenChange={setMapOpen}/>
-      {detailsVisible&&<><ChapterSettingsCard chapter={chapter} rewards={rewards} onChapterChange={onChapterChange} onRewardsChange={next=>{setRewards(next);onSave(flow,next)}}/><FlowLane nodes={applyStoryFlowLinks(flow)} onChange={change} boardCharacters={boardCharacters} depth={0} label="章節流程（與上方連線同步）" laneId="root" /></>}
+      {detailsVisible&&<><ChapterSettingsCard chapter={chapter} rewards={rewards} onDuplicate={duplicateChapterCard} onChapterChange={onChapterChange} onRewardsChange={next=>{setRewards(next);onSave(flow,next)}}/><FlowLane nodes={applyStoryFlowLinks(flow)} onChange={change} boardCharacters={boardCharacters} depth={0} label="章節流程（與上方連線同步）" laneId="root" /></>}
       {!flow.length && <div className="story-designer-empty">尚無節點，請從右上角新增第一段對話。</div>}
     </main>
     <aside className="story-designer-anchor-tools"><button onClick={returnToMap}>↑ 回流程圖</button><button onClick={()=>setMapOpen(value=>!value)}>{mapOpen?'收縮 MAP':'展開 MAP'}</button><button onClick={()=>setDetailsVisible(value=>!value)}>{detailsVisible?'隱藏細節':'顯示細節'}</button></aside>
@@ -142,11 +149,11 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
   </div>
 }
 
-function ChapterSettingsCard({chapter,rewards,onChapterChange,onRewardsChange}:{chapter:StoryChapter;rewards:StoryRewards;onChapterChange:(patch:Partial<StoryChapter>)=>void;onRewardsChange:(rewards:StoryRewards)=>void}){
+function ChapterSettingsCard({chapter,rewards,onDuplicate,onChapterChange,onRewardsChange}:{chapter:StoryChapter;rewards:StoryRewards;onDuplicate:()=>void;onChapterChange:(patch:Partial<StoryChapter>)=>void;onRewardsChange:(rewards:StoryRewards)=>void}){
   const characters=getChars(),backgrounds=getBattleBackgroundNames()
   const mapNumber=(key:'mapX'|'mapY'|'mapNodeScale',value:number)=>onChapterChange({[key]:value})
   return <section id="story-chapter-opening-settings" className="story-chapter-settings story-reward-node">
-    <div className="story-flow-lane-label">章節開場卡節點｜點完地圖後播放</div>
+    <div className="story-flow-lane-label">章節開場卡節點｜點完地圖後播放 <button type="button" title="複製為下方可編輯的章節字卡" onClick={onDuplicate}>⧉ 複製章節卡</button></div>
     <div className="story-chapter-settings-grid">
       <label><span>章節標題</span><input value={chapter.title} onChange={e=>onChapterChange({title:e.target.value})}/></label><label><span>章節副標</span><input value={chapter.subtitle} onChange={e=>onChapterChange({subtitle:e.target.value})}/></label>
       <label><span>地圖節點章節標籤</span><input value={chapter.mapNodeLabel??`第 ${chapter.order} 章`} onChange={e=>onChapterChange({mapNodeLabel:e.target.value})}/></label><label><span>地圖節點短標題</span><input value={chapter.mapNodeTitle??chapter.title} onChange={e=>onChapterChange({mapNodeTitle:e.target.value})}/></label><label><span>地圖節點棋子符號</span><input value={chapter.mapNodeSymbol??chapter.piece} onChange={e=>onChapterChange({mapNodeSymbol:e.target.value})}/></label>
