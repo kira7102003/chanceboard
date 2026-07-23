@@ -17,6 +17,7 @@ export default function StoryMode({onClose,onComplete,onBattle,preview=false,pre
  const resume=useMemo(()=>{try{const raw=localStorage.getItem('cb_story_resume');if(!raw)return null;localStorage.removeItem('cb_story_resume');return JSON.parse(raw) as {chapterId:string;cursor:number;nodes:StoryFlowNode[]}}catch{return null}},[])
  const[chapter,setChapter]=useState<StoryChapter|null>(()=>resume?chapters.find(item=>item.id===resume.chapterId)??null:null),[nodes,setNodes]=useState<StoryFlowNode[]>(()=>resume?resume.nodes.slice(resume.cursor):[])
  const[showEntryPicker,setShowEntryPicker]=useState(false),[pendingChapter,setPendingChapter]=useState<StoryChapter|null>(null)
+ const[settingsOpen,setSettingsOpen]=useState(false),[cgPlayback,setCgPlayback]=useState<'once'|'always'>(()=>localStorage.getItem('cb_story_cg_playback')==='always'?'always':'once')
  const[entryRoute,setEntryRoute]=useState<{id:string;total:number}|undefined>()
  const[selectedId,setSelectedId]=useState(()=>chapters.findLast(item=>item.unlocked)?.id??chapters[0]?.id),[actorPoint,setActorPoint]=useState(()=>{const item=chapters.findLast(item=>item.unlocked)??chapters[0];return{x:item?.mapX??9.5,y:item?.mapY??68}})
  const player=usePlayerStore()
@@ -33,7 +34,7 @@ export default function StoryMode({onClose,onComplete,onBattle,preview=false,pre
  const enter=(item:StoryChapter)=>{if(!item.unlocked)return;const picker=getChapterFlow(item).find((node):node is Extract<StoryFlowNode,{type:'branch'}>=>node.type==='branch'&&!!node.chapterRouteSelect);if(picker){setPendingChapter(item);setShowEntryPicker(true);return}startChapter(item)}
  if(showEntryPicker&&pendingChapter&&pendingPicker)return <StoryRoutePicker chapter={pendingChapter} node={pendingPicker} onBack={()=>{setShowEntryPicker(false);setPendingChapter(null)}} onChoose={route=>{setShowEntryPicker(false);setPendingChapter(null);startChapter(pendingChapter,{id:route.id,label:route.label})}}/>
  return <div className="panel-overlay story-map-screen">
-  <div className="panel-header"><button className="panel-back" onClick={onClose}>返回大廳</button><span className="panel-title">故事模式</span><span className="panel-meta">命運棋盤</span></div>
+  <div className="panel-header"><button className="panel-back" onClick={onClose}>返回大廳</button><span className="panel-title">故事模式</span><span className="panel-meta">命運棋盤</span><button className="story-map-settings-button" title="故事基本設定" aria-label="故事基本設定" onClick={()=>setSettingsOpen(true)}>⚙</button></div>
   <div className="story-world-map">
    <header><small>CHANCEBOARD CHRONICLE</small><h1>六棋之境</h1><p>沿著命運棋路前進，每一幅地圖都是一段尚未落子的故事。</p></header>
    <div className="story-map-route">
@@ -50,5 +51,6 @@ export default function StoryMode({onClose,onComplete,onBattle,preview=false,pre
    </div>
    {selected&&<aside className={`story-map-detail ${selected.unlocked?'':'locked'}`} style={{backgroundImage:`linear-gradient(90deg,#080a18f5,#080a18aa),url(${getUrlByKey(`cb_story_map_${selected.id}`)??''})`}}><div><small>已選擇｜CHAPTER {selected.order} · {selected.piece}</small><h2>{selected.title}</h2><p>{selected.subtitle}</p></div><button className="story-map-next" disabled={!selected.unlocked} onClick={()=>enter(selected)}>{selected.unlocked?'下一步：選擇小黑／小白 →':'🔒 尚未解鎖'}</button></aside>}
   </div>
+  {settingsOpen&&<div className="story-map-settings-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)setSettingsOpen(false)}}><section className="story-map-settings-modal" role="dialog" aria-modal="true" aria-labelledby="story-settings-title"><header><div><small>STORY SETTINGS</small><h2 id="story-settings-title">基本設定</h2></div><button onClick={()=>setSettingsOpen(false)}>×</button></header><div className="story-map-setting-group"><b>CG 播放方式</b><p>設定此帳號再次進入故事時，開場 CG 的播放規則。</p><label className={cgPlayback==='once'?'active':''}><input type="radio" name="cgPlayback" checked={cgPlayback==='once'} onChange={()=>{setCgPlayback('once');localStorage.setItem('cb_story_cg_playback','once')}}/><span><strong>第一次播放</strong><small>每段開場 CG 看過後，之後自動跳過</small></span></label><label className={cgPlayback==='always'?'active':''}><input type="radio" name="cgPlayback" checked={cgPlayback==='always'} onChange={()=>{setCgPlayback('always');localStorage.setItem('cb_story_cg_playback','always')}}/><span><strong>每次播放</strong><small>每次進入章節都完整播放開場 CG</small></span></label></div><footer><button onClick={()=>setSettingsOpen(false)}>完成</button></footer></section></div>}
  </div>
 }
