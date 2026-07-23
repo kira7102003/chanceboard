@@ -64,6 +64,8 @@ export interface StoryChapter {
   chapterCardNextLinks?: StoryNodeLink[]
   flowNodePositions?: Record<string,{x:number;y:number}>
   flowGraphLinks?: StoryGraphLink[]
+  /** Connections hidden/removed in the visual flow editor, keyed as source>target. */
+  flowGraphDisabledLinks?: string[]
   rewards?: StoryRewards
   mapX?: number
   mapY?: number
