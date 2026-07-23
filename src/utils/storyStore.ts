@@ -26,6 +26,10 @@ export interface StorySegment {
   portraitInactiveOpacity?: number
   chapterPrompt?: string
   chapterEffect?: 'fade' | 'writing' | 'reading'
+  /** Only show this presentation once for each player. */
+  playOnce?: boolean
+  /** Zero-based point in the chapter's externally planned map route. */
+  mapRoutePointIndex?: number
 }
 
 export type StoryFlowNode =

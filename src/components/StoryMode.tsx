@@ -21,7 +21,7 @@ export default function StoryMode({onClose,onComplete,onBattle,preview=false,pre
  const[selectedId,setSelectedId]=useState(()=>chapters.findLast(item=>item.unlocked)?.id??chapters[0]?.id),[actorPoint,setActorPoint]=useState(()=>{const item=chapters.findLast(item=>item.unlocked)??chapters[0];return{x:item?.mapX??9.5,y:item?.mapY??68}})
  const player=usePlayerStore()
  useEffect(()=>{if(!newUnlock)return;localStorage.setItem('cb_story_seen_unlock',newUnlock);const timer=window.setTimeout(()=>setNewUnlock(null),4200);return()=>window.clearTimeout(timer)},[newUnlock])
- const leaveChapter=()=>{setChapter(null);setNodes([])}
+ const leaveChapter=()=>{if(chapter){const pointIndex=Number(localStorage.getItem(`cb_story_map_route_point_${chapter.id}`));const planned=chapters[0]?.mapRoutePoints;if(Number.isInteger(pointIndex)&&planned?.[pointIndex])setActorPoint(planned[pointIndex])}setChapter(null);setNodes([])}
  const completeChapter=(cleared:StoryChapter)=>{if(preview){leaveChapter();return}const next=unlockNextStoryChapter(cleared.id);setChapters(next);const following=next[cleared.order];if(following?.unlocked){setSelectedId(following.id);setNewUnlock(following.id)}onComplete?.(cleared)}
  const pendingPicker=pendingChapter?getChapterFlow(pendingChapter).find((node):node is Extract<StoryFlowNode,{type:'branch'}>=>node.type==='branch'&&!!node.chapterRouteSelect):undefined
  if(chapter)return <StoryPlayer chapter={chapter} initialNodes={nodes} entryRoute={entryRoute} onLeave={leaveChapter} onComplete={completeChapter} onBattle={onBattle} preview={preview}/>
