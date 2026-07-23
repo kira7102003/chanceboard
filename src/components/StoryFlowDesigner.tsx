@@ -314,6 +314,9 @@ function CgUpload({ segment, onChange }: { segment: StorySegment; onChange: (seg
   const storageKey = segment.cgKey && !/^https?:/.test(segment.cgKey) ? segment.cgKey : `cb_story_cg_${segment.id}`
   const [url, setUrl] = useState(() => /^https?:/.test(segment.cgKey ?? '') ? segment.cgKey ?? '' : getUrlByKey(storageKey) ?? '')
   const [busy, setBusy] = useState(false)
+  useEffect(() => {
+    setUrl(/^https?:/.test(segment.cgKey ?? '') ? segment.cgKey ?? '' : getUrlByKey(storageKey) ?? '')
+  }, [segment.cgKey, storageKey])
   const upload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
@@ -322,7 +325,10 @@ function CgUpload({ segment, onChange }: { segment: StorySegment; onChange: (seg
     reader.onload = async () => {
       try {
         const cloudUrl = await uploadByKey(storageKey, String(reader.result))
-        onChange({ ...segment, cgKey: storageKey })
+        // Persist the public cloud URL in the chapter model. The previous
+        // key-only value depended on localStorage and disappeared after a
+        // deployment or when the editor was opened on another browser.
+        onChange({ ...segment, cgKey: cloudUrl })
         setUrl(cloudUrl)
       } finally {
         setBusy(false)
@@ -332,7 +338,9 @@ function CgUpload({ segment, onChange }: { segment: StorySegment; onChange: (seg
     reader.readAsDataURL(file)
   }
   const clear = () => {
-    removeByKey(storageKey)
+    // Uploaded CGs always use the stable per-segment key, even though the
+    // chapter now stores the public URL for cross-device persistence.
+    removeByKey(`cb_story_cg_${segment.id}`)
     onChange({ ...segment, cgKey: undefined })
     setUrl('')
   }

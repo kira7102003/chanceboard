@@ -109,6 +109,12 @@ export function getUrlByKey(storageKey: string): string | null {
   }
   const local = localStorage.getItem(storageKey)
   if (local) return local
+  // Story CG/route images are referenced by cloud chapter data. Older
+  // chapters stored only the stable key, so they must not depend on this
+  // browser having a local upload marker after a deploy or device change.
+  if (storageKey.startsWith('cb_story_cg_') || storageKey.startsWith('cb_story_route_')) {
+    return storageUrl(storagePath(storageKey))
+  }
   return null
 }
 
