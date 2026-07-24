@@ -79,8 +79,13 @@ export async function removeChromaKeyBackground(src: string, hexColor = '#00ff00
     const delta = distance(offset)
     if (delta > edge) continue
     data[offset + 3] = delta <= tolerance ? 0 : Math.round(255 * (delta - tolerance) / Math.max(1, edge - tolerance))
-    // Remove the green fringe left by antialiasing around hair and clothing.
-    if (data[offset + 3] > 0) data[offset + 1] = Math.min(data[offset + 1], Math.max(data[offset], data[offset + 2]) + 18)
+  }
+  // Despill antialiased pixels. White/silver hair blended with a green screen is
+  // often far from pure #00ff00, so chroma distance alone leaves a green halo.
+  for (let offset = 0; offset < data.length; offset += 4) {
+    if (data[offset + 3] === 0) continue
+    const red=data[offset],green=data[offset+1],blue=data[offset+2],neutral=Math.max(red,blue),excess=green-neutral
+    if(excess>8)data[offset+1]=neutral+Math.min(6,Math.round(excess*.08))
   }
   context.putImageData(frame, 0, 0)
   return canvas.toDataURL('image/png')
