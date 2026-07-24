@@ -1465,7 +1465,7 @@ function ImageCrop({ storageKey, fallbackStorageKey, cropW = PORTRAIT_W, cropH =
     reader.readAsDataURL(file); e.target.value = ''
   }
 
-  const handleReEdit = async () => {
+  const handleReEdit = async (removeGreen=false) => {
     if (!saved) return
     setFetchingRe(true)
     try {
@@ -1475,7 +1475,7 @@ function ImageCrop({ storageKey, fallbackStorageKey, cropW = PORTRAIT_W, cropH =
       if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current)
       const url = URL.createObjectURL(blob)
       blobUrlRef.current = url
-      setImgSrc(url)
+      setImgSrc(removeGreen&&supportsChromaKey?await removeGreenScreenIfPresent(url,chromaTolerance):url)
     } catch (err) {
       console.error('重新裁切載入失敗', err)
       alert('載入圖片失敗，請改用「上傳圖片」')
@@ -1573,10 +1573,11 @@ function ImageCrop({ storageKey, fallbackStorageKey, cropW = PORTRAIT_W, cropH =
               <input type="file" accept="image/*" onChange={handleFile} hidden />
             </label>
             {saved && !savedFailed && (
-              <button className="btn sm" onClick={handleReEdit} disabled={fetchingRe}>
+              <button className="btn sm" onClick={()=>handleReEdit(false)} disabled={fetchingRe}>
                 {fetchingRe ? '載入中…' : '重新裁切'}
               </button>
             )}
+            {saved&&!savedFailed&&supportsChromaKey&&<button className="btn sm" onClick={()=>handleReEdit(true)} disabled={fetchingRe||removingBg}>{fetchingRe?'處理中…':'自動去綠幕'}</button>}
             {saved && <button className="btn sm danger" onClick={handleRemove}>移除</button>}
           </div>
         </div>
