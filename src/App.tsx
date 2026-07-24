@@ -36,10 +36,16 @@ function RotatePrompt() {
 
 function GlobalBgm({ config, enabled, volume }: { config: BgmConfig; enabled: boolean; volume: number }) {
   const ref=useRef<HTMLAudioElement>(null)
+  const [storyOverride,setStoryOverride]=useState<string|null|undefined>(undefined)
   const playable=config.tracks.map(track=>({ ...track, url:getUrlByKey(track.storageKey) })).filter((track):track is typeof track & {url:string}=>!!track.url)
   const initial=config.mode==='random'&&playable.length>1?playable[Math.floor(Math.random()*playable.length)]:playable.find(track=>track.id===config.selectedId)??playable[0]
   const [trackId,setTrackId]=useState(initial?.id??'')
-  const current=playable.find(track=>track.id===trackId)??initial
+  const current=storyOverride===undefined?(playable.find(track=>track.id===trackId)??initial):storyOverride?{id:'story-override',name:'Story BGM',storageKey:storyOverride,url:getUrlByKey(storyOverride)??''}:undefined
+  useEffect(()=>{
+    const update=(event:Event)=>setStoryOverride((event as CustomEvent<{storageKey?:string|null}>).detail.storageKey)
+    window.addEventListener('chanceboard:story-bgm',update)
+    return()=>window.removeEventListener('chanceboard:story-bgm',update)
+  },[])
   useEffect(()=>{setTrackId(initial?.id??'')},[config.mode,config.selectedId,config.tracks.length])
   useEffect(()=>{
     const audio=ref.current
@@ -51,7 +57,7 @@ function GlobalBgm({ config, enabled, volume }: { config: BgmConfig; enabled: bo
     return()=>{window.removeEventListener('pointerdown',play);window.removeEventListener('keydown',play)}
   },[current?.url,enabled,volume])
   const next=()=>{if(config.mode!=='random'||playable.length<2)return;const choices=playable.filter(track=>track.id!==trackId);setTrackId(choices[Math.floor(Math.random()*choices.length)].id)}
-  if(!current)return null
+  if(!current?.url)return null
   return <audio ref={ref} src={current.url} data-audio-kind="music" autoPlay loop={config.mode==='selected'} preload="auto" onEnded={next} />
 }
 

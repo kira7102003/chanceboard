@@ -53,6 +53,8 @@ export interface StoryChapter {
   segments?: StorySegment[]
   flow?: StoryFlowNode[]
   backgroundKey?: string
+  /** Music used while playing this chapter. Undefined inherits global BGM; an empty string disables music. */
+  bgmStorageKey?: string
   chapterCardEnabled?: boolean
   chapterCardEyebrow?: string
   chapterCardTitle?: string

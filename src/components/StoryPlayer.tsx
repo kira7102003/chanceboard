@@ -21,6 +21,10 @@ export default function StoryPlayer({chapter,initialNodes,onLeave,onComplete,onB
  const selectedId=pieceId(segment?.boardCharacter),speaker=segment?.speaker||chapter.title,speakerChar=chars.find(char=>char.id===selectedId||char.name===speaker),activeSide=segment?.side??'left'
  const avatar=speakerChar?(getCharImg(speakerChar.id)??getUrlByKey(`cb_head_img_${speakerChar.id}`)):getUrlByKey(`cb_board_${segment?.boardCharacter??leftId}_front`)
  const background=getUrlByKey(chapter.backgroundKey||`cb_story_map_${chapter.id}`)??'',cg=segment?.cgKey?(getUrlByKey(segment.cgKey)??segment.cgKey):''
+ useEffect(()=>{
+  window.dispatchEvent(new CustomEvent('chanceboard:story-bgm',{detail:{storageKey:chapter.bgmStorageKey}}))
+  return()=>{window.dispatchEvent(new CustomEvent('chanceboard:story-bgm',{detail:{storageKey:undefined}}))}
+ },[chapter.bgmStorageKey])
  useEffect(()=>{setShown(type==='chapter'&&chapterEffect!=='writing'?text.length:0)},[cursor,text,type,chapterEffect])
  useEffect(()=>{if(!preview&&node&&isOnce(node))localStorage.setItem(onceKey(node),'1');if(!preview&&segment?.mapRoutePointIndex!==undefined)localStorage.setItem(`cb_story_map_route_point_${chapter.id}`,String(segment.mapRoutePointIndex))},[chapter.id,node,preview,segment?.mapRoutePointIndex])
  useEffect(()=>{if(preview||!entryRoute)return;const key=`cb_story_route_progress_${chapter.id}_${entryRoute.id}`,done=Math.min(entryRoute.total,cursor);if(done>Number(localStorage.getItem(key)||0))localStorage.setItem(key,String(done))},[chapter.id,cursor,entryRoute,preview])

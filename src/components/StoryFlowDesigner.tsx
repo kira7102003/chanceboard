@@ -9,6 +9,7 @@ import { applyStoryFlowLinks, getChapterFlow, getStoryChapters, type StoryChapte
 import StoryPlayer from './StoryPlayer'
 import StoryMode from './StoryMode'
 import { flushStoryChapters } from '../story/storyRepository'
+import { getBgmConfig } from '../utils/bgmStore'
 
 interface Props {
   chapter: StoryChapter
@@ -152,6 +153,7 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
 
 function ChapterSettingsCard({chapter,rewards,onDuplicate,onChapterChange,onRewardsChange}:{chapter:StoryChapter;rewards:StoryRewards;onDuplicate:()=>void;onChapterChange:(patch:Partial<StoryChapter>)=>void;onRewardsChange:(rewards:StoryRewards)=>void}){
   const characters=getChars(),backgrounds=getBattleBackgroundNames()
+  const bgmTracks=[...getBgmConfig('lobby').tracks,...getBgmConfig('battle').tracks].filter((track,index,all)=>all.findIndex(item=>item.storageKey===track.storageKey)===index)
   const mapNumber=(key:'mapX'|'mapY'|'mapNodeScale',value:number)=>onChapterChange({[key]:value})
   return <section id="story-chapter-opening-settings" className="story-chapter-settings story-reward-node">
     <div className="story-flow-lane-label">章節開場卡節點｜點完地圖後播放 <button type="button" title="複製為下方可編輯的章節字卡" onClick={onDuplicate}>⧉ 複製章節卡</button></div>
@@ -161,6 +163,7 @@ function ChapterSettingsCard({chapter,rewards,onDuplicate,onChapterChange,onRewa
       <label><span>地圖位置 X%</span><input type="number" min="0" max="100" value={chapter.mapX??10} onChange={e=>mapNumber('mapX',Math.max(0,Math.min(100,+e.target.value)))}/></label><label><span>地圖位置 Y%</span><input type="number" min="0" max="100" value={chapter.mapY??68} onChange={e=>mapNumber('mapY',Math.max(0,Math.min(100,+e.target.value)))}/></label><label><span>地圖節點尺寸 %</span><input type="number" min="60" max="180" value={chapter.mapNodeScale??100} onChange={e=>mapNumber('mapNodeScale',Math.max(60,Math.min(180,+e.target.value)))}/></label>
       <label className="check"><input type="checkbox" checked={chapter.chapterCardEnabled!==false} onChange={e=>onChapterChange({chapterCardEnabled:e.target.checked})}/><span>顯示開場章節卡</span></label><label><span>章節卡上方標籤</span><input value={chapter.chapterCardEyebrow??'CHAPTER'} onChange={e=>onChapterChange({chapterCardEyebrow:e.target.value})}/></label><label><span>章節卡大標題</span><input value={chapter.chapterCardTitle??`第${chapter.order}章　${chapter.piece}`} onChange={e=>onChapterChange({chapterCardTitle:e.target.value})}/></label><label><span>章節卡點擊提示</span><input value={chapter.chapterCardPrompt??'點擊任意位置開始 ◆'} onChange={e=>onChapterChange({chapterCardPrompt:e.target.value})}/></label><label><span>章節卡顯示效果</span><select value={chapter.chapterCardEffect??'writing'} onChange={e=>onChapterChange({chapterCardEffect:e.target.value as StoryChapter['chapterCardEffect']})}><option value="writing">書寫・逐字出現</option><option value="reading">閱讀・展開整頁</option><option value="fade">淡入・完整標題</option></select></label>
       <label className="check"><input type="checkbox" checked={chapter.unlocked} onChange={e=>onChapterChange({unlocked:e.target.checked})}/><span>開放章節</span></label><label><span>故事背景</span><select value={chapter.backgroundKey??''} onChange={e=>onChapterChange({backgroundKey:e.target.value||undefined})}><option value="">章節預設背景</option>{backgrounds.map((name,index)=><option value={`cb_bg_battle_${index+1}`} key={index}>{name}</option>)}</select></label>
+      <label><span>關卡音樂</span><select value={chapter.bgmStorageKey===undefined?'__inherit__':chapter.bgmStorageKey} onChange={e=>onChapterChange({bgmStorageKey:e.target.value==='__inherit__'?undefined:e.target.value})}><option value="__inherit__">繼承全域 BGM</option><option value="">不播放音樂</option>{bgmTracks.map(track=><option key={track.storageKey} value={track.storageKey}>{track.name}</option>)}</select></label>
     </div>
     <div className="story-chapter-rewards"><b>章節首次完成獎勵</b><label><span>獎勵角色</span><select value={rewards.characterId??''} onChange={e=>onRewardsChange({...rewards,characterId:e.target.value||undefined})}><option value="">不贈送角色</option>{characters.map(character=><option value={character.id} key={character.id}>{character.name}</option>)}</select></label>{([['gems','鑽石'],['coins','金幣'],['silver','銀'],['copper','銅'],['iron','鐵'],['wood','木']] as const).map(([key,label])=><label key={key}><span>{label}</span><input type="number" min="0" value={rewards[key]??0} onChange={e=>onRewardsChange({...rewards,[key]:Math.max(0,Math.floor(+e.target.value||0))})}/></label>)}</div>
   </section>
