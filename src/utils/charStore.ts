@@ -329,6 +329,12 @@ export function removeCharImg(id: string): void {
 export function getCharWideImg(id: string): string | null {
   return getUrlByKey(`cb_wide_img_${id}`)
 }
+/** Character art used on the battlefield. Awakened art is optional, so older
+ * characters continue to use their normal wide portrait without extra setup. */
+export function getCharBattleImg(id: string, awakened = false): string | null {
+  return (awakened ? getUrlByKey(`cb_awaken_wide_img_${id}`) : null)
+    ?? getCharWideImg(id)
+}
 export async function saveCharWideImg(id: string, dataUrl: string): Promise<string> {
   return uploadByKey(`cb_wide_img_${id}`, dataUrl)
 }

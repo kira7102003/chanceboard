@@ -9,7 +9,7 @@ import type { GameState } from '../types/game'
 import { getReadyUnits } from '../engine/atb'
 import { calcBAT, effectiveATK, effectiveDEF, effectiveSPD } from '../engine/combat'
 import ScorePanel from './ScorePanel'
-import { getCharWideImg, getMoveImg, getCardImg, getMoveImageFacing, getCharacterBImage, getCharacterBImageFacing } from '../utils/charStore'
+import { getCharBattleImg, getMoveImg, getCardImg, getMoveImageFacing, getCharacterBImageFacing } from '../utils/charStore'
 import BattleLog from './battle/BattleLog'
 import { useFitBattleLayout } from '../hooks/useFitBattleLayout'
 import { getBattlePresentationStyle } from '../utils/battlePresentation'
@@ -67,6 +67,10 @@ function statusTagTexts(unit: Unit, clock: number): string[] {
     counts.set(text, (counts.get(text) ?? 0) + 1)
   }
   return [...counts].map(([text, count]) => count > 1 ? `${text} ×${count}` : text)
+}
+
+function isAwakened(unit: Unit | undefined, clock: number): boolean {
+  return !!unit?.statuses.some(status => status.key === 'awakened' && status.expiresAt > clock)
 }
 
 // Ported from the reference's moveTargetRuleShort(): one-line targeting rule
@@ -197,12 +201,20 @@ export default function BattleView({ onPlayCard, onDiscardCard, onMoveUnit, onEx
       lastAnimIdx.current = i
       const { moveId, moveName, moveSlot, charName, charId, attackerSide, targetSide, targetName, targetCharId, targetUnitId, groupTargets, dealsDamage, hasTarget, selfTargetOnly, missed } = entry.moveAnim
       const img = getMoveImg(moveId)
-      const charImg = charId ? getCharWideImg(charId) : null
-      const targetCharImg = targetCharId ? getCharacterBImage(targetCharId) : null
+      const attackerUnit = [...game.teamA, ...game.teamB].find(unit =>
+        unit.characterId === charId && unit.side === (attackerSide ?? unit.side))
+      const targetUnit = targetUnitId
+        ? [...game.teamA, ...game.teamB].find(unit => unit.id === targetUnitId)
+        : [...game.teamA, ...game.teamB].find(unit => unit.characterId === targetCharId)
+      const charImg = charId ? getCharBattleImg(charId, isAwakened(attackerUnit, game.clock)) : null
+      const targetCharImg = targetCharId ? getCharBattleImg(targetCharId, isAwakened(targetUnit, game.clock)) : null
       const targetFacing = targetCharId ? getCharacterBImageFacing(targetCharId) : 'left'
       const resolvedGroupTargets = groupTargets?.map(t => ({
         name: t.name,
-        charImg: t.charId ? getCharacterBImage(t.charId) : null,
+        charImg: t.charId ? getCharBattleImg(
+          t.charId,
+          isAwakened([...game.teamA, ...game.teamB].find(unit => unit.characterId === t.charId), game.clock),
+        ) : null,
         facing: t.charId ? getCharacterBImageFacing(t.charId) : 'left' as const,
       })) ?? []
       if (animTimer.current) clearTimeout(animTimer.current)
@@ -713,7 +725,7 @@ function UnitCard({ unit, clock, flip = false, onClick, selectable, highlighted,
   const pct     = unit.alive ? Math.max(0, (unit.hp / unit.maxHp) * 100) : 0
   const ticks   = Math.max(0, unit.nextActionAt - clock)
   const hpColor = pct > 50 ? '#22cc66' : pct > 20 ? '#ccaa22' : '#cc3333'
-  const img     = getCharWideImg(unit.characterId)
+  const img     = getCharBattleImg(unit.characterId, isAwakened(unit, clock))
   const stateClass = selectable ? 'selectable' : (onClick && isPreview ? 'previewable' : (onClick ? 'targetable' : ''))
 
   return (
