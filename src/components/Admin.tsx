@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import './Logistics.css'
 import { moves as defaultMoves, cards as allCards } from '../data/db'
 import { getChars, saveChars, resetChars, getCharImg, getUrlByKey, uploadByKey, uploadBlobByKey, removeByKey, onCloudSynced, onCloudSave, getMoveOverrides, saveMoveOverride, resetMoveOverride } from '../utils/charStore'
-import { removeChromaKeyBackground, removePixelBackground } from '../utils/removePixelBackground'
+import { removeChromaKeyBackground, removeGreenScreenIfPresent, removePixelBackground } from '../utils/removePixelBackground'
 import { CARD_ICON } from '../data/cardIcons'
 import type { Character } from '../types/character'
 import type { Move, RangeType, Scope } from '../types/move'
@@ -1454,7 +1454,14 @@ function ImageCrop({ storageKey, fallbackStorageKey, cropW = PORTRAIT_W, cropH =
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return
     const reader = new FileReader()
-    reader.onload = ev => setImgSrc(ev.target!.result as string)
+    reader.onload = async ev => {
+      const source=ev.target!.result as string
+      if(!supportsChromaKey){setImgSrc(source);return}
+      setRemovingBg(true)
+      try{setImgSrc(await removeGreenScreenIfPresent(source,chromaTolerance))}
+      catch(error){console.warn('自動綠幕去背失敗，保留原圖',error);setImgSrc(source)}
+      finally{setRemovingBg(false)}
+    }
     reader.readAsDataURL(file); e.target.value = ''
   }
 

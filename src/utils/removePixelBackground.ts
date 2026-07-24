@@ -96,3 +96,27 @@ export async function removeChromaKeyBackground(src: string, hexColor = '#00ff00
   context.putImageData(frame, 0, 0)
   return canvas.toDataURL('image/png')
 }
+
+/** Automatically removes a green screen only when green occupies a meaningful part of the image border. */
+export async function removeGreenScreenIfPresent(src: string, tolerance = 72) {
+  const image = await loadImage(src)
+  const canvas = document.createElement('canvas')
+  canvas.width = image.naturalWidth
+  canvas.height = image.naturalHeight
+  const context = canvas.getContext('2d', { willReadFrequently: true })
+  if (!context) return src
+  context.drawImage(image, 0, 0)
+  const { data } = context.getImageData(0, 0, canvas.width, canvas.height)
+  const width = canvas.width, height = canvas.height, step = Math.max(1, Math.floor(Math.min(width, height) / 180))
+  let samples = 0, green = 0, transparent = 0
+  const inspect = (x: number, y: number) => {
+    const offset = (y * width + x) * 4, alpha = data[offset + 3]
+    samples++
+    if (alpha < 20) transparent++
+    if (Math.hypot(data[offset], data[offset + 1] - 255, data[offset + 2]) <= tolerance * 1.35) green++
+  }
+  for (let x = 0; x < width; x += step) { inspect(x, 0); inspect(x, height - 1) }
+  for (let y = step; y < height - step; y += step) { inspect(0, y); inspect(width - 1, y) }
+  if (transparent / samples > .08 || green / samples < .18) return src
+  return removeChromaKeyBackground(src, '#00ff00', tolerance)
+}
