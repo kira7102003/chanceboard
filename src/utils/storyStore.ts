@@ -55,6 +55,9 @@ export interface StoryChapter {
   backgroundKey?: string
   /** Music used while playing this chapter. Undefined inherits global BGM; an empty string disables music. */
   bgmStorageKey?: string
+  beforeBattleBgmStorageKey?: string
+  battleBgmStorageKey?: string
+  afterBattleBgmStorageKey?: string
   chapterCardEnabled?: boolean
   chapterCardEyebrow?: string
   chapterCardTitle?: string

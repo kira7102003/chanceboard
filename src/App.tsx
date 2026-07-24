@@ -34,13 +34,14 @@ function RotatePrompt() {
   )
 }
 
-function GlobalBgm({ config, enabled, volume }: { config: BgmConfig; enabled: boolean; volume: number }) {
+function GlobalBgm({ config, enabled, volume, forcedStorageKey }: { config: BgmConfig; enabled: boolean; volume: number; forcedStorageKey?: string|null }) {
   const ref=useRef<HTMLAudioElement>(null)
   const [storyOverride,setStoryOverride]=useState<string|null|undefined>(undefined)
   const playable=config.tracks.map(track=>({ ...track, url:getUrlByKey(track.storageKey) })).filter((track):track is typeof track & {url:string}=>!!track.url)
   const initial=config.mode==='random'&&playable.length>1?playable[Math.floor(Math.random()*playable.length)]:playable.find(track=>track.id===config.selectedId)??playable[0]
   const [trackId,setTrackId]=useState(initial?.id??'')
-  const current=storyOverride===undefined?(playable.find(track=>track.id===trackId)??initial):storyOverride?{id:'story-override',name:'Story BGM',storageKey:storyOverride,url:getUrlByKey(storyOverride)??''}:undefined
+  const override=forcedStorageKey!==undefined?forcedStorageKey:storyOverride
+  const current=override===undefined?(playable.find(track=>track.id===trackId)??initial):override?{id:'story-override',name:'Story BGM',storageKey:override,url:getUrlByKey(override)??''}:undefined
   useEffect(()=>{
     const update=(event:Event)=>setStoryOverride((event as CustomEvent<{storageKey?:string|null}>).detail.storageKey)
     window.addEventListener('chanceboard:story-bgm',update)
@@ -250,7 +251,7 @@ export default function App() {
 
   return (
     <>
-    <GlobalBgm key={appPhase==='battle'||appPhase==='end'?'battle':'lobby'} config={(appPhase==='battle'||appPhase==='end')&&battleBgmConfig.tracks.length?battleBgmConfig:bgmConfig} enabled={musicEnabled} volume={musicVolume}/>
+    <GlobalBgm key={appPhase==='battle'||appPhase==='end'?'battle':'lobby'} config={(appPhase==='battle'||appPhase==='end')&&battleBgmConfig.tracks.length?battleBgmConfig:bgmConfig} enabled={musicEnabled} volume={musicVolume} forcedStorageKey={appPhase==='battle'||appPhase==='end'?(localStorage.getItem('cb_story_battle_bgm_override')??undefined):undefined}/>
     <RotatePrompt />
     {cloudSynced && <DailyCheckIn userId={user.id} />}
     <div className="app" style={activeBgUrl ? {

@@ -5,10 +5,10 @@ import {applyStoryFlowLinks,describeStoryRewards,type StoryChapter,type StoryFlo
 import './StoryPlaybackV2.css'
 import StoryRoutePicker from './StoryRoutePicker'
 
-interface Props{chapter:StoryChapter;initialNodes:StoryFlowNode[];onLeave:()=>void;onComplete?: (chapter:StoryChapter)=>void;onBattle?:()=>void;preview?:boolean;entryRoute?:{id:string;total:number}}
+interface Props{chapter:StoryChapter;initialNodes:StoryFlowNode[];onLeave:()=>void;onComplete?: (chapter:StoryChapter)=>void;onBattle?:()=>void;preview?:boolean;entryRoute?:{id:string;total:number};musicStage?:'before'|'after'}
 const pieceId=(value?:string)=>value?.startsWith('piece:')?value.slice(6):null
 
-export default function StoryPlayer({chapter,initialNodes,onLeave,onComplete,onBattle,preview=false,entryRoute}:Props){
+export default function StoryPlayer({chapter,initialNodes,onLeave,onComplete,onBattle,preview=false,entryRoute,musicStage='before'}:Props){
  const routeKey=`${preview?'cb_story_preview_route':'cb_story_route'}_${chapter.id}`
  const cgPlayback=localStorage.getItem('cb_story_cg_playback')==='always'?'always':'once'
  const onceKey=(node:StoryFlowNode)=>`cb_story_once_${chapter.id}_${node.id}`
@@ -22,9 +22,10 @@ export default function StoryPlayer({chapter,initialNodes,onLeave,onComplete,onB
  const avatar=speakerChar?(getCharImg(speakerChar.id)??getUrlByKey(`cb_head_img_${speakerChar.id}`)):getUrlByKey(`cb_board_${segment?.boardCharacter??leftId}_front`)
  const background=getUrlByKey(chapter.backgroundKey||`cb_story_map_${chapter.id}`)??'',cg=segment?.cgKey?(getUrlByKey(segment.cgKey)??segment.cgKey):''
  useEffect(()=>{
-  window.dispatchEvent(new CustomEvent('chanceboard:story-bgm',{detail:{storageKey:chapter.bgmStorageKey}}))
+  const storageKey=musicStage==='after'?chapter.afterBattleBgmStorageKey:(chapter.beforeBattleBgmStorageKey??chapter.bgmStorageKey)
+  window.dispatchEvent(new CustomEvent('chanceboard:story-bgm',{detail:{storageKey}}))
   return()=>{window.dispatchEvent(new CustomEvent('chanceboard:story-bgm',{detail:{storageKey:undefined}}))}
- },[chapter.bgmStorageKey])
+ },[chapter.afterBattleBgmStorageKey,chapter.beforeBattleBgmStorageKey,chapter.bgmStorageKey,musicStage])
  useEffect(()=>{setShown(type==='chapter'&&chapterEffect!=='writing'?text.length:0)},[cursor,text,type,chapterEffect])
  useEffect(()=>{if(!preview&&node&&isOnce(node))localStorage.setItem(onceKey(node),'1');if(!preview&&segment?.mapRoutePointIndex!==undefined)localStorage.setItem(`cb_story_map_route_point_${chapter.id}`,String(segment.mapRoutePointIndex))},[chapter.id,node,preview,segment?.mapRoutePointIndex])
  useEffect(()=>{if(preview||!entryRoute)return;const key=`cb_story_route_progress_${chapter.id}_${entryRoute.id}`,done=Math.min(entryRoute.total,cursor);if(done>Number(localStorage.getItem(key)||0))localStorage.setItem(key,String(done))},[chapter.id,cursor,entryRoute,preview])
@@ -38,7 +39,7 @@ export default function StoryPlayer({chapter,initialNodes,onLeave,onComplete,onB
  const choose=(branch:Extract<StoryFlowNode,{type:'branch'}>['branches'][number])=>{if(node?.type==='branch'){const entry={branchId:node.id,title:node.title,routeId:branch.id,label:branch.label};setRoute(current=>{const next=[...current.filter(item=>item.branchId!==node.id),entry];localStorage.setItem(routeKey,JSON.stringify(next));return next})}setNodes(current=>[...current.slice(0,cursor),...applyStoryFlowLinks(branch.nodes),...current.slice(cursor+1)]);setShown(0)}
  const portraitImage=(ref?:string,pose:'front'|'side'='front')=>{if(!ref)return null;const piece=pieceId(ref);return piece?getCharImg(piece):(getUrlByKey(`cb_board_${ref}_${pose}`)??getUrlByKey(`cb_board_${ref}_front`))}
  const boardPortrait=(side:'left'|'right')=>{if(node?.type==='branch'){if(!node.showPortraits)return null;const configured=node.choicePortraits?.length?node.choicePortraits.filter(item=>item.side===side&&item.visible):[{id:`legacy_${side}`,character:side==='left'?node.leftCharacter:node.rightCharacter,side,visible:true}];return <>{configured.map((item,index)=>{const image=portraitImage(item.character);return image?<img key={item.id} className={`story-v2-portrait choice ${side} active`} style={{'--choice-index':index} as React.CSSProperties} src={image} alt=""/>:null})}</>}const id=side===activeSide?(segment?.boardCharacter&&!selectedId?segment.boardCharacter:side==='left'?leftId:rightId):side==='left'?leftId:rightId;if(selectedId&&side===activeSide){const image=getCharImg(selectedId);return image?<img className={`story-v2-portrait ${side} active`} src={image} alt=""/>:null}const image=getUrlByKey(`cb_board_${id}_${segment?.pose??'front'}`)??getUrlByKey(`cb_board_${id}_front`);return image?<img className={`story-v2-portrait ${side} ${side===activeSide?'active':'inactive'}`} src={image} alt=""/>:null}
- const enterBattle=()=>{addHistory();if(preview||!onBattle){advance();return}localStorage.setItem('cb_story_resume',JSON.stringify({chapterId:chapter.id,cursor:cursor+1,nodes}));onBattle()}
+ const enterBattle=()=>{addHistory();if(preview||!onBattle){advance();return}localStorage.setItem('cb_story_resume',JSON.stringify({chapterId:chapter.id,cursor:cursor+1,nodes,afterBattle:true}));if(chapter.battleBgmStorageKey===undefined)localStorage.removeItem('cb_story_battle_bgm_override');else localStorage.setItem('cb_story_battle_bgm_override',chapter.battleBgmStorageKey);onBattle()}
  if(node?.type==='branch'&&node.chapterRouteSelect)return <StoryRoutePicker chapter={chapter} node={node} onBack={onLeave} onChoose={choose}/>
  return <div className={`story-v2 type-${type}`} onClick={advanceFromStage} style={{'--story-bg':`url(${background})`,'--cg':`url(${cg})`,'--cg-x':`${segment?.cgPositionX??50}%`,'--cg-y':`${segment?.cgPositionY??50}%`,'--cg-end-x':`${segment?.cgEndPositionX??segment?.cgPositionX??50}%`,'--cg-end-y':`${segment?.cgEndPositionY??segment?.cgPositionY??50}%`,'--cg-duration':`${segment?.cgDuration??6}s`,'--portrait-active':`${(segment?.portraitActiveScale??100)/100}`,'--portrait-inactive':`${(segment?.portraitInactiveScale??88)/100}`,'--portrait-dim':`${(segment?.portraitInactiveOpacity??45)/100}`} as React.CSSProperties}>
   <div className="story-v2-bg"/>{cg&&<><div className="story-v2-cg-blur"/><div key={segment?.id} className="story-v2-cg"/></>}
