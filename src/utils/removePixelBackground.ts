@@ -61,7 +61,7 @@ export async function removePixelBackground(src: string) {
   return canvas.toDataURL('image/png')
 }
 
-/** Removes an edge-connected solid colour background (for green/blue screen art). */
+/** Removes a solid chroma-key colour, including enclosed gaps between hair or clothing. */
 export async function removeChromaKeyBackground(src: string, hexColor = '#00ff00', tolerance = 72) {
   const image = await loadImage(src)
   const canvas = document.createElement('canvas')
@@ -71,27 +71,16 @@ export async function removeChromaKeyBackground(src: string, hexColor = '#00ff00
   if (!context) throw new Error('無法建立去背畫布')
   context.drawImage(image, 0, 0)
   const frame = context.getImageData(0, 0, canvas.width, canvas.height)
-  const data = frame.data, width = canvas.width, height = canvas.height
+  const data = frame.data
   const rgb = hexColor.replace('#', '').match(/.{2}/g)?.map(value => Number.parseInt(value, 16)) ?? [0, 255, 0]
   const distance = (offset: number) => Math.hypot(data[offset] - rgb[0], data[offset + 1] - rgb[1], data[offset + 2] - rgb[2])
-  const visited = new Uint8Array(width * height), queue = new Int32Array(width * height)
-  let head = 0, tail = 0
   const edge = Math.max(8, tolerance * 1.35)
-  const enqueue = (x: number, y: number) => {
-    const index = y * width + x
-    if (visited[index] || distance(index * 4) > edge) return
-    visited[index] = 1
-    queue[tail++] = index
-  }
-  for (let x = 0; x < width; x++) { enqueue(x, 0); enqueue(x, height - 1) }
-  for (let y = 1; y < height - 1; y++) { enqueue(0, y); enqueue(width - 1, y) }
-  while (head < tail) {
-    const index = queue[head++], x = index % width, y = Math.floor(index / width), offset = index * 4, delta = distance(offset)
+  for (let offset = 0; offset < data.length; offset += 4) {
+    const delta = distance(offset)
+    if (delta > edge) continue
     data[offset + 3] = delta <= tolerance ? 0 : Math.round(255 * (delta - tolerance) / Math.max(1, edge - tolerance))
-    if (x > 0) enqueue(x - 1, y)
-    if (x + 1 < width) enqueue(x + 1, y)
-    if (y > 0) enqueue(x, y - 1)
-    if (y + 1 < height) enqueue(x, y + 1)
+    // Remove the green fringe left by antialiasing around hair and clothing.
+    if (data[offset + 3] > 0) data[offset + 1] = Math.min(data[offset + 1], Math.max(data[offset], data[offset + 2]) + 18)
   }
   context.putImageData(frame, 0, 0)
   return canvas.toDataURL('image/png')
