@@ -11,7 +11,7 @@ export interface StorySegment {
   /** Legacy 1=front, 2=side. */
   portrait?: 1 | 2
   boardCharacter?: string
-  pose?: 'front' | 'side'
+  pose?: 'front' | 'side' | 'awaken_front' | 'awaken_side'
   section?: string
   presentation?: 'dialogue' | 'narration' | 'marquee' | 'chapter' | 'cg' | 'battle'
   textDirection?: 'ltr' | 'ttb' | 'btt' | 'rtl'

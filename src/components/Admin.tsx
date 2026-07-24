@@ -617,6 +617,14 @@ function BasicTab({ char, onUpdate }: { char: Character; onUpdate: (p: Partial<C
             <FacingSelect value={char.wideImageFacing ?? 'left'} onChange={value => onUpdate({ wideImageFacing: value })} />
           </div>
           <div className="adm-section">
+            <div className="adm-section-label">覺醒狀態立繪 · 正面</div>
+            <ImageCrop storageKey={`cb_awaken_img_${char.id}`} />
+          </div>
+          <div className="adm-section">
+            <div className="adm-section-label">覺醒狀態立繪 · 側面／戰場</div>
+            <ImageCrop storageKey={`cb_awaken_wide_img_${char.id}`} />
+          </div>
+          <div className="adm-section">
             <div className="adm-section-label">四星以上突破圖片</div>
             <ImageCrop storageKey={`cb_star_img_${char.id}`} />
           </div>
@@ -1030,11 +1038,12 @@ function BgSettings() {
             }}>刪除角色</button>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            {(['front', 'side'] as const).map(pose => {
+            {(['front', 'side', 'awaken_front', 'awaken_side'] as const).map(pose => {
               const key = `${character.id}_${pose}`
-              return <div key={key}><div style={{ fontSize: 11, color: '#8f91ad', marginBottom: 6 }}>{character.name || '未命名'} · {pose === 'front' ? '正面' : '側面'}立繪（768×1376）</div>
+              const poseLabel=pose==='front'?'正面':pose==='side'?'側面':pose==='awaken_front'?'覺醒正面':'覺醒側面'
+              return <div key={key}><div style={{ fontSize: 11, color: '#8f91ad', marginBottom: 6 }}>{character.name || '未命名'} · {poseLabel}立繪（768×1376）</div>
                 <ImageCrop storageKey={`cb_board_${key}`} cropW={768} cropH={1376} />
-                {pose === 'side' && <FacingSelect value={facing[key] ?? 'left'} onChange={value => updateFacing(key, value)} />}</div>
+                {(pose === 'side'||pose==='awaken_side') && <FacingSelect value={facing[key] ?? 'left'} onChange={value => updateFacing(key, value)} />}</div>
             })}
           </div>
           <div style={{ marginTop: 12 }}>
