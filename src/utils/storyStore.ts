@@ -41,6 +41,17 @@ export interface StoryChoicePortrait { id: string; character?: string; side: 'le
 export interface StoryFlowBranch { id: string; label: string; nodes: StoryFlowNode[]; coverKey?: string; description?: string; progressText?: string }
 export interface StoryNodeLink { id:string; targetId:string; label:string }
 export interface StoryGraphLink extends StoryNodeLink { sourceId:string }
+export interface StoryFlowVersion {
+  id: string
+  name: string
+  createdAt: string
+  flow: StoryFlowNode[]
+  flowGraphLinks?: StoryGraphLink[]
+  flowGraphDisabledLinks?: string[]
+  flowNodePositions?: Record<string,{x:number;y:number}>
+  chapterCardNextNodeId?: string
+  chapterCardNextLinks?: StoryNodeLink[]
+}
 
 export interface StoryChapter {
   id: StoryChapterId
@@ -71,6 +82,7 @@ export interface StoryChapter {
   flowGraphLinks?: StoryGraphLink[]
   /** Connections hidden/removed in the visual flow editor, keyed as source>target. */
   flowGraphDisabledLinks?: string[]
+  flowVersions?: StoryFlowVersion[]
   rewards?: StoryRewards
   mapX?: number
   mapY?: number

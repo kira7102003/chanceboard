@@ -5,7 +5,7 @@ import './StoryChapterSettings.css'
 import './StoryPlaybackV2.css'
 import { getCharImg, getChars, getUrlByKey, uploadByKey, removeByKey } from '../utils/charStore'
 import { getBattleBackgroundNames, type BoardCharacter } from '../utils/boardCharacters'
-import { applyStoryFlowLinks, getChapterFlow, getStoryChapters, type StoryChapter, type StoryFlowNode, type StoryRewards, type StorySegment } from '../utils/storyStore'
+import { applyStoryFlowLinks, getChapterFlow, getStoryChapters, type StoryChapter, type StoryFlowNode, type StoryRewards, type StorySegment, type StoryFlowVersion } from '../utils/storyStore'
 import StoryPlayer from './StoryPlayer'
 import StoryMode from './StoryMode'
 import { flushStoryChapters } from '../story/storyRepository'
@@ -59,6 +59,17 @@ const editFlowLink=(nodes:StoryFlowNode[],sourceId:string,linkId:string,patch:{l
 const disconnectFlowNodes=(nodes:StoryFlowNode[],sourceId:string,targetId:string):StoryFlowNode[]=>nodes.map(node=>{if(node.id===sourceId&&node.type==='common'){const links=(node.nextLinks??[]).filter(link=>link.targetId!==targetId);return{...node,nextLinks:links,nextNodeId:links[0]?.targetId,nextLinkMode:'manual'}}return node.type==='branch'?{...node,branches:node.branches.map(route=>({...route,nodes:disconnectFlowNodes(route.nodes,sourceId,targetId)}))}:node})
 const dedupeFlowLinks=(nodes:StoryFlowNode[]):StoryFlowNode[]=>nodes.map(node=>{if(node.type==='branch')return{...node,branches:node.branches.map(route=>({...route,nodes:dedupeFlowLinks(route.nodes)}))};const seen=new Set<string>(),links=(node.nextLinks??[]).filter(link=>!seen.has(link.targetId)&&!!seen.add(link.targetId));return{...node,nextLinks:links,nextNodeId:links[0]?.targetId??node.nextNodeId}})
 const addAutomaticFlowLinks=(nodes:StoryFlowNode[]):StoryFlowNode[]=>nodes.map((node,index)=>node.type==='branch'?{...node,branches:node.branches.map(route=>({...route,nodes:addAutomaticFlowLinks(route.nodes)}))}:node.nextLinkMode==='manual'?node:{...node,nextNodeId:nodes[index+1]?.id,nextLinkMode:'auto'})
+const textToNodes=(text:string,route='story'):StoryFlowNode[]=>text.trim().split(/\n\s*\n+/).filter(Boolean).map((block,index)=>{
+  const lines=block.trim().split(/\n/),speakerMatch=lines[0]?.match(/^([^：:]{1,12})[：:]\s*(.*)$/),speaker=speakerMatch?.[1]??'旁白',body=[speakerMatch?.[2],...lines.slice(1)].filter(Boolean).join('\n')||block.trim()
+  const presentation:StorySegment['presentation']=/(\[|【)\s*(CG|開場\s*CG)/i.test(block)?'cg':/(\[|【)\s*戰鬥/.test(block)?'battle':speaker==='旁白'?'narration':'dialogue'
+  return{id:uid(`node_${route}`),type:'common' as const,segment:{id:uid(`segment_${route}`),speaker,text:body.replace(/^(\[|【)[^\]】]+(\]|】)\s*/,'').trim(),side:index%2?'right':'left',presentation}}
+})
+const generateFlowFromText=(source:string):StoryFlowNode[]=>{
+  const text=source.replace(/\r/g,'').trim(),marks=[...text.matchAll(/【\s*(執黑|執白)\s*】/g)]
+  if(!marks.length)return textToNodes(text)
+  const before=text.slice(0,marks[0].index).trim(),branches=marks.map((mark,index)=>({id:uid('route'),label:mark[1],nodes:textToNodes(text.slice((mark.index??0)+mark[0].length,marks[index+1]?.index??text.length),mark[1])}))
+  return[...textToNodes(before),{id:uid('branch'),type:'branch',title:'選擇執棋方',branches,chapterRouteSelect:true}]
+}
 
 export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, onChapterChange, onClose }: Props) {
   const [flow, setFlow] = useState(() => addAutomaticFlowLinks(dedupeFlowLinks(getChapterFlow(chapter))))
@@ -67,6 +78,8 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
   const [previewStartId,setPreviewStartId]=useState<string|undefined>(undefined)
   const [mapOpen,setMapOpen]=useState(true)
   const [detailsVisible,setDetailsVisible]=useState(true)
+  const [flowToolsOpen,setFlowToolsOpen]=useState(false)
+  const [flowImportText,setFlowImportText]=useState('')
   const canvasRef = useRef<HTMLElement>(null)
   const scrollKey = `cb_story_designer_scroll_v2_${chapter.id}`
   const previewStartNode=findPreviewNode(flow,previewStartId)
@@ -97,6 +110,10 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
     change([...flow, copy])
     revealNode(copy.id)
   }
+  const exportFlow=async()=>{const value=JSON.stringify(flow,null,2);setFlowImportText(value);setFlowToolsOpen(true);try{await navigator.clipboard.writeText(value)}catch{/* textarea remains available for manual copy */}}
+  const importFlow=()=>{if(!flowImportText.trim())return;try{const parsed=JSON.parse(flowImportText) as StoryFlowNode[];if(!Array.isArray(parsed))throw new Error('not array');change(parsed)}catch{change(generateFlowFromText(flowImportText))}setFlowToolsOpen(false)}
+  const saveFlowVersion=()=>{const name=window.prompt('版本名稱',`${chapter.title} ${new Date().toLocaleString('zh-TW')}`)?.trim();if(!name)return;const version:StoryFlowVersion={id:uid('flow_version'),name,createdAt:new Date().toISOString(),flow:structuredClone(flow),flowGraphLinks:structuredClone(chapter.flowGraphLinks??[]),flowGraphDisabledLinks:[...(chapter.flowGraphDisabledLinks??[])],flowNodePositions:structuredClone(chapter.flowNodePositions??{}),chapterCardNextNodeId:chapter.chapterCardNextNodeId,chapterCardNextLinks:structuredClone(chapter.chapterCardNextLinks??[])};onChapterChange({flowVersions:[...(chapter.flowVersions??[]),version]});void flushStoryChapters()}
+  const restoreFlowVersion=(version:StoryFlowVersion)=>{if(!window.confirm(`切換到「${version.name}」？目前未另存版本的變更會被取代。`))return;const restored=structuredClone(version.flow);setFlow(restored);onChapterChange({flow:restored,flowGraphLinks:structuredClone(version.flowGraphLinks??[]),flowGraphDisabledLinks:[...(version.flowGraphDisabledLinks??[])],flowNodePositions:structuredClone(version.flowNodePositions??{}),chapterCardNextNodeId:version.chapterCardNextNodeId,chapterCardNextLinks:structuredClone(version.chapterCardNextLinks??[])});onSave(restored,rewards);void flushStoryChapters()}
   const returnToMap=()=>{const canvas=canvasRef.current,map=canvas?.querySelector<HTMLElement>('.story-graph-overview');if(canvas&&map){setMapOpen(true);requestAnimationFrame(()=>{canvas.scrollTo({top:Math.max(0,map.offsetTop-12),left:0,behavior:'smooth'})})}}
   const openPreview = (startId = previewStartId) => {
     setPreviewStartId(startId)
@@ -134,7 +151,7 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
     <header className="story-designer-head">
       <div><button onClick={onClose}>← 返回章節設定</button><span className="story-designer-dot" /><b>{chapter.piece}　{chapter.title}｜故事流程</b></div>
       <div className="story-designer-legend"><i className="dialogue" />對話<i className="choice" />選項<i className="route" />分支</div>
-      <div className="story-add-toolbar"><button title="從故事起點播放整個章節流程" className="route-entry" onClick={() => openPreview(undefined)}>↗ 完整流程預覽</button><button title="從目前在下方選取的節點開始預覽" onClick={() => openPreview()} disabled={!previewStartId}>↗ 選取節點預覽</button><button title="新增小黑／小白等全畫面路線選擇入口" className="route-entry" onClick={() => append(makeRouteSelect())}>＋ 路線入口</button><button title="新增角色說話的對話節點" onClick={() => append(makeCommon(boardCharacters[0]))}>＋ 對話</button><button title="新增可分成多條路線的選項節點" onClick={() => append(makeBranch())}>＋ 分支</button><button title="新增沒有角色立繪的敘事旁白" onClick={() => append(makePresentation('narration'))}>＋ 旁白</button><button title="新增會在畫面上移動顯示的文字" onClick={() => append(makePresentation('marquee'))}>＋ 跑馬燈</button><button title="新增章節標題字卡與顯示效果" onClick={() => append(makePresentation('chapter'))}>＋ 章節</button><button title="新增全畫面 CG 圖片與運鏡設定" onClick={() => append(makePresentation('cg'))}>＋ CG</button><button title="新增進入戰鬥的提示與銜接節點" onClick={() => append(makePresentation('battle'))}>＋ 戰鬥</button><button title="所有修改會自動同步至雲端，不需另外按儲存" className="primary" disabled>☁ 編輯即自動儲存</button></div>
+      <div className="story-add-toolbar"><button title="貼上完整故事文字，自動生成節點與分支；也可複製整份 FLOW" onClick={()=>setFlowToolsOpen(true)}>FLOW 匯入／生成</button><button title="將目前 FLOW 儲存為本章的一個命名版本" onClick={saveFlowVersion}>儲存版本</button><button title="從故事起點播放整個章節流程" className="route-entry" onClick={() => openPreview(undefined)}>↗ 完整流程預覽</button><button title="從目前在下方選取的節點開始預覽" onClick={() => openPreview()} disabled={!previewStartId}>↗ 選取節點預覽</button><button title="新增小黑／小白等全畫面路線選擇入口" className="route-entry" onClick={() => append(makeRouteSelect())}>＋ 路線入口</button><button title="新增角色說話的對話節點" onClick={() => append(makeCommon(boardCharacters[0]))}>＋ 對話</button><button title="新增可分成多條路線的選項節點" onClick={() => append(makeBranch())}>＋ 分支</button><button title="新增沒有角色立繪的敘事旁白" onClick={() => append(makePresentation('narration'))}>＋ 旁白</button><button title="新增會在畫面上移動顯示的文字" onClick={() => append(makePresentation('marquee'))}>＋ 跑馬燈</button><button title="新增章節標題字卡與顯示效果" onClick={() => append(makePresentation('chapter'))}>＋ 章節</button><button title="新增全畫面 CG 圖片與運鏡設定" onClick={() => append(makePresentation('cg'))}>＋ CG</button><button title="新增進入戰鬥的提示與銜接節點" onClick={() => append(makePresentation('battle'))}>＋ 戰鬥</button><button title="所有修改會自動同步至雲端，不需另外按儲存" className="primary" disabled>☁ 編輯即自動儲存</button></div>
     </header>
     <div className="story-designer-sub"><b>劇情工作區</b><span>拖曳卡片調整位置</span><span>黃點接到藍點建立流程</span><span>點「修改細節」前往下方編輯</span><span>☁ 所有變更自動儲存</span></div>
     <nav className="story-designer-palette">
@@ -147,6 +164,7 @@ export default function StoryFlowDesigner({ chapter, boardCharacters, onSave, on
       {!flow.length && <div className="story-designer-empty">尚無節點，請從右上角新增第一段對話。</div>}
     </main>
     <aside className="story-designer-anchor-tools"><button onClick={returnToMap}>↑ 回流程圖</button><button onClick={()=>setMapOpen(value=>!value)}>{mapOpen?'收縮 MAP':'展開 MAP'}</button><button onClick={()=>setDetailsVisible(value=>!value)}>{detailsVisible?'隱藏細節':'顯示細節'}</button></aside>
+    {flowToolsOpen&&<div className="story-flow-tools-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)setFlowToolsOpen(false)}}><section className="story-flow-tools-modal" role="dialog" aria-modal="true"><header><div><small>FLOW GENERATOR</small><h2>複製、貼上與版本管理</h2></div><button onClick={()=>setFlowToolsOpen(false)}>×</button></header><div className="story-flow-import"><h3>貼上故事，自動生成 FLOW</h3><p>可貼上另一份 FLOW JSON，或直接貼完整故事。空行會分成節點；「角色：台詞」會建立對話；【執黑】、【執白】會自動建立兩條分支。</p><textarea value={flowImportText} onChange={event=>setFlowImportText(event.target.value)} placeholder={'【開場 CG】\\n畫面說明……\\n\\n小黑：第一句台詞\\n\\n【執黑】\\n小黑：黑方故事……\\n\\n【執白】\\n小白：白方故事……'}/><div><button onClick={exportFlow}>複製目前 FLOW</button><button className="primary" disabled={!flowImportText.trim()} onClick={importFlow}>生成並取代目前 FLOW</button></div></div><div className="story-flow-versions"><div><h3>本章 FLOW 版本</h3><button onClick={saveFlowVersion}>＋ 儲存目前版本</button></div>{chapter.flowVersions?.length?<ul>{[...chapter.flowVersions].reverse().map(version=><li key={version.id}><span><b>{version.name}</b><small>{new Date(version.createdAt).toLocaleString('zh-TW')} · {flattenFlowNodes(version.flow).length} 個節點</small></span><button onClick={()=>restoreFlowVersion(version)}>切換</button><button className="danger" onClick={()=>{if(window.confirm(`刪除版本「${version.name}」？`)){onChapterChange({flowVersions:chapter.flowVersions?.filter(item=>item.id!==version.id)});void flushStoryChapters()}}}>刪除</button></li>)}</ul>:<p className="empty">尚未儲存版本。版本會保留節點、連線與 FLOW MAP 位置。</p>}</div></section></div>}
     {previewWindow && !previewWindow.closed && createPortal((!previewStartId||previewStartNode?.type==='branch'&&previewStartNode.chapterRouteSelect)?<StoryMode onClose={()=>previewWindow.close()} preview previewChapters={getStoryChapters().map(item=>item.id===chapter.id?{...chapter,flow,rewards}:item)}/>:<StoryPlayer key={previewStartId} chapter={{...chapter,rewards}} initialNodes={previewFromNode(flow,previewStartId)??flow} onLeave={()=>previewWindow.close()} preview />, previewWindow.document.body)}
   </div>
 }
