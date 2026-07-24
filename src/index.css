@@ -3096,6 +3096,7 @@ h2 {
 }
 .img-crop-actions { display: flex; flex-direction: column; gap: 6px; }
 .img-crop-tool { display: flex; flex-direction: column; gap: 9px; }
+.img-chroma-tool{display:grid;grid-template-columns:minmax(180px,1fr) auto minmax(170px,.7fr) auto;gap:10px;align-items:center;padding:10px;border:1px solid #3d8d69;border-radius:9px;background:linear-gradient(135deg,#10251e,#11192a);color:#e8fff5}.img-chroma-tool>div{display:grid;gap:2px}.img-chroma-tool b{font-size:12px}.img-chroma-tool small{color:#9ccbb6;font-size:9px}.img-chroma-tool label{display:grid;gap:4px;color:#b9d5c8;font-size:9px}.img-chroma-tool input[type=color]{width:48px;height:30px;padding:2px;border:1px solid #52677a;border-radius:6px;background:#0b1120}.img-chroma-tool input[type=range]{width:100%}@media(max-width:760px){.img-chroma-tool{grid-template-columns:1fr 1fr}.img-chroma-tool>div{grid-column:1/-1}}
 .img-crop-hint {
   text-align: center; font-size: .7rem; color: rgba(200,161,90,.3);
   letter-spacing: .05em;

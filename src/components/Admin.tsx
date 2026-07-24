@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import './Logistics.css'
 import { moves as defaultMoves, cards as allCards } from '../data/db'
 import { getChars, saveChars, resetChars, getCharImg, getUrlByKey, uploadByKey, uploadBlobByKey, removeByKey, onCloudSynced, onCloudSave, getMoveOverrides, saveMoveOverride, resetMoveOverride } from '../utils/charStore'
-import { removePixelBackground } from '../utils/removePixelBackground'
+import { removeChromaKeyBackground, removePixelBackground } from '../utils/removePixelBackground'
 import { CARD_ICON } from '../data/cardIcons'
 import type { Character } from '../types/character'
 import type { Move, RangeType, Scope } from '../types/move'
@@ -1342,6 +1342,8 @@ function ImageCrop({ storageKey, fallbackStorageKey, cropW = PORTRAIT_W, cropH =
   const [uploading,   setUploading]   = useState(false)
   const [fetchingRe,  setFetchingRe]  = useState(false)
   const [removingBg,   setRemovingBg] = useState(false)
+  const [chromaColor, setChromaColor] = useState('#00ff00')
+  const [chromaTolerance, setChromaTolerance] = useState(72)
   const [savedFailed, setSavedFailed] = useState(false)
   const [disp,        setDisp]        = useState({ w: 0, h: 0, imgX: 0, imgY: 0 })
   // box: x/y in rendered-image coords; w = box width; height = w / CROP_RATIO
@@ -1493,6 +1495,19 @@ function ImageCrop({ storageKey, fallbackStorageKey, cropW = PORTRAIT_W, cropH =
     }
   }
 
+  const handleChromaKey = async () => {
+    if (!imgSrc) return
+    setRemovingBg(true)
+    try {
+      setImgSrc(await removeChromaKeyBackground(imgSrc, chromaColor, chromaTolerance))
+    } catch (error) {
+      console.error('綠幕去背失敗', error)
+      alert(error instanceof Error ? error.message : '綠幕去背失敗')
+    } finally {
+      setRemovingBg(false)
+    }
+  }
+
   const handleSave = async () => {
     const img = imgRef.current; if (!img || !img.naturalWidth) return
     const d = dispRef.current; if (!d.w || !d.h) return
@@ -1533,6 +1548,7 @@ function ImageCrop({ storageKey, fallbackStorageKey, cropW = PORTRAIT_W, cropH =
   const previewH = 70
   const previewW = Math.round(previewH * cropW / cropH)
 
+  const supportsChromaKey=/^cb_(img_|wide_img_|awaken_img_|awaken_wide_img_|star_img_|extra_[abc]_img_|board_|story_img_|monster_img_)/.test(storageKey)
   return (
     <div className="img-crop">
       {!imgSrc && (
@@ -1561,7 +1577,7 @@ function ImageCrop({ storageKey, fallbackStorageKey, cropW = PORTRAIT_W, cropH =
 
       {imgSrc && (
         <div className="img-crop-tool">
-          <div ref={stageRef} className={`img-crop-stage${storageKey.startsWith('cb_extra_') ? ' pixel-transparent-stage' : ''}`}>
+          <div ref={stageRef} className={`img-crop-stage${supportsChromaKey ? ' pixel-transparent-stage' : ''}`}>
             <img ref={imgRef} src={imgSrc} className="img-crop-src"
               alt="" onLoad={initBox} draggable={false} />
 
@@ -1589,6 +1605,7 @@ function ImageCrop({ storageKey, fallbackStorageKey, cropW = PORTRAIT_W, cropH =
           </div>
 
           <div className="img-crop-hint">拖曳框內移動位置 · 拖曳四角縮放大小</div>
+          {supportsChromaKey&&<div className="img-chroma-tool"><div><b>綠幕／色幕去背</b><small>選擇背景色並調整容差，處理後可先預覽再儲存。</small></div><label>背景色<input type="color" value={chromaColor} onChange={event=>setChromaColor(event.target.value)}/></label><label>容差 {chromaTolerance}<input type="range" min="10" max="160" value={chromaTolerance} onChange={event=>setChromaTolerance(Number(event.target.value))}/></label><button className="btn sm" onClick={handleChromaKey} disabled={uploading||removingBg}>{removingBg?'去背處理中…':'背景轉透明'}</button></div>}
           <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
             {storageKey.startsWith('cb_extra_') && <button className="btn sm" onClick={handleRemoveBackground} disabled={uploading || removingBg}>{removingBg ? '去背處理中…' : '自動去背'}</button>}
             <button className="btn primary sm" onClick={handleSave} disabled={uploading}>
